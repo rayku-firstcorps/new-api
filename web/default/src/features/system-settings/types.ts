@@ -237,6 +237,13 @@ export type BillingSettings = {
   StripeUnitPrice: number
   StripeMinTopUp: number
   StripePromotionCodesEnabled: boolean
+  ExternalBalanceApiEnabled: boolean
+  ExternalBalanceApiKey: string
+  ExternalBalanceApiKeyNext: string
+  ExternalBalanceApiAllowQuery: boolean
+  ExternalBalanceApiAllowDeduct: boolean
+  ExternalBalanceApiMaxDeductQuota: number
+  ExternalBalanceApiAllowedIPs: string
   CreemApiKey: string
   CreemWebhookSecret: string
   CreemTestMode: boolean

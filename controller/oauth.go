@@ -23,9 +23,13 @@ func providerParams(name string) map[string]any {
 func GenerateOAuthCode(c *gin.Context) {
 	session := sessions.Default(c)
 	state := common.GetRandomString(12)
-	affCode := c.Query("aff")
+	affCode := firstNonEmpty(c.Query("aff_code"), c.Query("aff"))
 	if affCode != "" {
 		session.Set("aff", affCode)
+	}
+	promotionCode := firstNonEmpty(c.Query("promotion_code"), c.Query("promo"))
+	if promotionCode != "" {
+		session.Set("promotion_code", promotionCode)
 	}
 	session.Set("oauth_state", state)
 	err := session.Save()
@@ -263,10 +267,24 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	user.Status = common.UserStatusEnabled
 
 	// Handle affiliate code
-	affCode := session.Get("aff")
+	affCode := ""
+	if sessionAffCode := session.Get("aff"); sessionAffCode != nil {
+		affCode, _ = sessionAffCode.(string)
+	}
+	promotionCode := ""
+	if sessionPromotionCode := session.Get("promotion_code"); sessionPromotionCode != nil {
+		promotionCode, _ = sessionPromotionCode.(string)
+	}
+	promotionLink, err := resolvePromotionLink(promotionCode)
+	if err != nil {
+		return nil, err
+	}
 	inviterId := 0
-	if affCode != nil {
-		inviterId, _ = model.GetUserIdByAffCode(affCode.(string))
+	if affCode != "" {
+		inviterId, _ = model.GetUserIdByAffCode(affCode)
+	}
+	if promotionLink != nil {
+		inviterId = 0
 	}
 
 	// Use transaction to ensure user creation and OAuth binding are atomic
@@ -276,6 +294,11 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 			// Create user
 			if err := user.InsertWithTx(tx, inviterId); err != nil {
 				return err
+			}
+			if promotionLink != nil {
+				if err := model.ApplyPromotionRegistrationWithTx(tx, user, promotionLink, c.ClientIP(), c.Request.UserAgent()); err != nil {
+					return err
+				}
 			}
 
 			// Create OAuth binding
@@ -302,6 +325,11 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 			// Create user
 			if err := user.InsertWithTx(tx, inviterId); err != nil {
 				return err
+			}
+			if promotionLink != nil {
+				if err := model.ApplyPromotionRegistrationWithTx(tx, user, promotionLink, c.ClientIP(), c.Request.UserAgent()); err != nil {
+					return err
+				}
 			}
 
 			// Set the provider user ID on the user model and update

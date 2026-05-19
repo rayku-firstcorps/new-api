@@ -52,6 +52,16 @@ func SetApiRouter(router *gin.Engine) {
 		// Standard OAuth providers (GitHub, Discord, OIDC, LinuxDO) - unified route
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
 		apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
+		apiRouter.POST("/promotion/click", middleware.CriticalRateLimit(), controller.RecordPromotionClick)
+
+		externalBalanceRoute := apiRouter.Group("/external/balance")
+		externalBalanceRoute.Use(middleware.CriticalRateLimit())
+		externalBalanceRoute.Use(middleware.ExternalBalanceAuth())
+		{
+			externalBalanceRoute.GET("/user", controller.GetExternalUserBalance)
+			externalBalanceRoute.POST("/deduct", controller.DeductExternalUserBalance)
+			externalBalanceRoute.GET("/transaction/:request_id", controller.GetExternalBalanceTransaction)
+		}
 
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 		apiRouter.POST("/creem/webhook", controller.CreemWebhook)
@@ -292,6 +302,18 @@ func SetApiRouter(router *gin.Engine) {
 			redemptionRoute.PUT("/", controller.UpdateRedemption)
 			redemptionRoute.DELETE("/invalid", controller.DeleteInvalidRedemption)
 			redemptionRoute.DELETE("/:id", controller.DeleteRedemption)
+		}
+		promotionRoute := apiRouter.Group("/promotion")
+		promotionRoute.Use(middleware.AdminAuth())
+		{
+			promotionRoute.GET("/", controller.GetPromotionLinks)
+			promotionRoute.POST("/", controller.AddPromotionLink)
+			promotionRoute.GET("/:id", controller.GetPromotionLink)
+			promotionRoute.PUT("/:id", controller.UpdatePromotionLink)
+			promotionRoute.DELETE("/:id", controller.DeletePromotionLink)
+			promotionRoute.POST("/:id/enable", controller.EnablePromotionLink)
+			promotionRoute.POST("/:id/disable", controller.DisablePromotionLink)
+			promotionRoute.GET("/:id/registrations", controller.GetPromotionRegistrations)
 		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.GET("/", middleware.AdminAuth(), controller.GetAllLogs)

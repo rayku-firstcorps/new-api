@@ -29,17 +29,32 @@ import { ThemeCustomizationProvider } from '@/context/theme-customization-provid
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { Toaster } from '@/components/ui/sonner'
 import { NavigationProgress } from '@/components/navigation-progress'
+import {
+  saveAffiliateCode,
+  savePromotionCode,
+} from '@/features/auth/lib/storage'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 import { getSetupStatus } from '@/features/setup/api'
-import { saveAffiliateCode } from '@/features/auth/lib/storage'
 
 function RootComponent() {
   // Load system configuration (logo, system name, etc.) from backend
   useSystemConfig({ autoLoad: true })
 
   useEffect(() => {
-    const aff = new URLSearchParams(window.location.search).get('aff')?.trim()
+    const searchParams = new URLSearchParams(window.location.search)
+    const landingPath = `${window.location.pathname}${window.location.search}`
+    const promo =
+      searchParams.get('promotion_code')?.trim() ||
+      searchParams.get('promo')?.trim()
+    const aff =
+      searchParams.get('aff_code')?.trim() || searchParams.get('aff')?.trim()
+
+    if (promo) {
+      savePromotionCode(promo, 'promotion_code', landingPath)
+      return
+    }
+
     if (aff) {
       saveAffiliateCode(aff)
     }

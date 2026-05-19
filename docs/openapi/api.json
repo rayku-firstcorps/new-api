@@ -56,6 +56,10 @@
     },
     {
       "name": "系统设置"
+    },
+    {
+      "name": "External Balance API",
+      "description": "External service APIs for querying and deducting user quota balances."
     }
   ],
   "paths": {
@@ -4942,6 +4946,548 @@
           }
         ]
       }
+    },
+    "/api/external/balance/user": {
+      "get": {
+        "summary": "Query external user balance",
+        "description": "Query an enabled user balance by user_id, username, or email. Priority is user_id, then username, then email.",
+        "tags": [
+          "External Balance API"
+        ],
+        "security": [
+          {
+            "ExternalBalanceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ExternalBalanceUser"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/external/balance/deduct": {
+      "post": {
+        "summary": "Deduct external user balance",
+        "description": "Atomically deduct user quota using a globally idempotent request_id. Repeated request_id calls return the first transaction result without duplicate deduction.",
+        "tags": [
+          "External Balance API"
+        ],
+        "security": [
+          {
+            "ExternalBalanceApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalBalanceDeductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ExternalBalanceDeductResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/external/balance/transaction/{request_id}": {
+      "get": {
+        "summary": "Get external balance transaction",
+        "description": "Fetch a deduction transaction by external request_id, including transaction snapshot and current user balance when the user still exists.",
+        "tags": [
+          "External Balance API"
+        ],
+        "security": [
+          {
+            "ExternalBalanceApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ExternalBalanceTransaction"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "invalid_api_key"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5118,6 +5664,214 @@
           },
           "redeemed_time": {
             "type": "integer"
+          }
+        }
+      },
+      "ExternalBalanceUser": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "example": 123
+          },
+          "username": {
+            "type": "string",
+            "example": "test"
+          },
+          "email": {
+            "type": "string",
+            "example": "test@example.com"
+          },
+          "quota": {
+            "type": "integer",
+            "example": 5000000
+          },
+          "used_quota": {
+            "type": "integer",
+            "example": 100000
+          },
+          "quota_per_unit": {
+            "type": "number",
+            "example": 500000
+          },
+          "balance_units": {
+            "type": "number",
+            "example": 10
+          },
+          "status": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "ExternalBalanceDeductRequest": {
+        "type": "object",
+        "required": [
+          "request_id",
+          "quota"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 128,
+            "example": "order_20260519_0001"
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 123
+          },
+          "username": {
+            "type": "string",
+            "example": "test"
+          },
+          "email": {
+            "type": "string",
+            "example": "test@example.com"
+          },
+          "quota": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 500000
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 64,
+            "example": "external_order"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "external order charge"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": {
+              "order_id": "202605190001",
+              "source": "partner_a"
+            }
+          }
+        },
+        "description": "At least one of user_id, username, or email is required. request_id is globally idempotent."
+      },
+      "ExternalBalanceDeductResult": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "example": "order_20260519_0001"
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 123
+          },
+          "quota": {
+            "type": "integer",
+            "example": 500000
+          },
+          "deducted_quota": {
+            "type": "integer",
+            "example": 500000
+          },
+          "quota_before": {
+            "type": "integer",
+            "example": 5000000
+          },
+          "quota_after": {
+            "type": "integer",
+            "example": 4500000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failed"
+            ],
+            "example": "success"
+          },
+          "required_quota": {
+            "type": "integer",
+            "example": 500000
+          },
+          "error_code": {
+            "type": "string",
+            "example": "insufficient_quota"
+          }
+        }
+      },
+      "ExternalBalanceTransaction": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "example": "order_20260519_0001"
+          },
+          "user_id": {
+            "type": "integer",
+            "example": 123
+          },
+          "username": {
+            "type": "string",
+            "example": "test"
+          },
+          "email": {
+            "type": "string",
+            "example": "test@example.com"
+          },
+          "quota": {
+            "type": "integer",
+            "example": 500000
+          },
+          "quota_before": {
+            "type": "integer",
+            "example": 5000000
+          },
+          "quota_after": {
+            "type": "integer",
+            "example": 4500000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failed"
+            ],
+            "example": "success"
+          },
+          "reason": {
+            "type": "string",
+            "example": "external_order"
+          },
+          "description": {
+            "type": "string",
+            "example": "external order charge"
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Stored JSON metadata string."
+          },
+          "error_code": {
+            "type": "string",
+            "example": ""
+          },
+          "error_message": {
+            "type": "string",
+            "example": ""
+          },
+          "user": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ExternalBalanceUser"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64",
+            "example": 1779120000
           }
         }
       }
@@ -7803,6 +8557,12 @@
           }
         ],
         "type": "combination"
+      },
+      "ExternalBalanceApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "ExternalBalanceApiKey",
+        "description": "Independent service-level API key configured by ExternalBalanceApiKey or ExternalBalanceApiKeyNext."
       }
     }
   },

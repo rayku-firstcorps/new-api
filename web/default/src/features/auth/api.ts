@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
+import { getAffiliateCode, getPromotionCode } from './lib/storage'
 import type {
   LoginPayload,
   LoginResponse,
@@ -86,9 +87,14 @@ export async function githubOAuthStart(clientId: string, state: string) {
 
 // Get OAuth state for CSRF protection
 export async function getOAuthState(): Promise<string> {
-  const aff =
-    typeof window !== 'undefined' ? (localStorage.getItem('aff') ?? '') : ''
-  const res = await api.get('/api/oauth/state', { params: { aff } })
+  const aff = getAffiliateCode()
+  const promotion_code = getPromotionCode()
+  const res = await api.get('/api/oauth/state', {
+    params: {
+      aff,
+      promotion_code,
+    },
+  })
   if (res.data?.success) return res.data.data
   return ''
 }
@@ -105,7 +111,14 @@ export async function wechatLoginByCode(code: string): Promise<ApiResponse> {
 
 // User registration
 export async function register(payload: RegisterPayload): Promise<ApiResponse> {
-  const res = await api.post(`/api/user/register`, payload, {
+  const requestBody = {
+    ...payload,
+    promotion_code: payload.promotion_code ?? payload.promo,
+    aff_code: payload.aff_code ?? payload.aff,
+    promo: payload.promo ?? payload.promotion_code,
+    aff: payload.aff ?? payload.aff_code,
+  }
+  const res = await api.post(`/api/user/register`, requestBody, {
     params: { turnstile: payload.turnstile ?? '' },
   })
   return res.data

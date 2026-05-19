@@ -27,8 +27,16 @@ For commercial licensing, please contact support@quantumnous.com
 const STORAGE_KEYS = {
   USER_ID: 'uid',
   AFFILIATE: 'aff',
+  PROMOTION: 'promotion_source',
   STATUS: 'status',
 } as const
+
+export type PromotionSourceRecord = {
+  code: string
+  source_param: 'promo' | 'promotion_code'
+  landing_path: string
+  created_at: number
+}
 
 // ============================================================================
 // User ID Storage
@@ -102,5 +110,84 @@ export function saveAffiliateCode(code: string): void {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to save affiliate code:', error)
+  }
+}
+
+/**
+ * Get promotion code from structured storage.
+ */
+export function getPromotionCode(): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.PROMOTION)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<PromotionSourceRecord>
+      if (!isPromotionSourceParam(parsed.source_param)) {
+        return ''
+      }
+      if (typeof parsed.code === 'string' && parsed.code.trim()) {
+        return parsed.code.trim()
+      }
+    }
+  } catch {
+    // ignore structured storage parse errors
+  }
+
+  return ''
+}
+
+/**
+ * Save promotion code with source metadata.
+ */
+export function savePromotionCode(
+  code: string,
+  sourceParam: PromotionSourceRecord['source_param'],
+  landingPath: string
+): void {
+  if (typeof window === 'undefined') return
+  try {
+    const normalized = code.trim()
+    if (!normalized) return
+
+    const record: PromotionSourceRecord = {
+      code: normalized,
+      source_param: sourceParam,
+      landing_path: landingPath || window.location.pathname || '/',
+      created_at: Date.now(),
+    }
+    window.localStorage.setItem(STORAGE_KEYS.PROMOTION, JSON.stringify(record))
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to save promotion code:', error)
+  }
+}
+
+function isPromotionSourceParam(
+  sourceParam: unknown
+): sourceParam is PromotionSourceRecord['source_param'] {
+  return sourceParam === 'promo' || sourceParam === 'promotion_code'
+}
+
+/**
+ * Get structured promotion source record
+ */
+export function getPromotionSourceRecord(): PromotionSourceRecord | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.PROMOTION)
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw) as Partial<PromotionSourceRecord>
+    if (!parsed.code) return null
+    if (!isPromotionSourceParam(parsed.source_param)) return null
+
+    return {
+      code: String(parsed.code),
+      source_param: parsed.source_param,
+      landing_path: String(parsed.landing_path ?? '/'),
+      created_at: Number(parsed.created_at ?? Date.now()),
+    }
+  } catch {
+    return null
   }
 }
