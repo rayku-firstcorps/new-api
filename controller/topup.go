@@ -264,18 +264,59 @@ func RequestEpay(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "success", "data": params, "url": uri})
 }
 
-// tradeNo lock
+// orderLocks: in-memory fallback when Redis is not enabled
 var orderLocks sync.Map
 var createLock sync.Mutex
 
-// refCountedMutex 带引用计数的互斥锁，确保最后一个使用者才从 map 中删除
 type refCountedMutex struct {
 	mu       sync.Mutex
 	refCount int
 }
 
-// LockOrder 尝试对给定订单号加锁
+const orderLockTTL = 30 * time.Second
+const orderLockRetryInterval = 50 * time.Millisecond
+const orderLockMaxWait = 10 * time.Second
+
+func orderLockKey(tradeNo string) string {
+	return "order_lock:" + tradeNo
+}
+
 func LockOrder(tradeNo string) {
+	if common.RedisEnabled {
+		lockRedisOrder(tradeNo)
+		return
+	}
+	lockLocalOrder(tradeNo)
+}
+
+func UnlockOrder(tradeNo string) {
+	if common.RedisEnabled {
+		unlockRedisOrder(tradeNo)
+		return
+	}
+	unlockLocalOrder(tradeNo)
+}
+
+func lockRedisOrder(tradeNo string) {
+	key := orderLockKey(tradeNo)
+	ctx := common.RDB.Context()
+	deadline := time.Now().Add(orderLockMaxWait)
+	for time.Now().Before(deadline) {
+		ok, err := common.RDB.SetNX(ctx, key, "1", orderLockTTL).Result()
+		if err == nil && ok {
+			return
+		}
+		time.Sleep(orderLockRetryInterval)
+	}
+	common.SysError(fmt.Sprintf("order lock timeout: trade_no=%s", tradeNo))
+}
+
+func unlockRedisOrder(tradeNo string) {
+	key := orderLockKey(tradeNo)
+	common.RDB.Del(common.RDB.Context(), key)
+}
+
+func lockLocalOrder(tradeNo string) {
 	createLock.Lock()
 	var rcm *refCountedMutex
 	if v, ok := orderLocks.Load(tradeNo); ok {
@@ -289,8 +330,7 @@ func LockOrder(tradeNo string) {
 	rcm.mu.Lock()
 }
 
-// UnlockOrder 释放给定订单号的锁
-func UnlockOrder(tradeNo string) {
+func unlockLocalOrder(tradeNo string) {
 	v, ok := orderLocks.Load(tradeNo)
 	if !ok {
 		return
@@ -404,6 +444,7 @@ func EpayNotify(c *gin.Context) {
 			}
 			logger.LogInfo(c.Request.Context(), fmt.Sprintf("易支付 充值成功 trade_no=%s user_id=%d client_ip=%s quota_to_add=%d money=%.2f topup=%q", topUp.TradeNo, topUp.UserId, c.ClientIP(), quotaToAdd, topUp.Money, common.GetJsonString(topUp)))
 			model.RecordTopupLog(topUp.UserId, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", logger.LogQuota(quotaToAdd), topUp.Money), c.ClientIP(), topUp.PaymentMethod, "epay")
+			model.TryGrantFirstTopUpReward(topUp.UserId, topUp.Amount)
 		}
 	} else {
 		logger.LogInfo(c.Request.Context(), fmt.Sprintf("易支付 webhook 忽略事件 trade_no=%s callback_type=%s trade_status=%s client_ip=%s verify_info=%q", verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.TradeStatus, c.ClientIP(), common.GetJsonString(verifyInfo)))

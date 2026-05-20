@@ -24,6 +24,9 @@ export const promotionLinkSchema = z.object({
   name: z.string(),
   channel_tag: z.string(),
   reward_quota: z.number(),
+  first_topup_reward_quota: z.number().default(0),
+  first_topup_min_amount: z.number().default(0),
+  first_topup_count: z.number().default(0),
   enabled: z.boolean(),
   clicks: z.number(),
   registrations: z.number(),
@@ -92,6 +95,8 @@ export interface PromotionFormData {
   name: string
   channel_tag: string
   reward_quota: number
+  first_topup_reward_quota: number
+  first_topup_min_amount: number
   max_registrations: number
   expires_at: number
   enabled: boolean

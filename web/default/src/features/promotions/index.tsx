@@ -77,6 +77,8 @@ function PromotionDrawer({
   const [name, setName] = useState('')
   const [channelTag, setChannelTag] = useState('')
   const [rewardQuota, setRewardQuota] = useState(5000000)
+  const [firstTopupRewardQuota, setFirstTopupRewardQuota] = useState(0)
+  const [firstTopupMinAmount, setFirstTopupMinAmount] = useState(0)
   const [maxRegistrations, setMaxRegistrations] = useState(0)
   const [expiresAt, setExpiresAt] = useState(0)
   const [enabled, setEnabled] = useState(true)
@@ -89,6 +91,8 @@ function PromotionDrawer({
       setName(currentRow.name)
       setChannelTag(currentRow.channel_tag)
       setRewardQuota(currentRow.reward_quota)
+      setFirstTopupRewardQuota(currentRow.first_topup_reward_quota ?? 0)
+      setFirstTopupMinAmount(currentRow.first_topup_min_amount ?? 0)
       setMaxRegistrations(currentRow.max_registrations)
       setExpiresAt(currentRow.expires_at)
       setEnabled(currentRow.enabled)
@@ -98,6 +102,8 @@ function PromotionDrawer({
     setName('')
     setChannelTag('')
     setRewardQuota(5000000)
+    setFirstTopupRewardQuota(0)
+    setFirstTopupMinAmount(0)
     setMaxRegistrations(0)
     setExpiresAt(0)
     setEnabled(true)
@@ -109,6 +115,8 @@ function PromotionDrawer({
       name: name.trim(),
       channel_tag: channelTag.trim(),
       reward_quota: rewardQuota,
+      first_topup_reward_quota: firstTopupRewardQuota,
+      first_topup_min_amount: firstTopupMinAmount,
       max_registrations: maxRegistrations,
       expires_at: expiresAt,
       enabled,
@@ -184,6 +192,40 @@ function PromotionDrawer({
               onChange={(e) => setRewardQuota(Number(e.target.value || 0))}
               placeholder={t('Reward Quota')}
             />
+          </div>
+          <div className='grid gap-2'>
+            <Label htmlFor='promotion-first-topup-reward-quota'>
+              {t('First Topup Reward Quota')}
+            </Label>
+            <Input
+              id='promotion-first-topup-reward-quota'
+              type='number'
+              value={firstTopupRewardQuota}
+              onChange={(e) =>
+                setFirstTopupRewardQuota(Number(e.target.value || 0))
+              }
+              placeholder='0'
+            />
+            <p className='text-muted-foreground text-xs'>
+              {t('0 means first topup reward is disabled')}
+            </p>
+          </div>
+          <div className='grid gap-2'>
+            <Label htmlFor='promotion-first-topup-min-amount'>
+              {t('First Topup Min Amount')}
+            </Label>
+            <Input
+              id='promotion-first-topup-min-amount'
+              type='number'
+              value={firstTopupMinAmount}
+              onChange={(e) =>
+                setFirstTopupMinAmount(Number(e.target.value || 0))
+              }
+              placeholder='0'
+            />
+            <p className='text-muted-foreground text-xs'>
+              {t('0 means no minimum amount required')}
+            </p>
           </div>
           <div className='grid gap-2'>
             <Label htmlFor='promotion-max-registrations'>
@@ -352,6 +394,18 @@ export function Promotions() {
       {
         accessorKey: 'registrations',
         header: t('Registrations'),
+      },
+      {
+        accessorKey: 'first_topup_reward_quota',
+        header: t('First Topup Reward'),
+        cell: ({ row }) =>
+          row.original.first_topup_reward_quota
+            ? row.original.first_topup_reward_quota
+            : '—',
+      },
+      {
+        accessorKey: 'first_topup_count',
+        header: t('First Topup Count'),
       },
       {
         accessorKey: 'expires_at',

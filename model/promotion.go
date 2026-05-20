@@ -16,8 +16,11 @@ type PromotionLink struct {
 	Code             string         `json:"code" gorm:"type:varchar(64);uniqueIndex;not null"`
 	Name             string         `json:"name" gorm:"type:varchar(100);not null"`
 	ChannelTag       string         `json:"channel_tag" gorm:"type:varchar(64);not null;index"`
-	RewardQuota      int            `json:"reward_quota" gorm:"type:int;not null;default:0"`
-	Enabled          bool           `json:"enabled" gorm:"not null;default:true;index"`
+	RewardQuota           int            `json:"reward_quota" gorm:"type:int;not null;default:0"`
+	FirstTopupRewardQuota int            `json:"first_topup_reward_quota" gorm:"type:int;not null;default:0"`
+	FirstTopupMinAmount   int            `json:"first_topup_min_amount" gorm:"type:int;not null;default:0"`
+	FirstTopupCount       int            `json:"first_topup_count" gorm:"type:int;not null;default:0"`
+	Enabled               bool           `json:"enabled" gorm:"not null;default:true;index"`
 	Clicks           int            `json:"clicks" gorm:"type:int;not null;default:0"`
 	Registrations    int            `json:"registrations" gorm:"type:int;not null;default:0"`
 	MaxRegistrations int            `json:"max_registrations" gorm:"type:int;not null;default:0"`
@@ -85,10 +88,16 @@ func validatePromotionLink(link *PromotionLink) error {
 	if link.RewardQuota < 0 {
 		return errors.New("promotion reward quota cannot be negative")
 	}
+	if link.FirstTopupRewardQuota < 0 {
+		return errors.New("first topup reward quota cannot be negative")
+	}
+	if link.FirstTopupMinAmount < 0 {
+		return errors.New("first topup min amount cannot be negative")
+	}
 	if link.MaxRegistrations < 0 {
 		return errors.New("promotion max registrations cannot be negative")
 	}
-	if link.RewardQuota == 0 {
+	if link.RewardQuota == 0 && link.FirstTopupRewardQuota == 0 {
 		link.RewardQuota = DefaultPromotionRewardQuota()
 	}
 	return nil
@@ -116,6 +125,8 @@ func UpdatePromotionLink(link *PromotionLink) error {
 		"name",
 		"channel_tag",
 		"reward_quota",
+		"first_topup_reward_quota",
+		"first_topup_min_amount",
 		"enabled",
 		"max_registrations",
 		"expires_at",
@@ -256,4 +267,66 @@ func ApplyPromotionRegistrationWithTx(tx *gorm.DB, user *User, link *PromotionLi
 	user.PromotionChannelTag = link.ChannelTag
 	RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("通过推广链接注册赠送 %s", logger.LogQuota(link.RewardQuota)))
 	return nil
+}
+
+func TryGrantFirstTopUpReward(userId int, topUpAmount int64) {
+	var user User
+	if err := DB.Select("id", "promotion_code", "first_topup_rewarded").Where("id = ?", userId).First(&user).Error; err != nil {
+		return
+	}
+	if user.FirstTopupRewarded || user.PromotionCode == "" {
+		return
+	}
+
+	var rewardQuota int
+	var linkCode string
+
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var lockedUser User
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Select("id", "promotion_code", "first_topup_rewarded").
+			Where("id = ?", userId).First(&lockedUser).Error; err != nil {
+			return err
+		}
+		if lockedUser.FirstTopupRewarded || lockedUser.PromotionCode == "" {
+			return nil
+		}
+
+		var link PromotionLink
+		if err := tx.Where("code = ?", lockedUser.PromotionCode).First(&link).Error; err != nil {
+			return nil
+		}
+		if link.FirstTopupRewardQuota <= 0 || !link.Enabled {
+			return nil
+		}
+		if link.ExpiresAt != 0 && link.ExpiresAt <= common.GetTimestamp() {
+			return nil
+		}
+		if link.FirstTopupMinAmount > 0 && topUpAmount < int64(link.FirstTopupMinAmount) {
+			return nil
+		}
+
+		if err := tx.Model(&User{}).Where("id = ?", userId).Updates(map[string]interface{}{
+			"quota":                gorm.Expr("quota + ?", link.FirstTopupRewardQuota),
+			"first_topup_rewarded": true,
+		}).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&PromotionLink{}).Where("id = ?", link.Id).
+			Update("first_topup_count", gorm.Expr("first_topup_count + ?", 1)).Error; err != nil {
+			return err
+		}
+
+		rewardQuota = link.FirstTopupRewardQuota
+		linkCode = link.Code
+		return nil
+	})
+	if err != nil {
+		common.SysError(fmt.Sprintf("failed to grant first topup reward: user_id=%d error=%s", userId, err.Error()))
+		return
+	}
+
+	if rewardQuota > 0 {
+		RecordLog(userId, LogTypeSystem, fmt.Sprintf("通过推广链接首充赠送 %s（推广码: %s，充值金额: %d）", logger.LogQuota(rewardQuota), linkCode, topUpAmount))
+	}
 }

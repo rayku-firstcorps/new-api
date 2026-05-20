@@ -48,6 +48,7 @@ type User struct {
 	DeletedAt           gorm.DeletedAt `gorm:"index"`
 	PromotionCode       string         `json:"promotion_code" gorm:"type:varchar(64);column:promotion_code;index"`
 	PromotionChannelTag string         `json:"promotion_channel_tag" gorm:"type:varchar(64);column:promotion_channel_tag;index"`
+	FirstTopupRewarded  bool           `json:"first_topup_rewarded" gorm:"not null;default:false;column:first_topup_rewarded"`
 	LinuxDOId           string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
 	Setting             string         `json:"setting" gorm:"type:text;column:setting"`
 	Remark              string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`

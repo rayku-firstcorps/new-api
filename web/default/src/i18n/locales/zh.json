@@ -4500,6 +4500,12 @@
     "No API key to copy": "没有可复制的 API 密钥",
     "Configure at least one API key before enabling external calls.": "在启用外部调用前，请至少配置一个 API 密钥。",
     "One or both keys are configured. Rotate by placing the next key here first.": "已配置一个或两个密钥。轮换时请先把下一把密钥填在这里。",
-    "Configure API access for external balance operations": "配置外部余额操作的 API 访问"
+    "Configure API access for external balance operations": "配置外部余额操作的 API 访问",
+    "First Topup Reward Quota": "首充奖励额度",
+    "First Topup Min Amount": "首充最低金额",
+    "First Topup Reward": "首充奖励",
+    "First Topup Count": "首充发放数",
+    "0 means first topup reward is disabled": "0 表示不启用首充奖励",
+    "0 means no minimum amount required": "0 表示不限制充值金额"
   }
 }
