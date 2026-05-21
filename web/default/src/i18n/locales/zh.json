@@ -4506,6 +4506,7 @@
     "First Topup Reward": "首充奖励",
     "First Topup Count": "首充发放数",
     "0 means first topup reward is disabled": "0 表示不启用首充奖励",
-    "0 means no minimum amount required": "0 表示不限制充值金额"
+    "0 means no minimum amount required": "0 表示不限制充值金额",
+    "Promotion Links": "推广"
   }
 }
