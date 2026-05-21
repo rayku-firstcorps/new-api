@@ -192,6 +192,16 @@ const BILLING_SECTIONS = [
           WaffoPancakeUnitPrice: settings.WaffoPancakeUnitPrice ?? 1,
           WaffoPancakeMinTopUp: settings.WaffoPancakeMinTopUp ?? 1,
         }}
+        airwallexDefaultValues={{
+          AirwallexEnabled: settings.AirwallexEnabled ?? false,
+          AirwallexClientId: settings.AirwallexClientId ?? '',
+          AirwallexApiKey: settings.AirwallexApiKey ?? '',
+          AirwallexWebhookSecret: settings.AirwallexWebhookSecret ?? '',
+          AirwallexSandbox: settings.AirwallexSandbox ?? false,
+          AirwallexCurrency: settings.AirwallexCurrency ?? 'USD',
+          AirwallexUnitPrice: settings.AirwallexUnitPrice ?? 1,
+          AirwallexMinTopUp: settings.AirwallexMinTopUp ?? 1,
+        }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
           termsVersion:

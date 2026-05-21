@@ -127,6 +127,13 @@ export function getPaymentIcon(
           style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.WAFFO_PANCAKE] }}
         />
       )
+    case PAYMENT_TYPES.AIRWALLEX:
+      return (
+        <CreditCard
+          className={className}
+          style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.AIRWALLEX] }}
+        />
+      )
     default:
       return <CreditCard className={className} />
   }

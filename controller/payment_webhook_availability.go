@@ -101,6 +101,27 @@ func isWaffoPancakeWebhookEnabled() bool {
 	return isWaffoPancakeTopUpEnabled()
 }
 
+func isAirwallexTopUpEnabled() bool {
+	if !isPaymentComplianceConfirmed() {
+		return false
+	}
+	if !setting.AirwallexEnabled {
+		return false
+	}
+
+	return strings.TrimSpace(setting.AirwallexClientId) != "" &&
+		strings.TrimSpace(setting.AirwallexApiKey) != "" &&
+		strings.TrimSpace(setting.AirwallexWebhookSecret) != ""
+}
+
+func isAirwallexWebhookConfigured() bool {
+	return strings.TrimSpace(setting.AirwallexWebhookSecret) != ""
+}
+
+func isAirwallexWebhookEnabled() bool {
+	return isAirwallexTopUpEnabled()
+}
+
 func isEpayTopUpEnabled() bool {
 	if !isPaymentComplianceConfirmed() {
 		return false

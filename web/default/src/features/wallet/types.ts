@@ -54,6 +54,9 @@ export type WaffoPancakePaymentResponse = ApiResponse<
     }
   | string
 >
+export type AirwallexPaymentResponse = ApiResponse<
+  { payment_url?: string; order_id?: string } | string
+>
 
 /**
  * Creem product configuration
@@ -145,6 +148,10 @@ export interface TopupInfo {
   enable_waffo_pancake_topup?: boolean
   /** Minimum topup amount for Waffo Pancake */
   waffo_pancake_min_topup?: number
+  /** Whether Airwallex topup is enabled */
+  enable_airwallex_topup?: boolean
+  /** Minimum topup amount for Airwallex */
+  airwallex_min_topup?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */
@@ -195,6 +202,14 @@ export interface WaffoPaymentRequest {
  * Waffo Pancake payment request parameters
  */
 export interface WaffoPancakePaymentRequest {
+  /** Topup amount */
+  amount: number
+}
+
+/**
+ * Airwallex payment request parameters
+ */
+export interface AirwallexPaymentRequest {
   /** Topup amount */
   amount: number
 }

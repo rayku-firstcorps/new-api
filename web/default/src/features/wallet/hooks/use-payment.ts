@@ -22,16 +22,28 @@ import { toast } from 'sonner'
 import {
   calculateAmount,
   calculateStripeAmount,
+  calculateAirwallexAmount,
   calculateWaffoPancakeAmount,
   requestPayment,
   requestStripePayment,
+  requestAirwallexPayment,
   isApiSuccess,
 } from '../api'
 import {
+  isAirwallexPayment,
   isStripePayment,
   isWaffoPancakePayment,
   submitPaymentForm,
 } from '../lib'
+
+function getStringField(data: unknown, field: string): string | null {
+  if (!data || typeof data !== 'object') {
+    return null
+  }
+
+  const value = (data as Record<string, unknown>)[field]
+  return typeof value === 'string' ? value : null
+}
 
 // ============================================================================
 // Payment Hook
@@ -49,12 +61,18 @@ export function usePayment() {
         setCalculating(true)
 
         const isStripe = isStripePayment(paymentType)
+        const isAirwallex = isAirwallexPayment(paymentType)
         const isPancake = isWaffoPancakePayment(paymentType)
-        const response = isStripe
-          ? await calculateStripeAmount({ amount: topupAmount })
-          : isPancake
-            ? await calculateWaffoPancakeAmount({ amount: topupAmount })
-            : await calculateAmount({ amount: topupAmount })
+        let response
+        if (isStripe) {
+          response = await calculateStripeAmount({ amount: topupAmount })
+        } else if (isAirwallex) {
+          response = await calculateAirwallexAmount({ amount: topupAmount })
+        } else if (isPancake) {
+          response = await calculateWaffoPancakeAmount({ amount: topupAmount })
+        } else {
+          response = await calculateAmount({ amount: topupAmount })
+        }
 
         if (isApiSuccess(response) && response.data) {
           const calculatedAmount = parseFloat(response.data)
@@ -82,17 +100,23 @@ export function usePayment() {
         setProcessing(true)
 
         const isStripe = isStripePayment(paymentType)
+        const isAirwallex = isAirwallexPayment(paymentType)
         const amount = Math.floor(topupAmount)
 
-        const response = isStripe
-          ? await requestStripePayment({
-              amount,
-              payment_method: 'stripe',
-            })
-          : await requestPayment({
-              amount,
-              payment_method: paymentType,
-            })
+        let response
+        if (isStripe) {
+          response = await requestStripePayment({
+            amount,
+            payment_method: 'stripe',
+          })
+        } else if (isAirwallex) {
+          response = await requestAirwallexPayment({ amount })
+        } else {
+          response = await requestPayment({
+            amount,
+            payment_method: paymentType,
+          })
+        }
 
         if (!isApiSuccess(response)) {
           toast.error(response.message || i18next.t('Payment request failed'))
@@ -100,14 +124,33 @@ export function usePayment() {
         }
 
         // Handle Stripe payment
-        if (isStripe && response.data?.pay_link) {
-          window.open(response.data.pay_link as string, '_blank')
+        const stripePayLink = getStringField(response.data, 'pay_link')
+        if (isStripe && stripePayLink) {
+          window.open(stripePayLink, '_blank')
           toast.success(i18next.t('Redirecting to payment page...'))
           return true
         }
 
+        if (isAirwallex && response.data) {
+          const data = response.data
+          const paymentUrl =
+            typeof data === 'string'
+              ? data
+              : getStringField(data, 'payment_url') || ''
+          if (paymentUrl) {
+            window.open(paymentUrl, '_blank')
+            toast.success(i18next.t('Redirecting to payment page...'))
+            return true
+          }
+        }
+
         // Handle non-Stripe payment
-        if (!isStripe && response.data) {
+        if (
+          !isStripe &&
+          !isAirwallex &&
+          response.data &&
+          typeof response.data === 'object'
+        ) {
           const url = (response as unknown as { url?: string }).url
           if (url) {
             submitPaymentForm(url, response.data)

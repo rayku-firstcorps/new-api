@@ -275,6 +275,14 @@ export type BillingSettings = {
   WaffoPancakeCurrency: string
   WaffoPancakeUnitPrice: number
   WaffoPancakeMinTopUp: number
+  AirwallexEnabled: boolean
+  AirwallexClientId: string
+  AirwallexApiKey: string
+  AirwallexWebhookSecret: string
+  AirwallexSandbox: boolean
+  AirwallexCurrency: string
+  AirwallexUnitPrice: number
+  AirwallexMinTopUp: number
   'checkin_setting.enabled': boolean
   'checkin_setting.min_quota': number
   'checkin_setting.max_quota': number
