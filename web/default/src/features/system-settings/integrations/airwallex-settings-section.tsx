@@ -53,7 +53,15 @@ export function AirwallexSettingsSection(props: Props) {
   })
 
   useEffect(() => {
-    form.reset(props.defaultValues)
+    const currentValues = form.getValues()
+    form.reset({
+      ...props.defaultValues,
+      AirwallexApiKey:
+        props.defaultValues.AirwallexApiKey || currentValues.AirwallexApiKey,
+      AirwallexWebhookSecret:
+        props.defaultValues.AirwallexWebhookSecret ||
+        currentValues.AirwallexWebhookSecret,
+    })
   }, [props.defaultValues, form])
 
   const handleSave = async () => {
