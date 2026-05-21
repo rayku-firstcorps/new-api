@@ -31,6 +31,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { formatTimestampToDate } from '@/lib/format'
+import { useSystemConfigStore, DEFAULT_CURRENCY_CONFIG } from '@/stores/system-config-store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -73,11 +74,12 @@ function PromotionDrawer({
   onSaved: () => void
 }) {
   const { t } = useTranslation()
+  const quotaPerUnit = useSystemConfigStore((s) => s.config.currency?.quotaPerUnit ?? DEFAULT_CURRENCY_CONFIG.quotaPerUnit)
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [channelTag, setChannelTag] = useState('')
-  const [rewardQuota, setRewardQuota] = useState(5000000)
-  const [firstTopupRewardQuota, setFirstTopupRewardQuota] = useState(0)
+  const [rewardAmount, setRewardAmount] = useState(10)
+  const [firstTopupRewardAmount, setFirstTopupRewardAmount] = useState(0)
   const [firstTopupMinAmount, setFirstTopupMinAmount] = useState(0)
   const [maxRegistrations, setMaxRegistrations] = useState(0)
   const [expiresAt, setExpiresAt] = useState(0)
@@ -90,8 +92,8 @@ function PromotionDrawer({
       setCode(currentRow.code)
       setName(currentRow.name)
       setChannelTag(currentRow.channel_tag)
-      setRewardQuota(currentRow.reward_quota)
-      setFirstTopupRewardQuota(currentRow.first_topup_reward_quota ?? 0)
+      setRewardAmount(currentRow.reward_quota / quotaPerUnit)
+      setFirstTopupRewardAmount((currentRow.first_topup_reward_quota ?? 0) / quotaPerUnit)
       setFirstTopupMinAmount(currentRow.first_topup_min_amount ?? 0)
       setMaxRegistrations(currentRow.max_registrations)
       setExpiresAt(currentRow.expires_at)
@@ -101,8 +103,8 @@ function PromotionDrawer({
     setCode('')
     setName('')
     setChannelTag('')
-    setRewardQuota(5000000)
-    setFirstTopupRewardQuota(0)
+    setRewardAmount(10)
+    setFirstTopupRewardAmount(0)
     setFirstTopupMinAmount(0)
     setMaxRegistrations(0)
     setExpiresAt(0)
@@ -114,8 +116,8 @@ function PromotionDrawer({
       code: code.trim(),
       name: name.trim(),
       channel_tag: channelTag.trim(),
-      reward_quota: rewardQuota,
-      first_topup_reward_quota: firstTopupRewardQuota,
+      reward_quota: Math.round(rewardAmount * quotaPerUnit),
+      first_topup_reward_quota: Math.round(firstTopupRewardAmount * quotaPerUnit),
       first_topup_min_amount: firstTopupMinAmount,
       max_registrations: maxRegistrations,
       expires_at: expiresAt,
@@ -184,25 +186,29 @@ function PromotionDrawer({
             />
           </div>
           <div className='grid gap-2'>
-            <Label htmlFor='promotion-reward-quota'>{t('Reward Quota')}</Label>
+            <Label htmlFor='promotion-reward-amount'>
+              {t('Reward Amount')} (¥)
+            </Label>
             <Input
-              id='promotion-reward-quota'
+              id='promotion-reward-amount'
               type='number'
-              value={rewardQuota}
-              onChange={(e) => setRewardQuota(Number(e.target.value || 0))}
-              placeholder={t('Reward Quota')}
+              step='0.01'
+              value={rewardAmount}
+              onChange={(e) => setRewardAmount(Number(e.target.value || 0))}
+              placeholder='10'
             />
           </div>
           <div className='grid gap-2'>
-            <Label htmlFor='promotion-first-topup-reward-quota'>
-              {t('First Topup Reward Quota')}
+            <Label htmlFor='promotion-first-topup-reward-amount'>
+              {t('First Topup Amount')} (¥)
             </Label>
             <Input
-              id='promotion-first-topup-reward-quota'
+              id='promotion-first-topup-reward-amount'
               type='number'
-              value={firstTopupRewardQuota}
+              step='0.01'
+              value={firstTopupRewardAmount}
               onChange={(e) =>
-                setFirstTopupRewardQuota(Number(e.target.value || 0))
+                setFirstTopupRewardAmount(Number(e.target.value || 0))
               }
               placeholder='0'
             />
@@ -212,7 +218,7 @@ function PromotionDrawer({
           </div>
           <div className='grid gap-2'>
             <Label htmlFor='promotion-first-topup-min-amount'>
-              {t('First Topup Min Amount')}
+              {t('First Topup Min Amount')} (¥)
             </Label>
             <Input
               id='promotion-first-topup-min-amount'
@@ -326,6 +332,7 @@ function RegistrationsDialog({
 
 export function Promotions() {
   const { t } = useTranslation()
+  const quotaPerUnit = useSystemConfigStore((s) => s.config.currency?.quotaPerUnit ?? DEFAULT_CURRENCY_CONFIG.quotaPerUnit)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [pagination, setPagination] = useState<PaginationState>({
@@ -385,7 +392,8 @@ export function Promotions() {
       },
       {
         accessorKey: 'reward_quota',
-        header: t('Reward Quota'),
+        header: t('Reward Amount'),
+        cell: ({ row }) => `¥${(row.original.reward_quota / quotaPerUnit).toFixed(2)}`,
       },
       {
         accessorKey: 'clicks',
@@ -400,7 +408,7 @@ export function Promotions() {
         header: t('First Topup Reward'),
         cell: ({ row }) =>
           row.original.first_topup_reward_quota
-            ? row.original.first_topup_reward_quota
+            ? `¥${(row.original.first_topup_reward_quota / quotaPerUnit).toFixed(2)}`
             : '—',
       },
       {
@@ -475,7 +483,7 @@ export function Promotions() {
         ),
       },
     ],
-    [t]
+    [t, quotaPerUnit]
   )
 
   const table = useReactTable({

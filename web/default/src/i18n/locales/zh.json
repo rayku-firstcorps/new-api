@@ -4507,6 +4507,22 @@
     "First Topup Count": "首充发放数",
     "0 means first topup reward is disabled": "0 表示不启用首充奖励",
     "0 means no minimum amount required": "0 表示不限制充值金额",
-    "Promotion Links": "推广"
+    "Promotion Links": "推广链接",
+    "Please fill in the required fields": "请填写必填字段",
+    "Update Promotion Link": "更新推广链接",
+    "Create Promotion Link": "创建推广",
+    "Manage registration attribution links and reward quotas": "管理注册归因链接和奖励额度",
+    "Promotion Code": "推广码",
+    "Channel Tag": "渠道标签",
+    "Reward Amount": "奖励金额",
+    "First Topup Amount": "首充奖励金额",
+    "Max Registrations": "最大注册数",
+    "Expires At": "过期时间",
+    "Registration Details": "注册详情",
+    "Copy promotion code": "复制推广码",
+    "Clicks": "点击数",
+    "Registrations": "注册数",
+    "No Promotion Links Found": "未找到推广链接",
+    "Create your first promotion link to track registration attribution.": "创建您的第一个推广链接以追踪注册归因。"
   }
 }
