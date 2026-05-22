@@ -57,6 +57,9 @@ export type WaffoPancakePaymentResponse = ApiResponse<
 export type AirwallexPaymentResponse = ApiResponse<
   { payment_url?: string; order_id?: string } | string
 >
+export type PayssionPaymentResponse = ApiResponse<
+  { payment_url?: string; order_id?: string } | string
+>
 
 /**
  * Creem product configuration
@@ -152,6 +155,10 @@ export interface TopupInfo {
   enable_airwallex_topup?: boolean
   /** Minimum topup amount for Airwallex */
   airwallex_min_topup?: number
+  /** Whether Payssion topup is enabled */
+  enable_payssion_topup?: boolean
+  /** Minimum topup amount for Payssion */
+  payssion_min_topup?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */
@@ -215,11 +222,23 @@ export interface AirwallexPaymentRequest {
 }
 
 /**
+ * Payssion payment request parameters
+ */
+export interface PayssionPaymentRequest {
+  /** Topup amount */
+  amount: number
+  /** Payssion payment method code */
+  payment_method: string
+}
+
+/**
  * Amount calculation request
  */
 export interface AmountRequest {
   /** Topup amount to calculate */
   amount: number
+  /** Optional gateway-specific payment method code */
+  payment_method?: string
 }
 
 /**
@@ -257,7 +276,7 @@ export interface UserWalletData {
 /**
  * Topup record status
  */
-export type TopupStatus = 'success' | 'pending' | 'expired'
+export type TopupStatus = 'success' | 'pending' | 'failed' | 'expired'
 
 /**
  * Topup billing record

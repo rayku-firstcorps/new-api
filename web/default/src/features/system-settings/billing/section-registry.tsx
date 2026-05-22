@@ -202,6 +202,15 @@ const BILLING_SECTIONS = [
           AirwallexUnitPrice: settings.AirwallexUnitPrice ?? 1,
           AirwallexMinTopUp: settings.AirwallexMinTopUp ?? 1,
         }}
+        payssionDefaultValues={{
+          PayssionEnabled: settings.PayssionEnabled ?? false,
+          PayssionApiKey: settings.PayssionApiKey ?? '',
+          PayssionWebhookSecret: settings.PayssionWebhookSecret ?? '',
+          PayssionCurrency: settings.PayssionCurrency ?? 'USD',
+          PayssionUnitPrice: settings.PayssionUnitPrice ?? 1,
+          PayssionMinTopUp: settings.PayssionMinTopUp ?? 1,
+          PayssionPaymentMethods: settings.PayssionPaymentMethods ?? '[]',
+        }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
           termsVersion:

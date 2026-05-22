@@ -133,6 +133,13 @@ func InitOptionMap() {
 	common.OptionMap["AirwallexCurrency"] = setting.AirwallexCurrency
 	common.OptionMap["AirwallexUnitPrice"] = strconv.FormatFloat(setting.AirwallexUnitPrice, 'f', -1, 64)
 	common.OptionMap["AirwallexMinTopUp"] = strconv.Itoa(setting.AirwallexMinTopUp)
+	common.OptionMap["PayssionEnabled"] = strconv.FormatBool(setting.PayssionEnabled)
+	common.OptionMap["PayssionApiKey"] = setting.PayssionApiKey
+	common.OptionMap["PayssionWebhookSecret"] = setting.PayssionWebhookSecret
+	common.OptionMap["PayssionCurrency"] = setting.PayssionCurrency
+	common.OptionMap["PayssionUnitPrice"] = strconv.FormatFloat(setting.PayssionUnitPrice, 'f', -1, 64)
+	common.OptionMap["PayssionMinTopUp"] = strconv.Itoa(setting.PayssionMinTopUp)
+	common.OptionMap["PayssionPaymentMethods"] = setting.PayssionPaymentMethods
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -488,6 +495,20 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.AirwallexUnitPrice, _ = strconv.ParseFloat(value, 64)
 	case "AirwallexMinTopUp":
 		setting.AirwallexMinTopUp, _ = strconv.Atoi(value)
+	case "PayssionEnabled":
+		setting.PayssionEnabled = value == "true"
+	case "PayssionApiKey":
+		setting.PayssionApiKey = value
+	case "PayssionWebhookSecret":
+		setting.PayssionWebhookSecret = value
+	case "PayssionCurrency":
+		setting.PayssionCurrency = value
+	case "PayssionUnitPrice":
+		setting.PayssionUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "PayssionMinTopUp":
+		setting.PayssionMinTopUp, _ = strconv.Atoi(value)
+	case "PayssionPaymentMethods":
+		setting.PayssionPaymentMethods = value
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "GitHubClientId":

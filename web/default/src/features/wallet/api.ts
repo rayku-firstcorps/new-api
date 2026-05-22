@@ -40,6 +40,8 @@ import type {
   WaffoPancakePaymentResponse,
   AirwallexPaymentRequest,
   AirwallexPaymentResponse,
+  PayssionPaymentRequest,
+  PayssionPaymentResponse,
 } from './types'
 
 // ============================================================================
@@ -183,12 +185,36 @@ export async function calculateAirwallexAmount(
 }
 
 /**
+ * Calculate payment amount for Payssion payment
+ */
+export async function calculatePayssionAmount(
+  request: AmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/payssion/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
  * Request Airwallex payment
  */
 export async function requestAirwallexPayment(
   request: AirwallexPaymentRequest
 ): Promise<AirwallexPaymentResponse> {
   const res = await api.post('/api/user/airwallex/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request Payssion payment
+ */
+export async function requestPayssionPayment(
+  request: PayssionPaymentRequest
+): Promise<PayssionPaymentResponse> {
+  const res = await api.post('/api/user/payssion/pay', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

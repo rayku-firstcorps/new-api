@@ -71,6 +71,10 @@ import {
   AirwallexSettingsSection,
   type AirwallexSettingsValues,
 } from './airwallex-settings-section'
+import {
+  PayssionSettingsSection,
+  type PayssionSettingsValues,
+} from './payssion-settings-section'
 
 const paymentSchema = z.object({
   PayAddress: z.string().refine((value) => {
@@ -154,6 +158,7 @@ type PaymentSettingsSectionProps = {
   waffoDefaultValues: WaffoSettingsValues
   waffoPancakeDefaultValues: WaffoPancakeSettingsValues
   airwallexDefaultValues: AirwallexSettingsValues
+  payssionDefaultValues: PayssionSettingsValues
   complianceDefaults: PaymentComplianceDefaults
 }
 
@@ -162,6 +167,7 @@ export function PaymentSettingsSection({
   waffoDefaultValues,
   waffoPancakeDefaultValues,
   airwallexDefaultValues,
+  payssionDefaultValues,
   complianceDefaults,
 }: PaymentSettingsSectionProps) {
   const { t } = useTranslation()
@@ -1483,6 +1489,10 @@ export function PaymentSettingsSection({
       <Separator />
 
       <AirwallexSettingsSection defaultValues={airwallexDefaultValues} />
+
+      <Separator />
+
+      <PayssionSettingsSection defaultValues={payssionDefaultValues} />
       {/* eslint-enable react-hooks/refs */}
     </SettingsSection>
   )

@@ -23,14 +23,18 @@ import {
   calculateAmount,
   calculateStripeAmount,
   calculateAirwallexAmount,
+  calculatePayssionAmount,
   calculateWaffoPancakeAmount,
   requestPayment,
   requestStripePayment,
   requestAirwallexPayment,
+  requestPayssionPayment,
   isApiSuccess,
 } from '../api'
 import {
+  getPayssionPaymentMethod,
   isAirwallexPayment,
+  isPayssionPayment,
   isStripePayment,
   isWaffoPancakePayment,
   submitPaymentForm,
@@ -62,12 +66,18 @@ export function usePayment() {
 
         const isStripe = isStripePayment(paymentType)
         const isAirwallex = isAirwallexPayment(paymentType)
+        const isPayssion = isPayssionPayment(paymentType)
         const isPancake = isWaffoPancakePayment(paymentType)
         let response
         if (isStripe) {
           response = await calculateStripeAmount({ amount: topupAmount })
         } else if (isAirwallex) {
           response = await calculateAirwallexAmount({ amount: topupAmount })
+        } else if (isPayssion) {
+          response = await calculatePayssionAmount({
+            amount: topupAmount,
+            payment_method: getPayssionPaymentMethod(paymentType),
+          })
         } else if (isPancake) {
           response = await calculateWaffoPancakeAmount({ amount: topupAmount })
         } else {
@@ -101,6 +111,7 @@ export function usePayment() {
 
         const isStripe = isStripePayment(paymentType)
         const isAirwallex = isAirwallexPayment(paymentType)
+        const isPayssion = isPayssionPayment(paymentType)
         const amount = Math.floor(topupAmount)
 
         let response
@@ -111,6 +122,11 @@ export function usePayment() {
           })
         } else if (isAirwallex) {
           response = await requestAirwallexPayment({ amount })
+        } else if (isPayssion) {
+          response = await requestPayssionPayment({
+            amount,
+            payment_method: getPayssionPaymentMethod(paymentType),
+          })
         } else {
           response = await requestPayment({
             amount,
@@ -144,10 +160,24 @@ export function usePayment() {
           }
         }
 
+        if (isPayssion && response.data) {
+          const data = response.data
+          const paymentUrl =
+            typeof data === 'string'
+              ? data
+              : getStringField(data, 'payment_url') || ''
+          if (paymentUrl) {
+            window.open(paymentUrl, '_blank')
+            toast.success(i18next.t('Redirecting to payment page...'))
+            return true
+          }
+        }
+
         // Handle non-Stripe payment
         if (
           !isStripe &&
           !isAirwallex &&
+          !isPayssion &&
           response.data &&
           typeof response.data === 'object'
         ) {

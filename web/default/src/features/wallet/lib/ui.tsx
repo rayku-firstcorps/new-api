@@ -84,7 +84,13 @@ export function getPaymentIcon(
     return <CreditCard className={className} />
   }
 
-  switch (paymentType) {
+  const normalizedPaymentType = paymentType.startsWith(
+    `${PAYMENT_TYPES.PAYSSION}:`
+  )
+    ? PAYMENT_TYPES.PAYSSION
+    : paymentType
+
+  switch (normalizedPaymentType) {
     case PAYMENT_TYPES.ALIPAY:
       return (
         <SiAlipay
@@ -132,6 +138,13 @@ export function getPaymentIcon(
         <CreditCard
           className={className}
           style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.AIRWALLEX] }}
+        />
+      )
+    case PAYMENT_TYPES.PAYSSION:
+      return (
+        <CreditCard
+          className={className}
+          style={{ color: PAYMENT_ICON_COLORS[PAYMENT_TYPES.PAYSSION] }}
         />
       )
     default:

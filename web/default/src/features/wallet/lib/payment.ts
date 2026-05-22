@@ -94,6 +94,28 @@ export function isAirwallexPayment(paymentType: string): boolean {
 }
 
 /**
+ * Check if payment method is Payssion.
+ */
+export function isPayssionPayment(paymentType: string): boolean {
+  return (
+    paymentType === PAYMENT_TYPES.PAYSSION ||
+    paymentType.startsWith(`${PAYMENT_TYPES.PAYSSION}:`)
+  )
+}
+
+/**
+ * Extract the provider method code from a Payssion-prefixed payment type.
+ */
+export function getPayssionPaymentMethod(paymentType: string): string {
+  if (!isPayssionPayment(paymentType)) {
+    return paymentType
+  }
+
+  const [, method] = paymentType.split(':', 2)
+  return method || PAYMENT_TYPES.PAYSSION
+}
+
+/**
  * Get default payment type from topup info
  */
 export function getDefaultPaymentType(topupInfo: TopupInfo | null): string {
@@ -120,6 +142,10 @@ export function getDefaultPaymentType(topupInfo: TopupInfo | null): string {
 
   if (topupInfo.enable_airwallex_topup) {
     return PAYMENT_TYPES.AIRWALLEX
+  }
+
+  if (topupInfo.enable_payssion_topup) {
+    return PAYMENT_TYPES.PAYSSION
   }
 
   return DEFAULT_PAYMENT_TYPE
@@ -151,6 +177,10 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
 
   if (topupInfo.enable_airwallex_topup) {
     return topupInfo.airwallex_min_topup || DEFAULT_MIN_TOPUP
+  }
+
+  if (topupInfo.enable_payssion_topup) {
+    return topupInfo.payssion_min_topup || DEFAULT_MIN_TOPUP
   }
 
   return DEFAULT_MIN_TOPUP

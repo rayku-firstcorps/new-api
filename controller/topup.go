@@ -114,6 +114,34 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	enablePayssion := isPayssionTopUpEnabled()
+	if enablePayssion {
+		for _, method := range setting.GetPayssionPaymentMethods() {
+			methodType := model.PaymentMethodPayssion + ":" + method.Type
+			hasPayssionMethod := false
+			for _, payMethod := range payMethods {
+				if payMethod["type"] == methodType {
+					hasPayssionMethod = true
+					break
+				}
+			}
+			if hasPayssionMethod {
+				continue
+			}
+			color := method.Color
+			if color == "" {
+				color = "#2563EB"
+			}
+			payMethods = append(payMethods, map[string]string{
+				"name":      method.Name,
+				"type":      methodType,
+				"color":     color,
+				"min_topup": strconv.Itoa(setting.PayssionMinTopUp),
+				"icon":      method.Icon,
+			})
+		}
+	}
+
 	data := gin.H{
 		"enable_online_topup":              isEpayTopUpEnabled(),
 		"enable_stripe_topup":              isStripeTopUpEnabled(),
@@ -121,6 +149,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"enable_waffo_topup":               enableWaffo,
 		"enable_waffo_pancake_topup":       enableWaffoPancake,
 		"enable_airwallex_topup":           enableAirwallex,
+		"enable_payssion_topup":            enablePayssion,
 		"enable_redemption":                complianceConfirmed,
 		"payment_compliance_confirmed":     complianceConfirmed,
 		"payment_compliance_terms_version": operation_setting.CurrentComplianceTermsVersion,
@@ -137,6 +166,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"waffo_min_topup":         setting.WaffoMinTopUp,
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,
 		"airwallex_min_topup":     setting.AirwallexMinTopUp,
+		"payssion_min_topup":      setting.PayssionMinTopUp,
 		"amount_options":          operation_setting.GetPaymentSetting().AmountOptions,
 		"discount":                operation_setting.GetPaymentSetting().AmountDiscount,
 		"topup_link":              common.TopUpLink,

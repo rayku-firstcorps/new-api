@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNotificationStore } from '@/stores/notification-store'
 import { getNotice } from '@/lib/api'
@@ -121,15 +121,25 @@ export function useNotifications() {
   }, [noticeContent, lastReadNotice, announcements, isAnnouncementRead])
 
   // Handle dialog open
-  const handleOpenDialog = (tab?: 'notice' | 'announcements') => {
-    // Mark Notice as read when opening dialog
-    if (noticeContent) {
-      markNoticeRead(noticeContent)
-    }
+  const handleOpenDialog = useCallback(
+    (tab?: 'notice' | 'announcements') => {
+      // Mark Notice as read when opening dialog
+      if (noticeContent) {
+        markNoticeRead(noticeContent)
+      }
 
-    setActiveTab(tab || 'notice')
-    setDialogOpen(true)
-  }
+      if ((tab || 'notice') === 'announcements' && announcements.length > 0) {
+        const allKeys = announcements.map((item: Record<string, unknown>) =>
+          getAnnouncementKey(item)
+        )
+        markAnnouncementsRead(allKeys)
+      }
+
+      setActiveTab(tab || 'notice')
+      setDialogOpen(true)
+    },
+    [announcements, markAnnouncementsRead, markNoticeRead, noticeContent]
+  )
 
   // Handle tab change - mark announcements as read when switching to that tab
   const handleTabChange = (tab: 'notice' | 'announcements') => {
@@ -149,6 +159,61 @@ export function useNotifications() {
     setClosedUntilDate(today)
     setDialogOpen(false)
   }
+
+  const openUnreadDialog = useCallback(() => {
+    if (isNoticeClosed()) return false
+
+    if (unreadCounts.notice > 0) {
+      handleOpenDialog('notice')
+      return true
+    }
+
+    if (unreadCounts.announcements > 0) {
+      handleOpenDialog('announcements')
+      return true
+    }
+
+    return false
+  }, [
+    unreadCounts.notice,
+    unreadCounts.announcements,
+    isNoticeClosed,
+    handleOpenDialog,
+  ])
+
+  const openUnreadAnnouncementsDialog = useCallback(() => {
+    if (isNoticeClosed() || unreadCounts.announcements === 0) {
+      return false
+    }
+
+    handleOpenDialog('announcements')
+    return true
+  }, [unreadCounts.announcements, isNoticeClosed, handleOpenDialog])
+
+  const openAnnouncementsDialog = useCallback(() => {
+    if (isNoticeClosed() || announcements.length === 0) {
+      return false
+    }
+
+    handleOpenDialog('announcements')
+    return true
+  }, [announcements.length, isNoticeClosed, handleOpenDialog])
+
+  const openHomeSplashDialog = useCallback(() => {
+    if (isNoticeClosed()) return false
+
+    if (announcements.length > 0) {
+      handleOpenDialog('announcements')
+      return true
+    }
+
+    if (noticeContent) {
+      handleOpenDialog('notice')
+      return true
+    }
+
+    return false
+  }, [announcements.length, noticeContent, isNoticeClosed, handleOpenDialog])
 
   return {
     // Data
@@ -171,6 +236,10 @@ export function useNotifications() {
     openDialog: handleOpenDialog,
     closeDialog: () => setDialogOpen(false),
     closeToday: handleCloseToday,
+    openUnreadDialog,
+    openUnreadAnnouncementsDialog,
+    openAnnouncementsDialog,
+    openHomeSplashDialog,
     refetchNotice,
 
     // Status

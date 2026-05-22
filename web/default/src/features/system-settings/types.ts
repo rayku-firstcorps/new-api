@@ -283,6 +283,13 @@ export type BillingSettings = {
   AirwallexCurrency: string
   AirwallexUnitPrice: number
   AirwallexMinTopUp: number
+  PayssionEnabled: boolean
+  PayssionApiKey: string
+  PayssionWebhookSecret: string
+  PayssionCurrency: string
+  PayssionUnitPrice: number
+  PayssionMinTopUp: number
+  PayssionPaymentMethods: string
   'checkin_setting.enabled': boolean
   'checkin_setting.min_quota': number
   'checkin_setting.max_quota': number

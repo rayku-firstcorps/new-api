@@ -122,6 +122,27 @@ func isAirwallexWebhookEnabled() bool {
 	return isAirwallexTopUpEnabled()
 }
 
+func isPayssionTopUpEnabled() bool {
+	if !isPaymentComplianceConfirmed() {
+		return false
+	}
+	if !setting.PayssionEnabled {
+		return false
+	}
+
+	return strings.TrimSpace(setting.PayssionApiKey) != "" &&
+		isPayssionWebhookConfigured() &&
+		len(setting.GetPayssionPaymentMethods()) > 0
+}
+
+func isPayssionWebhookConfigured() bool {
+	return strings.TrimSpace(setting.PayssionWebhookSecret) != ""
+}
+
+func isPayssionWebhookEnabled() bool {
+	return isPayssionTopUpEnabled()
+}
+
 func isEpayTopUpEnabled() bool {
 	if !isPaymentComplianceConfirmed() {
 		return false
