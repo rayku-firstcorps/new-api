@@ -49,6 +49,7 @@ type User struct {
 	PromotionCode       string         `json:"promotion_code" gorm:"type:varchar(64);column:promotion_code;index"`
 	PromotionChannelTag string         `json:"promotion_channel_tag" gorm:"type:varchar(64);column:promotion_channel_tag;index"`
 	FirstTopupRewarded  bool           `json:"first_topup_rewarded" gorm:"not null;default:false;column:first_topup_rewarded"`
+	AffFirstTopupPassed bool           `json:"aff_first_topup_passed" gorm:"not null;default:false;column:aff_first_topup_passed"`
 	LinuxDOId           string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
 	Setting             string         `json:"setting" gorm:"type:text;column:setting"`
 	Remark              string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
@@ -333,15 +334,13 @@ func HardDeleteUserById(id int) error {
 	return err
 }
 
-func inviteUser(inviterId int) (err error) {
-	user, err := GetUserById(inviterId, true)
-	if err != nil {
-		return err
-	}
-	user.AffCount++
-	user.AffQuota += common.QuotaForInviter
-	user.AffHistoryQuota += common.QuotaForInviter
-	return DB.Save(user).Error
+func inviteUser(inviterId int) error {
+	return DB.Model(&User{}).Where("id = ?", inviterId).
+		UpdateColumns(map[string]interface{}{
+			"aff_count":   gorm.Expr("aff_count + 1"),
+			"aff_quota":   gorm.Expr("aff_quota + ?", common.QuotaForInviter),
+			"aff_history": gorm.Expr("aff_history + ?", common.QuotaForInviter),
+		}).Error
 }
 
 func (user *User) TransferAffQuotaToQuota(quota int) error {

@@ -45,6 +45,10 @@ const quotaSchema = z.object({
   PreConsumedQuota: z.coerce.number().min(0),
   QuotaForInviter: z.coerce.number().min(0),
   QuotaForInvitee: z.coerce.number().min(0),
+  AffCommissionRate: z.coerce.number().min(0).max(100),
+  AffCommissionDurationDays: z.coerce.number().min(0),
+  AffCommissionMaxPerTopup: z.coerce.number().min(0),
+  AffFirstTopupMinAmount: z.coerce.number().min(0),
   TopUpLink: z.string(),
   general_setting: z.object({
     docs_link: z.string(),
@@ -203,6 +207,118 @@ export function QuotaSettingsSection({
                 </FormControl>
                 <FormDescription>
                   {t('Quota given to invited users')}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='AffCommissionRate'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Referral Commission Rate (%)')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type='number'
+                    value={field.value ?? ''}
+                    onChange={handleNumberChange(field.onChange)}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    min={0}
+                    max={100}
+                    step={0.1}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Percentage of top-up quota given to the inviter on each recharge (0 to disable)'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='AffCommissionDurationDays'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Commission Duration (days)')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type='number'
+                    value={field.value ?? ''}
+                    onChange={handleNumberChange(field.onChange)}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    min={0}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'How many days after registration the commission remains active (0 for permanent)'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='AffCommissionMaxPerTopup'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Max Commission Per Top-Up')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type='number'
+                    value={field.value ?? ''}
+                    onChange={handleNumberChange(field.onChange)}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    min={0}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Maximum commission quota per single top-up (0 for unlimited)'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='AffFirstTopupMinAmount'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {t('First Top-Up Minimum Amount')}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type='number'
+                    value={field.value ?? ''}
+                    onChange={handleNumberChange(field.onChange)}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    min={0}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Minimum first top-up amount to activate commission (0 to disable threshold)'
+                  )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -157,6 +158,10 @@ func InitOptionMap() {
 	common.OptionMap["QuotaForNewUser"] = strconv.Itoa(common.QuotaForNewUser)
 	common.OptionMap["QuotaForInviter"] = strconv.Itoa(common.QuotaForInviter)
 	common.OptionMap["QuotaForInvitee"] = strconv.Itoa(common.QuotaForInvitee)
+	common.OptionMap["AffCommissionRate"] = fmt.Sprintf("%g", common.AffCommissionRate)
+	common.OptionMap["AffCommissionDurationDays"] = strconv.Itoa(common.AffCommissionDurationDays)
+	common.OptionMap["AffCommissionMaxPerTopup"] = strconv.Itoa(common.AffCommissionMaxPerTopup)
+	common.OptionMap["AffFirstTopupMinAmount"] = strconv.Itoa(common.AffFirstTopupMinAmount)
 	common.OptionMap["QuotaRemindThreshold"] = strconv.Itoa(common.QuotaRemindThreshold)
 	common.OptionMap["PreConsumedQuota"] = strconv.Itoa(common.PreConsumedQuota)
 	common.OptionMap["ModelRequestRateLimitCount"] = strconv.Itoa(setting.ModelRequestRateLimitCount)
@@ -547,6 +552,14 @@ func updateOptionMap(key string, value string) (err error) {
 		common.QuotaForInviter, _ = strconv.Atoi(value)
 	case "QuotaForInvitee":
 		common.QuotaForInvitee, _ = strconv.Atoi(value)
+	case "AffCommissionRate":
+		common.AffCommissionRate, _ = strconv.ParseFloat(value, 64)
+	case "AffCommissionDurationDays":
+		common.AffCommissionDurationDays, _ = strconv.Atoi(value)
+	case "AffCommissionMaxPerTopup":
+		common.AffCommissionMaxPerTopup, _ = strconv.Atoi(value)
+	case "AffFirstTopupMinAmount":
+		common.AffFirstTopupMinAmount, _ = strconv.Atoi(value)
 	case "QuotaRemindThreshold":
 		common.QuotaRemindThreshold, _ = strconv.Atoi(value)
 	case "PreConsumedQuota":
