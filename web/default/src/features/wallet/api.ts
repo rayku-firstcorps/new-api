@@ -42,6 +42,8 @@ import type {
   AirwallexPaymentResponse,
   PayssionPaymentRequest,
   PayssionPaymentResponse,
+  AntomPaymentRequest,
+  AntomPaymentResponse,
 } from './types'
 
 // ============================================================================
@@ -217,6 +219,40 @@ export async function requestPayssionPayment(
   const res = await api.post('/api/user/payssion/pay', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Calculate payment amount for Antom payment
+ */
+export async function calculateAntomAmount(
+  request: AmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/user/antom/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Request Antom payment
+ */
+export async function requestAntomPayment(
+  request: AntomPaymentRequest
+): Promise<AntomPaymentResponse> {
+  const res = await api.post('/api/user/antom/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Query Antom payment status
+ */
+export async function queryAntomPaymentStatus(
+  tradeNo: string
+): Promise<{ success: boolean; message: string; data: string }> {
+  const res = await api.get(`/api/user/antom/inquiry?trade_no=${encodeURIComponent(tradeNo)}`)
   return res.data
 }
 

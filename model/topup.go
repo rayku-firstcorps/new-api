@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -31,6 +32,7 @@ const (
 	PaymentMethodWaffoPancake = "waffo_pancake"
 	PaymentMethodAirwallex    = "airwallex"
 	PaymentMethodPayssion     = "payssion"
+	PaymentMethodAntom        = "antom"
 )
 
 const (
@@ -41,6 +43,7 @@ const (
 	PaymentProviderWaffoPancake = "waffo_pancake"
 	PaymentProviderAirwallex    = "airwallex"
 	PaymentProviderPayssion     = "payssion"
+	PaymentProviderAntom        = "antom"
 )
 
 var (
@@ -48,6 +51,20 @@ var (
 	ErrTopUpNotFound         = errors.New("topup not found")
 	ErrTopUpStatusInvalid    = errors.New("topup status invalid")
 )
+
+type TopUpRemotePaymentStatus string
+
+const (
+	TopUpRemotePaymentStatusUnknown TopUpRemotePaymentStatus = "unknown"
+	TopUpRemotePaymentStatusPending TopUpRemotePaymentStatus = "pending"
+	TopUpRemotePaymentStatusPaid    TopUpRemotePaymentStatus = "paid"
+	TopUpRemotePaymentStatusFailed  TopUpRemotePaymentStatus = "failed"
+)
+
+// VerifyPendingTopUpPayment is an optional provider-side verifier registered by
+// payment controllers. It may also complete the top-up when the provider reports
+// a paid status.
+var VerifyPendingTopUpPayment func(topUp *TopUp) (TopUpRemotePaymentStatus, error)
 
 func (topUp *TopUp) Insert() error {
 	var err error
@@ -734,4 +751,113 @@ func RechargePayssion(tradeNo string, callerIp string) (err error) {
 	}
 
 	return nil
+}
+
+func RechargeAntom(tradeNo string, callerIp string) (err error) {
+	if tradeNo == "" {
+		return errors.New("未提供支付单号")
+	}
+
+	var quotaToAdd int
+	topUp := &TopUp{}
+
+	refCol := "`trade_no`"
+	if common.UsingPostgreSQL {
+		refCol = `"trade_no"`
+	}
+
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", tradeNo).First(topUp).Error
+		if err != nil {
+			return errors.New("充值订单不存在")
+		}
+
+		if topUp.PaymentProvider != PaymentProviderAntom {
+			return ErrPaymentMethodMismatch
+		}
+
+		if topUp.Status == common.TopUpStatusSuccess {
+			return nil
+		}
+
+		if topUp.Status != common.TopUpStatusPending {
+			return errors.New("充值订单状态错误")
+		}
+
+		dAmount := decimal.NewFromInt(topUp.Amount)
+		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+		quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
+		if quotaToAdd <= 0 {
+			return errors.New("无效的充值额度")
+		}
+
+		topUp.CompleteTime = common.GetTimestamp()
+		topUp.Status = common.TopUpStatusSuccess
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		common.SysError("antom topup failed: " + err.Error())
+		return errors.New("充值失败，请稍后重试")
+	}
+
+	if quotaToAdd > 0 {
+		RecordTopupLog(topUp.UserId, fmt.Sprintf("Antom充值成功，充值额度：%v，支付金额：%.2f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodAntom)
+		TryGrantFirstTopUpReward(topUp.UserId, topUp.Amount)
+		TryGrantAffCommission(topUp.UserId, quotaToAdd, topUp.Amount)
+	}
+
+	return nil
+}
+
+func ExpirePendingTopUps(minutes int) {
+	cutoff := time.Now().Unix() - int64(minutes*60)
+	skipTradeNos := make([]string, 0)
+	if VerifyPendingTopUpPayment != nil {
+		var pendingTopUps []*TopUp
+		if err := DB.Where("status = ? AND create_time < ?", common.TopUpStatusPending, cutoff).Find(&pendingTopUps).Error; err != nil {
+			common.SysError("failed to load pending topups before expiration: " + err.Error())
+			return
+		}
+		for _, topUp := range pendingTopUps {
+			status, err := VerifyPendingTopUpPayment(topUp)
+			if err != nil {
+				common.SysError(fmt.Sprintf("failed to verify pending topup before expiration trade_no=%s provider=%s: %s", topUp.TradeNo, topUp.PaymentProvider, err.Error()))
+				if topUp.PaymentProvider == PaymentProviderAntom {
+					skipTradeNos = append(skipTradeNos, topUp.TradeNo)
+				}
+				continue
+			}
+			switch status {
+			case TopUpRemotePaymentStatusUnknown:
+				if topUp.PaymentProvider == PaymentProviderAntom {
+					skipTradeNos = append(skipTradeNos, topUp.TradeNo)
+				}
+			case TopUpRemotePaymentStatusPaid:
+				continue
+			case TopUpRemotePaymentStatusFailed:
+				if err := UpdatePendingTopUpStatus(topUp.TradeNo, topUp.PaymentProvider, common.TopUpStatusFailed); err != nil &&
+					!errors.Is(err, ErrTopUpStatusInvalid) &&
+					!errors.Is(err, ErrTopUpNotFound) {
+					common.SysError(fmt.Sprintf("failed to mark verified failed topup trade_no=%s: %s", topUp.TradeNo, err.Error()))
+				}
+			}
+		}
+	}
+	query := DB.Model(&TopUp{}).Where("status = ? AND create_time < ?", common.TopUpStatusPending, cutoff)
+	if len(skipTradeNos) > 0 {
+		query = query.Where("trade_no NOT IN ?", skipTradeNos)
+	}
+	result := query.Update("status", common.TopUpStatusExpired)
+	if result.RowsAffected > 0 {
+		common.SysLog(fmt.Sprintf("已将 %d 笔超时充值订单标记为过期", result.RowsAffected))
+	}
 }

@@ -141,6 +141,15 @@ func InitOptionMap() {
 	common.OptionMap["PayssionUnitPrice"] = strconv.FormatFloat(setting.PayssionUnitPrice, 'f', -1, 64)
 	common.OptionMap["PayssionMinTopUp"] = strconv.Itoa(setting.PayssionMinTopUp)
 	common.OptionMap["PayssionPaymentMethods"] = setting.PayssionPaymentMethods
+	common.OptionMap["AntomEnabled"] = strconv.FormatBool(setting.AntomEnabled)
+	common.OptionMap["AntomClientId"] = setting.AntomClientId
+	common.OptionMap["AntomMerchantPrivateKey"] = setting.AntomMerchantPrivateKey
+	common.OptionMap["AntomPublicKey"] = setting.AntomPublicKey
+	common.OptionMap["AntomSandbox"] = strconv.FormatBool(setting.AntomSandbox)
+	common.OptionMap["AntomCurrency"] = setting.AntomCurrency
+	common.OptionMap["AntomUnitPrice"] = strconv.FormatFloat(setting.AntomUnitPrice, 'f', -1, 64)
+	common.OptionMap["AntomMinTopUp"] = strconv.Itoa(setting.AntomMinTopUp)
+	common.OptionMap["AntomPaymentMethods"] = setting.AntomPaymentMethods
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -230,6 +239,7 @@ func SyncOptions(frequency int) {
 		time.Sleep(time.Duration(frequency) * time.Second)
 		common.SysLog("syncing options from database")
 		loadOptionsFromDatabase()
+		ExpirePendingTopUps(5)
 	}
 }
 
@@ -514,6 +524,24 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.PayssionMinTopUp, _ = strconv.Atoi(value)
 	case "PayssionPaymentMethods":
 		setting.PayssionPaymentMethods = value
+	case "AntomEnabled":
+		setting.AntomEnabled = value == "true"
+	case "AntomClientId":
+		setting.AntomClientId = value
+	case "AntomMerchantPrivateKey":
+		setting.AntomMerchantPrivateKey = value
+	case "AntomPublicKey":
+		setting.AntomPublicKey = value
+	case "AntomSandbox":
+		setting.AntomSandbox = value == "true"
+	case "AntomCurrency":
+		setting.AntomCurrency = value
+	case "AntomUnitPrice":
+		setting.AntomUnitPrice, _ = strconv.ParseFloat(value, 64)
+	case "AntomMinTopUp":
+		setting.AntomMinTopUp, _ = strconv.Atoi(value)
+	case "AntomPaymentMethods":
+		setting.AntomPaymentMethods = value
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "GitHubClientId":

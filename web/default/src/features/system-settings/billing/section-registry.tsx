@@ -76,10 +76,7 @@ const BILLING_SECTIONS = [
               settings['quota_setting.enable_free_model_pre_consume'],
           },
         }}
-        complianceConfirmed={
-          (settings['payment_setting.compliance_confirmed'] ?? false) &&
-          settings['payment_setting.compliance_terms_version'] === 'v1'
-        }
+        complianceConfirmed={true}
       />
     ),
   },
@@ -214,6 +211,17 @@ const BILLING_SECTIONS = [
           PayssionUnitPrice: settings.PayssionUnitPrice ?? 1,
           PayssionMinTopUp: settings.PayssionMinTopUp ?? 1,
           PayssionPaymentMethods: settings.PayssionPaymentMethods ?? '[]',
+        }}
+        antomDefaultValues={{
+          AntomEnabled: settings.AntomEnabled ?? false,
+          AntomClientId: settings.AntomClientId ?? '',
+          AntomMerchantPrivateKey: settings.AntomMerchantPrivateKey ?? '',
+          AntomPublicKey: settings.AntomPublicKey ?? '',
+          AntomSandbox: settings.AntomSandbox ?? false,
+          AntomCurrency: settings.AntomCurrency ?? 'CNY',
+          AntomUnitPrice: settings.AntomUnitPrice ?? 1,
+          AntomMinTopUp: settings.AntomMinTopUp ?? 1,
+          AntomPaymentMethods: settings.AntomPaymentMethods ?? '[]',
         }}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,

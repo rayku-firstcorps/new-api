@@ -142,6 +142,53 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	enableAntom := isAntomTopUpEnabled()
+	if enableAntom {
+		antomMethods := setting.GetAntomPaymentMethods()
+		if len(antomMethods) == 0 {
+			hasAntom := false
+			for _, method := range payMethods {
+				if method["type"] == model.PaymentMethodAntom {
+					hasAntom = true
+					break
+				}
+			}
+			if !hasAntom {
+				payMethods = append(payMethods, map[string]string{
+					"name":      "Antom",
+					"type":      model.PaymentMethodAntom,
+					"color":     "rgba(var(--semi-teal-5), 1)",
+					"min_topup": strconv.Itoa(setting.AntomMinTopUp),
+				})
+			}
+		} else {
+			for _, method := range antomMethods {
+				methodType := model.PaymentMethodAntom + ":" + method.Type
+				hasMethod := false
+				for _, payMethod := range payMethods {
+					if payMethod["type"] == methodType {
+						hasMethod = true
+						break
+					}
+				}
+				if hasMethod {
+					continue
+				}
+				color := method.Color
+				if color == "" {
+					color = "rgba(var(--semi-teal-5), 1)"
+				}
+				payMethods = append(payMethods, map[string]string{
+					"name":      method.Name,
+					"type":      methodType,
+					"color":     color,
+					"min_topup": strconv.Itoa(setting.AntomMinTopUp),
+					"icon":      method.Icon,
+				})
+			}
+		}
+	}
+
 	data := gin.H{
 		"enable_online_topup":              isEpayTopUpEnabled(),
 		"enable_stripe_topup":              isStripeTopUpEnabled(),
@@ -150,6 +197,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"enable_waffo_pancake_topup":       enableWaffoPancake,
 		"enable_airwallex_topup":           enableAirwallex,
 		"enable_payssion_topup":            enablePayssion,
+		"enable_antom_topup":               enableAntom,
 		"enable_redemption":                complianceConfirmed,
 		"payment_compliance_confirmed":     complianceConfirmed,
 		"payment_compliance_terms_version": operation_setting.CurrentComplianceTermsVersion,
@@ -167,6 +215,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,
 		"airwallex_min_topup":     setting.AirwallexMinTopUp,
 		"payssion_min_topup":      setting.PayssionMinTopUp,
+		"antom_min_topup":         setting.AntomMinTopUp,
 		"amount_options":          operation_setting.GetPaymentSetting().AmountOptions,
 		"discount":                operation_setting.GetPaymentSetting().AmountDiscount,
 		"topup_link":              common.TopUpLink,

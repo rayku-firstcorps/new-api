@@ -68,6 +68,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.POST("/waffo/webhook", controller.WaffoWebhook)
 		apiRouter.POST("/airwallex/webhook", controller.AirwallexWebhook)
 		apiRouter.POST("/payssion/webhook", controller.PayssionWebhook)
+		apiRouter.POST("/antom/webhook", controller.AntomWebhook)
 		//apiRouter.POST("/waffo-pancake/webhook", controller.WaffoPancakeWebhook)
 
 		// Universal secure verification routes
@@ -116,6 +117,9 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/airwallex/pay", middleware.CriticalRateLimit(), controller.RequestAirwallexPay)
 				selfRoute.POST("/payssion/amount", controller.RequestPayssionAmount)
 				selfRoute.POST("/payssion/pay", middleware.CriticalRateLimit(), controller.RequestPayssionPay)
+				selfRoute.POST("/antom/amount", controller.RequestAntomAmount)
+				selfRoute.POST("/antom/pay", middleware.CriticalRateLimit(), controller.RequestAntomPay)
+				selfRoute.GET("/antom/inquiry", middleware.AntomInquiryRateLimit(), controller.RequestAntomInquiry)
 				//selfRoute.POST("/waffo-pancake/amount", controller.RequestWaffoPancakeAmount)
 				//selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)

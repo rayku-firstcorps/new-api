@@ -60,6 +60,9 @@ export type AirwallexPaymentResponse = ApiResponse<
 export type PayssionPaymentResponse = ApiResponse<
   { payment_url?: string; order_id?: string } | string
 >
+export type AntomPaymentResponse = ApiResponse<
+  { payment_url?: string; order_id?: string } | string
+>
 
 /**
  * Creem product configuration
@@ -159,6 +162,10 @@ export interface TopupInfo {
   enable_payssion_topup?: boolean
   /** Minimum topup amount for Payssion */
   payssion_min_topup?: number
+  /** Whether Antom topup is enabled */
+  enable_antom_topup?: boolean
+  /** Minimum topup amount for Antom */
+  antom_min_topup?: number
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */
@@ -229,6 +236,16 @@ export interface PayssionPaymentRequest {
   amount: number
   /** Payssion payment method code */
   payment_method: string
+}
+
+/**
+ * Antom payment request parameters
+ */
+export interface AntomPaymentRequest {
+  /** Topup amount */
+  amount: number
+  /** Optional Antom payment method type */
+  paymentMethodType?: string
 }
 
 /**

@@ -143,6 +143,23 @@ func isPayssionWebhookEnabled() bool {
 	return isPayssionTopUpEnabled()
 }
 
+func isAntomTopUpEnabled() bool {
+	if !isPaymentComplianceConfirmed() {
+		return false
+	}
+	if !setting.AntomEnabled {
+		return false
+	}
+
+	return strings.TrimSpace(setting.AntomClientId) != "" &&
+		strings.TrimSpace(setting.AntomMerchantPrivateKey) != "" &&
+		strings.TrimSpace(setting.AntomPublicKey) != ""
+}
+
+func isAntomWebhookEnabled() bool {
+	return isAntomTopUpEnabled()
+}
+
 func isEpayTopUpEnabled() bool {
 	if !isPaymentComplianceConfirmed() {
 		return false

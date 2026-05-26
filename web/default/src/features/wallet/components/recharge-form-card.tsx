@@ -41,6 +41,7 @@ import {
   getMinTopupAmount,
   calculatePresetPricing,
 } from '../lib'
+import type { PaymentConfirmationStatus } from '../hooks/use-payment'
 import type {
   PaymentMethod,
   PresetAmount,
@@ -78,6 +79,9 @@ interface RechargeFormCardProps {
   waffoMinTopup?: number
   onWaffoMethodSelect?: (method: WaffoPayMethod, index: number) => void
   enableWaffoPancakeTopup?: boolean
+  paymentConfirmationStatus?: PaymentConfirmationStatus
+  paymentConfirmationOrderId?: string | null
+  onResetPaymentConfirmation?: () => void
 }
 
 export function RechargeFormCard({
@@ -108,6 +112,9 @@ export function RechargeFormCard({
   waffoMinTopup,
   onWaffoMethodSelect,
   enableWaffoPancakeTopup,
+  paymentConfirmationStatus = 'idle',
+  paymentConfirmationOrderId,
+  onResetPaymentConfirmation,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
@@ -129,7 +136,9 @@ export function RechargeFormCard({
     topupInfo?.enable_stripe_topup ||
     enableWaffoTopup ||
     enableWaffoPancakeTopup ||
-    topupInfo?.enable_airwallex_topup
+    topupInfo?.enable_airwallex_topup ||
+    topupInfo?.enable_payssion_topup ||
+    topupInfo?.enable_antom_topup
   const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
@@ -137,6 +146,7 @@ export function RechargeFormCard({
     Array.isArray(waffoPayMethods) && waffoPayMethods.length > 0
   const minTopup = getMinTopupAmount(topupInfo)
   const redemptionEnabled = topupInfo?.enable_redemption !== false
+  const showPaymentConfirmation = paymentConfirmationStatus !== 'idle'
 
   if (loading) {
     return (
@@ -210,6 +220,48 @@ export function RechargeFormCard({
       {/* Online Topup Section */}
       {hasAnyTopup ? (
         <div className='space-y-4 sm:space-y-6'>
+          {showPaymentConfirmation && (
+            <Alert>
+              <Loader2
+                className={cn(
+                  'h-4 w-4',
+                  paymentConfirmationStatus === 'waiting' && 'animate-spin'
+                )}
+              />
+              <AlertDescription className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+                <span>
+                  {paymentConfirmationStatus === 'waiting' &&
+                    t('Confirming payment result...')}
+                  {paymentConfirmationStatus === 'paid' &&
+                    t('Payment successful')}
+                  {paymentConfirmationStatus === 'failed' &&
+                    t('Payment failed. You can start a new payment or contact support.')}
+                  {paymentConfirmationStatus === 'timeout' &&
+                    t(
+                      'Payment confirmation is still pending. Please refresh later.'
+                    )}
+                  {paymentConfirmationOrderId && (
+                    <span className='text-muted-foreground ml-1 text-xs'>
+                      {paymentConfirmationOrderId}
+                    </span>
+                  )}
+                </span>
+                {paymentConfirmationStatus !== 'waiting' &&
+                  onResetPaymentConfirmation && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={onResetPaymentConfirmation}
+                      className='h-8 self-start sm:self-auto'
+                    >
+                      {t('Dismiss')}
+                    </Button>
+                  )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {hasConfigurableTopup && (
             <>
               {presetAmounts.length > 0 && (

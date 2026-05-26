@@ -203,3 +203,8 @@ func SearchRateLimit() func(c *gin.Context) {
 	}
 	return userRateLimitFactory(common.SearchRateLimitNum, common.SearchRateLimitDuration, "SR")
 }
+
+// AntomInquiryRateLimit caps authenticated Antom polling by user ID.
+func AntomInquiryRateLimit() func(c *gin.Context) {
+	return userRateLimitFactory(10, 60, "AIQ")
+}

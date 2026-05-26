@@ -294,6 +294,15 @@ export type BillingSettings = {
   PayssionUnitPrice: number
   PayssionMinTopUp: number
   PayssionPaymentMethods: string
+  AntomEnabled: boolean
+  AntomClientId: string
+  AntomMerchantPrivateKey: string
+  AntomPublicKey: string
+  AntomSandbox: boolean
+  AntomCurrency: string
+  AntomUnitPrice: number
+  AntomMinTopUp: number
+  AntomPaymentMethods: string
   'checkin_setting.enabled': boolean
   'checkin_setting.min_quota': number
   'checkin_setting.max_quota': number

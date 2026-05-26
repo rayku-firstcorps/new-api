@@ -75,6 +75,10 @@ import {
   PayssionSettingsSection,
   type PayssionSettingsValues,
 } from './payssion-settings-section'
+import {
+  AntomSettingsSection,
+  type AntomSettingsValues,
+} from './antom-settings-section'
 
 const paymentSchema = z.object({
   PayAddress: z.string().refine((value) => {
@@ -159,6 +163,7 @@ type PaymentSettingsSectionProps = {
   waffoPancakeDefaultValues: WaffoPancakeSettingsValues
   airwallexDefaultValues: AirwallexSettingsValues
   payssionDefaultValues: PayssionSettingsValues
+  antomDefaultValues: AntomSettingsValues
   complianceDefaults: PaymentComplianceDefaults
 }
 
@@ -168,6 +173,7 @@ export function PaymentSettingsSection({
   waffoPancakeDefaultValues,
   airwallexDefaultValues,
   payssionDefaultValues,
+  antomDefaultValues,
   complianceDefaults,
 }: PaymentSettingsSectionProps) {
   const { t } = useTranslation()
@@ -1493,6 +1499,10 @@ export function PaymentSettingsSection({
       <Separator />
 
       <PayssionSettingsSection defaultValues={payssionDefaultValues} />
+
+      <Separator />
+
+      <AntomSettingsSection defaultValues={antomDefaultValues} />
       {/* eslint-enable react-hooks/refs */}
     </SettingsSection>
   )

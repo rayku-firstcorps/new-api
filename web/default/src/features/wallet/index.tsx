@@ -88,8 +88,11 @@ export function Wallet(props: WalletProps) {
     amount: paymentAmount,
     calculating,
     processing,
+    confirmationStatus,
+    confirmationOrderId,
     calculatePaymentAmount,
     processPayment,
+    resetPaymentConfirmation,
   } = usePayment()
   const {
     affiliateLink,
@@ -306,6 +309,9 @@ export function Wallet(props: WalletProps) {
                   enableWaffoPancakeTopup={
                     topupInfo?.enable_waffo_pancake_topup
                   }
+                  paymentConfirmationStatus={confirmationStatus}
+                  paymentConfirmationOrderId={confirmationOrderId}
+                  onResetPaymentConfirmation={resetPaymentConfirmation}
                 />
               </div>
 

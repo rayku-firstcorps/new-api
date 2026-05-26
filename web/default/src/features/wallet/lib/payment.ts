@@ -104,6 +104,28 @@ export function isPayssionPayment(paymentType: string): boolean {
 }
 
 /**
+ * Check if payment method is Antom.
+ */
+export function isAntomPayment(paymentType: string): boolean {
+  return (
+    paymentType === PAYMENT_TYPES.ANTOM ||
+    paymentType.startsWith(`${PAYMENT_TYPES.ANTOM}:`)
+  )
+}
+
+/**
+ * Extract the provider method code from an Antom-prefixed payment type.
+ */
+export function getAntomPaymentMethod(paymentType: string): string {
+  if (!isAntomPayment(paymentType)) {
+    return paymentType
+  }
+
+  const [, method] = paymentType.split(':', 2)
+  return method || ''
+}
+
+/**
  * Extract the provider method code from a Payssion-prefixed payment type.
  */
 export function getPayssionPaymentMethod(paymentType: string): string {
@@ -148,6 +170,10 @@ export function getDefaultPaymentType(topupInfo: TopupInfo | null): string {
     return PAYMENT_TYPES.PAYSSION
   }
 
+  if (topupInfo.enable_antom_topup) {
+    return PAYMENT_TYPES.ANTOM
+  }
+
   return DEFAULT_PAYMENT_TYPE
 }
 
@@ -181,6 +207,10 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
 
   if (topupInfo.enable_payssion_topup) {
     return topupInfo.payssion_min_topup || DEFAULT_MIN_TOPUP
+  }
+
+  if (topupInfo.enable_antom_topup) {
+    return topupInfo.antom_min_topup || DEFAULT_MIN_TOPUP
   }
 
   return DEFAULT_MIN_TOPUP
