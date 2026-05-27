@@ -82,14 +82,13 @@ function ProjectAttribution(props: { currentYear: number }) {
       <span className='text-muted-foreground/45'>
         &copy; {props.currentYear}{' '}
         <a
-          href='https://github.com/QuantumNous/new-api'
+          href='https://kudexapi.com'
           target='_blank'
           rel='noopener noreferrer'
           className='text-foreground/70 hover:text-foreground font-medium transition-colors'
         >
-          {t('New API')}
+          {t('Kudex API')}
         </a>
-        . {t(NEW_API_FOOTER_ATTRIBUTION_KEY)}
       </span>
     </div>
   )
@@ -238,10 +237,7 @@ export function Footer(props: FooterProps) {
         {/* Bottom section */}
         <div className='border-border/30 mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 sm:flex-row'>
           <p className='text-muted-foreground/40 text-xs'>
-            &copy; {currentYear} {displayName}.{' '}
-            {props.copyright ?? t('footer.defaultCopyright')}
           </p>
-          <ProjectAttribution currentYear={currentYear} />
         </div>
       </div>
     </footer>
