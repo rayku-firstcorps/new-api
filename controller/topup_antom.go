@@ -48,6 +48,22 @@ type AntomPayRequest struct {
 	PaymentMethodType string `json:"paymentMethodType"`
 }
 
+type antomPaymentPricing struct {
+	Currency  string
+	UnitPrice decimal.Decimal
+}
+
+func defaultAntomCurrencyForPaymentMethod(paymentMethodType string) string {
+	switch strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(paymentMethodType), "-", "_")) {
+	case "ALIPAY_CN", "ALIPAYCN":
+		return "CNY"
+	case "ALIPAY_HK", "ALIPAYHK":
+		return "HKD"
+	default:
+		return ""
+	}
+}
+
 func getAntomClient() *defaultAlipayClient.DefaultAlipayClient {
 	baseURL := setting.AntomBaseURL()
 	clientId := setting.AntomClientId
@@ -85,7 +101,42 @@ func getAntomMinTopup() int64 {
 	return int64(minTopup)
 }
 
-func getAntomPayMoney(amount float64, group string) float64 {
+func resolveAntomPaymentMethod(paymentMethodType string) (setting.AntomPaymentMethod, bool) {
+	paymentMethodType = strings.TrimSpace(paymentMethodType)
+	if paymentMethodType == "" {
+		return setting.AntomPaymentMethod{}, false
+	}
+	for _, method := range setting.GetAntomPaymentMethods() {
+		if method.Type == paymentMethodType {
+			return method, true
+		}
+	}
+	return setting.AntomPaymentMethod{}, false
+}
+
+func getAntomPaymentPricing(paymentMethodType string) antomPaymentPricing {
+	currency := strings.ToUpper(strings.TrimSpace(setting.AntomCurrency))
+	if currency == "" {
+		currency = "CNY"
+	}
+	if methodCurrency := defaultAntomCurrencyForPaymentMethod(paymentMethodType); methodCurrency != "" {
+		currency = methodCurrency
+	}
+	unitPrice := decimal.NewFromFloat(setting.AntomUnitPrice)
+	if method, ok := resolveAntomPaymentMethod(paymentMethodType); ok {
+		if method.Currency != "" {
+			currency = method.Currency
+		}
+		if method.UnitPrice > 0 {
+			unitPrice = decimal.NewFromFloat(method.UnitPrice)
+		} else if method.ExchangeRate > 0 {
+			unitPrice = unitPrice.Mul(decimal.NewFromFloat(method.ExchangeRate))
+		}
+	}
+	return antomPaymentPricing{Currency: currency, UnitPrice: unitPrice}
+}
+
+func getAntomPayMoney(amount float64, group string, paymentMethodType string) float64 {
 	originalAmount := int64(amount)
 	dAmount := decimal.NewFromFloat(amount)
 	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
@@ -102,8 +153,9 @@ func getAntomPayMoney(amount float64, group string) float64 {
 		discount = ds
 	}
 
+	pricing := getAntomPaymentPricing(paymentMethodType)
 	return dAmount.
-		Mul(decimal.NewFromFloat(setting.AntomUnitPrice)).
+		Mul(pricing.UnitPrice).
 		Mul(decimal.NewFromFloat(topupGroupRatio)).
 		Mul(decimal.NewFromFloat(discount)).
 		InexactFloat64()
@@ -121,6 +173,11 @@ func RequestAntomAmount(c *gin.Context) {
 		return
 	}
 
+	if req.PaymentMethodType != "" && !setting.IsAntomPaymentMethodAllowed(req.PaymentMethodType) {
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "涓嶆敮鎸佺殑鏀粯鏂瑰紡"})
+		return
+	}
+
 	id := c.GetInt("id")
 	group, err := apiModel.GetUserGroup(id, true)
 	if err != nil {
@@ -128,7 +185,7 @@ func RequestAntomAmount(c *gin.Context) {
 		return
 	}
 
-	payMoney := getAntomPayMoney(float64(req.Amount), group)
+	payMoney := getAntomPayMoney(float64(req.Amount), group, req.PaymentMethodType)
 	if payMoney <= 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -154,6 +211,11 @@ func RequestAntomPay(c *gin.Context) {
 		return
 	}
 
+	if req.PaymentMethodType != "" && !setting.IsAntomPaymentMethodAllowed(req.PaymentMethodType) {
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "涓嶆敮鎸佺殑鏀粯鏂瑰紡"})
+		return
+	}
+
 	id := c.GetInt("id")
 	user, err := apiModel.GetUserById(id, false)
 	if err != nil || user == nil {
@@ -162,7 +224,7 @@ func RequestAntomPay(c *gin.Context) {
 	}
 
 	group, _ := apiModel.GetUserGroup(id, true)
-	payMoney := getAntomPayMoney(float64(req.Amount), group)
+	payMoney := getAntomPayMoney(float64(req.Amount), group, req.PaymentMethodType)
 	if payMoney < 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -204,8 +266,9 @@ func RequestAntomPay(c *gin.Context) {
 	callbackAddr := service.GetCallbackAddress()
 	returnURL := paymentReturnPath("/console/topup?show_history=true")
 
-	amountCents := antomAmountValue(payMoney, setting.AntomCurrency)
-	payAmount := &antomModel.Amount{Value: amountCents, Currency: strings.ToUpper(setting.AntomCurrency)}
+	pricing := getAntomPaymentPricing(req.PaymentMethodType)
+	amountCents := antomAmountValue(payMoney, pricing.Currency)
+	payAmount := &antomModel.Amount{Value: amountCents, Currency: pricing.Currency}
 
 	request, payRequest := pay.NewAlipayPayRequest()
 	payRequest.ProductCode = antomModel.CASHIER_PAYMENT

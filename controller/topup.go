@@ -178,13 +178,23 @@ func GetTopUpInfo(c *gin.Context) {
 				if color == "" {
 					color = "rgba(var(--semi-teal-5), 1)"
 				}
-				payMethods = append(payMethods, map[string]string{
+				payMethod := map[string]string{
 					"name":      method.Name,
 					"type":      methodType,
 					"color":     color,
 					"min_topup": strconv.Itoa(setting.AntomMinTopUp),
 					"icon":      method.Icon,
-				})
+				}
+				if method.Currency != "" {
+					payMethod["currency"] = method.Currency
+				}
+				if method.ExchangeRate > 0 {
+					payMethod["exchange_rate"] = strconv.FormatFloat(method.ExchangeRate, 'f', -1, 64)
+				}
+				if method.UnitPrice > 0 {
+					payMethod["unit_price"] = strconv.FormatFloat(method.UnitPrice, 'f', -1, 64)
+				}
+				payMethods = append(payMethods, payMethod)
 			}
 		}
 	}

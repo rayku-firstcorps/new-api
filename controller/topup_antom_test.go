@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	apiModel "github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/setting"
 	antomModel "github.com/alipay/global-open-sdk-go/com/alipay/api/model"
 	"github.com/alipay/global-open-sdk-go/com/alipay/api/response"
 	responsePay "github.com/alipay/global-open-sdk-go/com/alipay/api/response/pay"
@@ -65,4 +66,39 @@ func TestAntomQueryPaymentStatusUnknownOrMissingPaymentStatus(t *testing.T) {
 	}
 	resp.Result.ResultCode = "ORDER_NOT_EXIST"
 	assert.Equal(t, apiModel.TopUpRemotePaymentStatusUnknown, antomQueryPaymentStatus(resp))
+}
+
+func TestAntomPaymentPricingMethodOverrides(t *testing.T) {
+	oldCurrency := setting.AntomCurrency
+	oldUnitPrice := setting.AntomUnitPrice
+	oldMethods := setting.AntomPaymentMethods
+	defer func() {
+		setting.AntomCurrency = oldCurrency
+		setting.AntomUnitPrice = oldUnitPrice
+		setting.AntomPaymentMethods = oldMethods
+	}()
+
+	setting.AntomCurrency = "CNY"
+	setting.AntomUnitPrice = 1
+	setting.AntomPaymentMethods = `[
+		{"name":"Alipay CN","type":"ALIPAY_CN","currency":"CNY"},
+		{"name":"Alipay HK","type":"ALIPAY_HK","currency":"HKD","exchange_rate":1.1},
+		{"name":"Card USD","type":"CARD","currency":"USD","unit_price":0.14}
+	]`
+
+	cn := getAntomPaymentPricing("ALIPAY_CN")
+	assert.Equal(t, "CNY", cn.Currency)
+	assert.Equal(t, "1", cn.UnitPrice.String())
+
+	hk := getAntomPaymentPricing("ALIPAY_HK")
+	assert.Equal(t, "HKD", hk.Currency)
+	assert.Equal(t, "1.1", hk.UnitPrice.String())
+
+	card := getAntomPaymentPricing("CARD")
+	assert.Equal(t, "USD", card.Currency)
+	assert.Equal(t, "0.14", card.UnitPrice.String())
+
+	fallback := getAntomPaymentPricing("")
+	assert.Equal(t, "CNY", fallback.Currency)
+	assert.Equal(t, "1", fallback.UnitPrice.String())
 }

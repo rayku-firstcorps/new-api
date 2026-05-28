@@ -126,7 +126,9 @@ export function usePayment() {
           stopPaymentConfirmation()
           setConfirmationStatus('timeout')
           toast.info(
-            i18next.t('Payment confirmation is still pending. Please refresh later.')
+            i18next.t(
+              'Payment confirmation is still pending. Please refresh later.'
+            )
           )
         }
       }
@@ -165,7 +167,11 @@ export function usePayment() {
         } else if (isPancake) {
           response = await calculateWaffoPancakeAmount({ amount: topupAmount })
         } else if (isAntom) {
-          response = await calculateAntomAmount({ amount: topupAmount })
+          const paymentMethodType = getAntomPaymentMethod(paymentType)
+          response = await calculateAntomAmount({
+            amount: topupAmount,
+            ...(paymentMethodType ? { paymentMethodType } : {}),
+          })
         } else {
           response = await calculateAmount({ amount: topupAmount })
         }

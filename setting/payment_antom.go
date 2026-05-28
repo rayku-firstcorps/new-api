@@ -7,10 +7,13 @@ import (
 )
 
 type AntomPaymentMethod struct {
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	Icon  string `json:"icon,omitempty"`
-	Color string `json:"color,omitempty"`
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	Icon         string  `json:"icon,omitempty"`
+	Color        string  `json:"color,omitempty"`
+	Currency     string  `json:"currency,omitempty"`
+	ExchangeRate float64 `json:"exchange_rate,omitempty"`
+	UnitPrice    float64 `json:"unit_price,omitempty"`
 }
 
 var (
@@ -52,6 +55,7 @@ func GetAntomPaymentMethods() []AntomPaymentMethod {
 	for _, method := range methods {
 		method.Type = strings.TrimSpace(method.Type)
 		method.Name = strings.TrimSpace(method.Name)
+		method.Currency = strings.ToUpper(strings.TrimSpace(method.Currency))
 		if method.Type == "" {
 			continue
 		}

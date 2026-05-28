@@ -170,7 +170,7 @@ export function AntomSettingsSection(props: Props) {
 
       <div className='grid gap-4 md:grid-cols-2'>
         <div className='grid gap-1.5'>
-          <Label>{t('Unit price (CNY)')}</Label>
+          <Label>{t('Default unit price')}</Label>
           <Input
             type='number'
             step={0.01}
@@ -180,11 +180,7 @@ export function AntomSettingsSection(props: Props) {
         </div>
         <div className='grid gap-1.5'>
           <Label>{t('Minimum top-up quantity')}</Label>
-          <Input
-            type='number'
-            min={1}
-            {...form.register('AntomMinTopUp')}
-          />
+          <Input type='number' min={1} {...form.register('AntomMinTopUp')} />
         </div>
       </div>
 
@@ -193,12 +189,12 @@ export function AntomSettingsSection(props: Props) {
         <Textarea
           className='font-mono text-xs'
           rows={4}
-          placeholder='[{"name":"Card","type":"CARD"},{"name":"PayPay","type":"PAYPAY"}]'
+          placeholder='[{"name":"Alipay CN","type":"ALIPAY_CN","currency":"CNY"},{"name":"Alipay HK","type":"ALIPAY_HK","currency":"HKD","exchange_rate":1.1}]'
           {...form.register('AntomPaymentMethods')}
         />
         <p className='text-muted-foreground text-xs'>
           {t(
-            'Leave empty to show a single Antom entry. Configure specific methods as JSON array with name and type fields.'
+            'Leave empty to show a single Antom entry. Configure specific methods as JSON array with name, type, optional currency, exchange_rate, or unit_price fields.'
           )}
         </p>
       </div>

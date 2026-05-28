@@ -104,6 +104,12 @@ export interface PaymentMethod {
   min_topup?: number
   /** Optional icon URL provided by backend (preferred over built-in icons) */
   icon?: string
+  /** Optional payment currency for this method */
+  currency?: string
+  /** Optional exchange rate against global Antom unit price */
+  exchange_rate?: number
+  /** Optional absolute unit price for this method */
+  unit_price?: number
 }
 
 /**
@@ -256,6 +262,8 @@ export interface AmountRequest {
   amount: number
   /** Optional gateway-specific payment method code */
   payment_method?: string
+  /** Optional Antom payment method type */
+  paymentMethodType?: string
 }
 
 /**
