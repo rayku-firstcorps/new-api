@@ -841,6 +841,8 @@ func ExpirePendingTopUps(minutes int) {
 				if topUp.PaymentProvider == PaymentProviderAntom {
 					skipTradeNos = append(skipTradeNos, topUp.TradeNo)
 				}
+			case TopUpRemotePaymentStatusPending:
+				skipTradeNos = append(skipTradeNos, topUp.TradeNo)
 			case TopUpRemotePaymentStatusPaid:
 				continue
 			case TopUpRemotePaymentStatusFailed:

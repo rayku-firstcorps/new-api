@@ -154,6 +154,58 @@ func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentProvider(t *testing.T)
 	}
 }
 
+func TestExpirePendingTopUps_SkipsVerifiedPendingAntomOrder(t *testing.T) {
+	truncateTables(t)
+	oldVerifier := VerifyPendingTopUpPayment
+	defer func() { VerifyPendingTopUpPayment = oldVerifier }()
+
+	insertUserForPaymentGuardTest(t, 160, 0)
+	topUp := &TopUp{
+		UserId:          160,
+		Amount:          2,
+		Money:           9.99,
+		TradeNo:         "antom-pending-skip",
+		PaymentMethod:   PaymentMethodAntom,
+		PaymentProvider: PaymentProviderAntom,
+		Status:          common.TopUpStatusPending,
+		CreateTime:      time.Now().Add(-10 * time.Minute).Unix(),
+	}
+	require.NoError(t, topUp.Insert())
+
+	VerifyPendingTopUpPayment = func(topUp *TopUp) (TopUpRemotePaymentStatus, error) {
+		require.Equal(t, "antom-pending-skip", topUp.TradeNo)
+		return TopUpRemotePaymentStatusPending, nil
+	}
+
+	ExpirePendingTopUps(5)
+
+	assert.Equal(t, common.TopUpStatusPending, getTopUpStatusForPaymentGuardTest(t, "antom-pending-skip"))
+}
+
+func TestExpirePendingTopUps_ExpiresOldUnverifiedTopUp(t *testing.T) {
+	truncateTables(t)
+	oldVerifier := VerifyPendingTopUpPayment
+	VerifyPendingTopUpPayment = nil
+	defer func() { VerifyPendingTopUpPayment = oldVerifier }()
+
+	insertUserForPaymentGuardTest(t, 161, 0)
+	topUp := &TopUp{
+		UserId:          161,
+		Amount:          2,
+		Money:           9.99,
+		TradeNo:         "stripe-expire-old",
+		PaymentMethod:   PaymentMethodStripe,
+		PaymentProvider: PaymentProviderStripe,
+		Status:          common.TopUpStatusPending,
+		CreateTime:      time.Now().Add(-10 * time.Minute).Unix(),
+	}
+	require.NoError(t, topUp.Insert())
+
+	ExpirePendingTopUps(5)
+
+	assert.Equal(t, common.TopUpStatusExpired, getTopUpStatusForPaymentGuardTest(t, "stripe-expire-old"))
+}
+
 func TestCompleteSubscriptionOrder_RejectsMismatchedPaymentProvider(t *testing.T) {
 	truncateTables(t)
 
