@@ -358,6 +358,29 @@ func extractAntomPaymentURL(resp interface{}) string {
 	return ""
 }
 
+func antomQueryPaymentStatus(queryResp *responsePay.AlipayPayQueryResponse) apiModel.TopUpRemotePaymentStatus {
+	if queryResp == nil || queryResp.Result == nil {
+		return apiModel.TopUpRemotePaymentStatusUnknown
+	}
+	if queryResp.Result.ResultStatus == "F" {
+		return apiModel.TopUpRemotePaymentStatusFailed
+	}
+
+	switch queryResp.PaymentStatus {
+	case antomModel.TransactionStatusType_SUCCESS:
+		return apiModel.TopUpRemotePaymentStatusPaid
+	case antomModel.TransactionStatusType_FAIL, antomModel.TransactionStatusType_CANCELLED:
+		return apiModel.TopUpRemotePaymentStatusFailed
+	case antomModel.TransactionStatusType_PROCESSING, antomModel.TransactionStatusType_PENDING:
+		return apiModel.TopUpRemotePaymentStatusPending
+	default:
+		if queryResp.Result.ResultCode != "SUCCESS" {
+			return apiModel.TopUpRemotePaymentStatusUnknown
+		}
+		return apiModel.TopUpRemotePaymentStatusPending
+	}
+}
+
 func queryAntomPaymentStatus(tradeNo string) (apiModel.TopUpRemotePaymentStatus, error) {
 	client := getAntomClient()
 	if client == nil {
@@ -376,13 +399,7 @@ func queryAntomPaymentStatus(tradeNo string) (apiModel.TopUpRemotePaymentStatus,
 		return apiModel.TopUpRemotePaymentStatusUnknown, nil
 	}
 
-	if queryResp.Result.ResultCode == "SUCCESS" {
-		return apiModel.TopUpRemotePaymentStatusPaid, nil
-	}
-	if queryResp.Result.ResultStatus == "F" {
-		return apiModel.TopUpRemotePaymentStatusFailed, nil
-	}
-	return apiModel.TopUpRemotePaymentStatusPending, nil
+	return antomQueryPaymentStatus(queryResp), nil
 }
 
 func verifyPendingTopUpPayment(topUp *apiModel.TopUp) (apiModel.TopUpRemotePaymentStatus, error) {
@@ -450,7 +467,8 @@ func RequestAntomInquiry(c *gin.Context) {
 		return
 	}
 
-	if queryResp.Result.ResultCode == "SUCCESS" {
+	status := antomQueryPaymentStatus(queryResp)
+	if status == apiModel.TopUpRemotePaymentStatusPaid {
 		LockOrder(tradeNo)
 		defer UnlockOrder(tradeNo)
 		if err := apiModel.RechargeAntom(tradeNo, c.ClientIP()); err != nil {
@@ -460,7 +478,7 @@ func RequestAntomInquiry(c *gin.Context) {
 		return
 	}
 
-	if queryResp.Result.ResultStatus == "F" {
+	if status == apiModel.TopUpRemotePaymentStatusFailed {
 		topUp.Status = common.TopUpStatusFailed
 		_ = topUp.Update()
 		c.JSON(http.StatusOK, gin.H{"message": "success", "data": "failed"})
