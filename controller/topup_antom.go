@@ -53,6 +53,30 @@ type antomPaymentPricing struct {
 	UnitPrice decimal.Decimal
 }
 
+type antomWebhookResponse struct {
+	Result response.Result `json:"result"`
+}
+
+func antomWebhookSuccessResponse() antomWebhookResponse {
+	return antomWebhookResponse{
+		Result: response.Result{
+			ResultCode:    "SUCCESS",
+			ResultStatus:  "S",
+			ResultMessage: "Success",
+		},
+	}
+}
+
+func antomWebhookFailResponse() antomWebhookResponse {
+	return antomWebhookResponse{
+		Result: response.Result{
+			ResultCode:    "FAIL",
+			ResultStatus:  "F",
+			ResultMessage: "Fail",
+		},
+	}
+}
+
 func defaultAntomCurrencyForPaymentMethod(paymentMethodType string) string {
 	switch strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(paymentMethodType), "-", "_")) {
 	case "ALIPAY_CN", "ALIPAYCN":
@@ -333,7 +357,7 @@ func AntomWebhook(c *gin.Context) {
 	rawBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Antom webhook 读取请求体失败 client_ip=%s error=%q", c.ClientIP(), err.Error()))
-		c.JSON(http.StatusOK, response.Result{ResultCode: "FAIL", ResultMessage: "fail.", ResultStatus: "F"})
+		c.JSON(http.StatusOK, antomWebhookFailResponse())
 		return
 	}
 
@@ -346,14 +370,14 @@ func AntomWebhook(c *gin.Context) {
 	checkSignature, err := tools.CheckSignature(requestURI, requestMethod, clientID, requestTime, string(rawBody), signature, setting.AntomPublicKey)
 	if err != nil || !checkSignature {
 		logger.LogWarn(c.Request.Context(), fmt.Sprintf("Antom webhook 验签失败 client_ip=%s", c.ClientIP()))
-		c.JSON(http.StatusOK, response.Result{ResultCode: "FAIL", ResultMessage: "fail.", ResultStatus: "F"})
+		c.JSON(http.StatusOK, antomWebhookFailResponse())
 		return
 	}
 
 	var paymentNotify notify.AlipayPayResultNotify
 	if err := common.Unmarshal(rawBody, &paymentNotify); err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Antom webhook 解析失败 client_ip=%s error=%q", c.ClientIP(), err.Error()))
-		c.JSON(http.StatusOK, response.Result{ResultCode: "FAIL", ResultMessage: "fail.", ResultStatus: "F"})
+		c.JSON(http.StatusOK, antomWebhookFailResponse())
 		return
 	}
 
@@ -361,12 +385,12 @@ func AntomWebhook(c *gin.Context) {
 	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Antom webhook 收到通知 trade_no=%s result_code=%s client_ip=%s", tradeNo, paymentNotify.Result.ResultCode, c.ClientIP()))
 
 	if paymentNotify.Result.ResultCode != "SUCCESS" {
-		c.JSON(http.StatusOK, response.Result{ResultCode: "SUCCESS", ResultMessage: "success.", ResultStatus: "S"})
+		c.JSON(http.StatusOK, antomWebhookSuccessResponse())
 		return
 	}
 
 	if tradeNo == "" {
-		c.JSON(http.StatusOK, response.Result{ResultCode: "SUCCESS", ResultMessage: "success.", ResultStatus: "S"})
+		c.JSON(http.StatusOK, antomWebhookSuccessResponse())
 		return
 	}
 
@@ -375,11 +399,11 @@ func AntomWebhook(c *gin.Context) {
 
 	if err := apiModel.RechargeAntom(tradeNo, c.ClientIP()); err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Antom 充值处理失败 trade_no=%s client_ip=%s error=%q", tradeNo, c.ClientIP(), err.Error()))
-		c.JSON(http.StatusOK, response.Result{ResultCode: "FAIL", ResultMessage: "fail.", ResultStatus: "F"})
+		c.JSON(http.StatusOK, antomWebhookFailResponse())
 		return
 	}
 
-	c.JSON(http.StatusOK, response.Result{ResultCode: "SUCCESS", ResultMessage: "success.", ResultStatus: "S"})
+	c.JSON(http.StatusOK, antomWebhookSuccessResponse())
 }
 
 func antomAmountValue(money float64, currency string) string {

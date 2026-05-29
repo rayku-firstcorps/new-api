@@ -3,13 +3,22 @@ package controller
 import (
 	"testing"
 
+	"github.com/QuantumNous/new-api/common"
 	apiModel "github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting"
 	antomModel "github.com/alipay/global-open-sdk-go/com/alipay/api/model"
 	"github.com/alipay/global-open-sdk-go/com/alipay/api/response"
 	responsePay "github.com/alipay/global-open-sdk-go/com/alipay/api/response/pay"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestAntomWebhookSuccessResponseMatchesAntomSpec(t *testing.T) {
+	body, err := common.Marshal(antomWebhookSuccessResponse())
+	require.NoError(t, err)
+
+	assert.JSONEq(t, `{"result":{"resultCode":"SUCCESS","resultStatus":"S","resultMessage":"Success"}}`, string(body))
+}
 
 func TestAntomQueryPaymentStatusRequiresPaymentStatusSuccess(t *testing.T) {
 	resp := &responsePay.AlipayPayQueryResponse{
