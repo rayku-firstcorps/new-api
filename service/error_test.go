@@ -1,6 +1,10 @@
 package service
 
 import (
+	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/types"
@@ -54,4 +58,23 @@ func TestResetStatusCode(t *testing.T) {
 			require.Equal(t, tc.expectedCode, newAPIError.StatusCode)
 		})
 	}
+}
+
+func TestRelayErrorHandlerMarksRetryableResponse(t *testing.T) {
+	t.Parallel()
+
+	resp := &http.Response{
+		StatusCode: http.StatusGatewayTimeout,
+		Body: io.NopCloser(strings.NewReader(`{
+			"title": "Error 504: Gateway time-out",
+			"detail": "origin timeout",
+			"retryable": true,
+			"retry_after": 120
+		}`)),
+	}
+
+	newAPIError := RelayErrorHandler(context.Background(), resp, false)
+	require.NotNil(t, newAPIError)
+	require.Equal(t, http.StatusGatewayTimeout, newAPIError.StatusCode)
+	require.True(t, types.IsRetryableError(newAPIError))
 }
