@@ -47,6 +47,7 @@ func GetStatus(c *gin.Context) {
 
 	passkeySetting := system_setting.GetPasskeySettings()
 	legalSetting := system_setting.GetLegalSettings()
+	officialSocialLinks := model.PublicOfficialSocialLinksFromJSON(common.OptionMap[model.OptionKeyOfficialSocialLinks])
 
 	data := gin.H{
 		"version":                     common.Version,
@@ -100,8 +101,10 @@ func GetStatus(c *gin.Context) {
 		"faq_enabled":           cs.FAQEnabled,
 
 		// 模块管理配置
-		"HeaderNavModules":    common.OptionMap["HeaderNavModules"],
-		"SidebarModulesAdmin": common.OptionMap["SidebarModulesAdmin"],
+		"HeaderNavModules":      common.OptionMap["HeaderNavModules"],
+		"SidebarModulesAdmin":   common.OptionMap["SidebarModulesAdmin"],
+		"OfficialSocialLinks":   officialSocialLinks,
+		"official_social_links": officialSocialLinks,
 
 		"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
 		"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,

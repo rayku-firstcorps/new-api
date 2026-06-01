@@ -26,6 +26,10 @@ import {
 } from '@/stores/system-config-store'
 import { DEFAULT_SYSTEM_NAME, DEFAULT_LOGO } from '@/lib/constants'
 import { applyFaviconToDom } from '@/lib/dom-utils'
+import {
+  normalizeOfficialSocialLinksForDisplay,
+  type OfficialSocialLink,
+} from '@/features/official-social-links'
 
 interface UseSystemConfigOptions {
   /** Automatically fetch config from backend (use only in root component) */
@@ -46,6 +50,8 @@ interface StatusApiResponse {
     usd_exchange_rate?: number
     custom_currency_symbol?: string
     custom_currency_exchange_rate?: number
+    official_social_links?: OfficialSocialLink[]
+    OfficialSocialLinks?: OfficialSocialLink[]
   }
 }
 
@@ -97,6 +103,9 @@ export function mapStatusDataToConfig(
     footerHtml: data.footer_html,
     demoSiteEnabled: data.demo_site_enabled,
     displayTokenStatEnabled: data.display_token_stat_enabled,
+    officialSocialLinks: normalizeOfficialSocialLinksForDisplay(
+      data.official_social_links ?? data.OfficialSocialLinks
+    ),
     currency,
   }
 }

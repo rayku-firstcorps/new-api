@@ -24,6 +24,7 @@ import { ChatSettingsSection } from './chat-settings-section'
 import { DashboardSection } from './dashboard-section'
 import { DrawingSettingsSection } from './drawing-settings-section'
 import { FAQSection } from './faq-section'
+import { OfficialSocialLinksSection } from './official-social-links-section'
 import { UptimeKumaSection } from './uptime-kuma-section'
 
 /**
@@ -104,6 +105,15 @@ const CONTENT_SECTIONS = [
     descriptionKey: 'Configure chat-related settings',
     build: (settings: ContentSettings) => (
       <ChatSettingsSection defaultValue={settings.Chats} />
+    ),
+  },
+  {
+    id: 'official-communities',
+    titleKey: 'Official Communities',
+    descriptionKey:
+      'Configure official social and community links shown on the home page',
+    build: (settings: ContentSettings) => (
+      <OfficialSocialLinksSection data={settings.OfficialSocialLinks} />
     ),
   },
   {

@@ -19,8 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useSystemConfig } from '@/hooks/use-system-config'
 import { Button } from '@/components/ui/button'
 import { HeroTerminalDemo } from '../hero-terminal-demo'
+import { OfficialSocialLinks } from '../official-social-links'
 
 interface HeroProps {
   className?: string
@@ -29,6 +31,7 @@ interface HeroProps {
 
 export function Hero(props: HeroProps) {
   const { t } = useTranslation()
+  const { officialSocialLinks } = useSystemConfig()
 
   return (
     <section className='relative z-10 flex flex-col items-center overflow-hidden px-6 pt-28 pb-16 md:pt-36 md:pb-24'>
@@ -65,10 +68,12 @@ export function Hero(props: HeroProps) {
           className='landing-animate-fade-up text-muted-foreground/80 mt-5 max-w-lg text-base leading-relaxed opacity-0 md:text-lg'
           style={{ animationDelay: '80ms' }}
         >
-          {t('Power AI applications, manage digital assets, connect the Future')}
+          {t(
+            'Power AI applications, manage digital assets, connect the Future'
+          )}
         </p>
         <div
-          className='landing-animate-fade-up mt-8 flex items-center gap-3 opacity-0'
+          className='landing-animate-fade-up mt-8 flex flex-wrap items-center justify-center gap-3 opacity-0'
           style={{ animationDelay: '160ms' }}
         >
           {props.isAuthenticated ? (
@@ -97,6 +102,7 @@ export function Hero(props: HeroProps) {
               </Button>
             </>
           )}
+          <OfficialSocialLinks links={officialSocialLinks} />
         </div>
       </div>
 

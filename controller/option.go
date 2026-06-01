@@ -136,17 +136,41 @@ func UpdateOption(c *gin.Context) {
 		})
 		return
 	}
-	switch option.Value.(type) {
+	switch value := option.Value.(type) {
 	case bool:
-		option.Value = common.Interface2String(option.Value.(bool))
+		option.Value = common.Interface2String(value)
 	case float64:
-		option.Value = common.Interface2String(option.Value.(float64))
+		option.Value = common.Interface2String(value)
 	case int:
-		option.Value = common.Interface2String(option.Value.(int))
+		option.Value = common.Interface2String(value)
+	case string:
+		option.Value = value
 	default:
-		option.Value = fmt.Sprintf("%v", option.Value)
+		if option.Key == model.OptionKeyOfficialSocialLinks {
+			jsonBytes, err := common.Marshal(option.Value)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"success": false,
+					"message": "invalid OfficialSocialLinks value",
+				})
+				return
+			}
+			option.Value = string(jsonBytes)
+		} else {
+			option.Value = fmt.Sprintf("%v", option.Value)
+		}
 	}
 	switch option.Key {
+	case model.OptionKeyOfficialSocialLinks:
+		normalized, err := model.NormalizeOfficialSocialLinksJSONString(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+		option.Value = normalized
 	case "QuotaForInviter", "QuotaForInvitee", "AffCommissionRate", "AffCommissionDurationDays", "AffCommissionMaxPerTopup", "AffFirstTopupMinAmount":
 		if isPositiveOptionValue(option.Value.(string)) && !operation_setting.IsPaymentComplianceConfirmed() {
 			common.ApiErrorI18n(c, i18n.MsgPaymentComplianceRequired)

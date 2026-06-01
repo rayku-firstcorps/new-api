@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import type { OfficialSocialLink } from '@/features/official-social-links'
 import type { User } from '@/features/users/types'
 
 // ============================================================================
@@ -131,6 +132,8 @@ export interface SystemStatus {
     register_enabled?: boolean
     password_register_enabled?: boolean
     custom_oauth_providers?: CustomOAuthProviderInfo[]
+    official_social_links?: OfficialSocialLink[]
+    OfficialSocialLinks?: OfficialSocialLink[]
     [key: string]: unknown
   }
   // Allow direct access to common properties
@@ -173,6 +176,8 @@ export interface SystemStatus {
   register_enabled?: boolean
   password_register_enabled?: boolean
   custom_oauth_providers?: CustomOAuthProviderInfo[]
+  official_social_links?: OfficialSocialLink[]
+  OfficialSocialLinks?: OfficialSocialLink[]
   [key: string]: unknown
 }
 

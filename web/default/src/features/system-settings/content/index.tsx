@@ -39,6 +39,7 @@ const defaultContentSettings: ContentSettings = {
   DataExportDefaultTime: 'hour',
   DataExportInterval: 5,
   Chats: '[]',
+  OfficialSocialLinks: '[]',
   DrawingEnabled: false,
   MjNotifyEnabled: false,
   MjAccountFilterEnabled: false,
@@ -117,6 +118,7 @@ export function ContentSettings() {
     | 'faq'
     | 'uptime-kuma'
     | 'chat'
+    | 'official-communities'
     | 'drawing'
   const sectionContent = getContentSectionContent(activeSection, settings)
 

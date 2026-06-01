@@ -78,7 +78,10 @@ function ProjectAttribution(props: { currentYear: number }) {
   const { t } = useTranslation()
 
   return (
-    <div className='text-muted-foreground/45 text-center text-xs sm:text-right'>
+    <div
+      className='text-muted-foreground/45 text-center text-xs sm:text-right'
+      data-attribution-key={NEW_API_FOOTER_ATTRIBUTION_KEY}
+    >
       <span className='text-muted-foreground/45'>
         &copy; {props.currentYear}{' '}
         <a
@@ -236,8 +239,7 @@ export function Footer(props: FooterProps) {
 
         {/* Bottom section */}
         <div className='border-border/30 mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 sm:flex-row'>
-          <p className='text-muted-foreground/40 text-xs'>
-          </p>
+          <p className='text-muted-foreground/40 text-xs'></p>
         </div>
       </div>
     </footer>
