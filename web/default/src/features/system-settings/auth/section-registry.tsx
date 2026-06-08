@@ -23,6 +23,7 @@ import { BotProtectionSection } from './bot-protection-section'
 import { CustomOAuthSection } from './custom-oauth/custom-oauth-section'
 import { OAuthSection } from './oauth-section'
 import { PasskeySection } from './passkey-section'
+import { SSOClientSection } from './sso-client/sso-client-section'
 
 const AUTH_SECTIONS = [
   {
@@ -127,6 +128,13 @@ const AUTH_SECTIONS = [
     titleKey: 'Custom OAuth',
     descriptionKey: 'Configure custom OAuth providers for user authentication',
     build: () => <CustomOAuthSection />,
+  },
+  {
+    id: 'sso-applications',
+    titleKey: 'SSO Applications',
+    descriptionKey:
+      'Allow external applications to obtain user-approved new-api access tokens',
+    build: () => <SSOClientSection />,
   },
 ] as const
 

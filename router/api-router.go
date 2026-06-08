@@ -74,6 +74,15 @@ func SetApiRouter(router *gin.Engine) {
 		// Universal secure verification routes
 		apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
 
+		ssoRoute := apiRouter.Group("/sso")
+		{
+			ssoRoute.GET("/authorize", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.GetSSOAuthorize)
+			ssoRoute.POST("/authorize", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.ConfirmSSOAuthorize)
+			ssoRoute.POST("/deny", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.DenySSOAuthorize)
+			ssoRoute.POST("/token", middleware.CriticalRateLimit(), controller.ExchangeSSOToken)
+			ssoRoute.POST("/api-key", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.CreateSSOApiKey)
+		}
+
 		userRoute := apiRouter.Group("/user")
 		{
 			userRoute.POST("/register", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.Register)
@@ -218,6 +227,15 @@ func SetApiRouter(router *gin.Engine) {
 			customOAuthRoute.POST("/", controller.CreateCustomOAuthProvider)
 			customOAuthRoute.PUT("/:id", controller.UpdateCustomOAuthProvider)
 			customOAuthRoute.DELETE("/:id", controller.DeleteCustomOAuthProvider)
+		}
+		ssoClientRoute := apiRouter.Group("/sso-client")
+		ssoClientRoute.Use(middleware.RootAuth())
+		{
+			ssoClientRoute.GET("/", controller.GetSSOClients)
+			ssoClientRoute.GET("/:id", controller.GetSSOClient)
+			ssoClientRoute.POST("/", controller.CreateSSOClient)
+			ssoClientRoute.PUT("/:id", controller.UpdateSSOClient)
+			ssoClientRoute.DELETE("/:id", controller.DeleteSSOClient)
 		}
 		performanceRoute := apiRouter.Group("/performance")
 		performanceRoute.Use(middleware.RootAuth())
