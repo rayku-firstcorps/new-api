@@ -40,6 +40,8 @@ func setupModelListControllerTestDB(t *testing.T) *gorm.DB {
 	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", strings.ReplaceAll(t.Name(), "/", "_"))
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	require.NoError(t, err)
+	originalDB := model.DB
+	originalLogDB := model.LOG_DB
 	model.DB = db
 	model.LOG_DB = db
 
@@ -50,6 +52,8 @@ func setupModelListControllerTestDB(t *testing.T) *gorm.DB {
 		if err == nil {
 			_ = sqlDB.Close()
 		}
+		model.DB = originalDB
+		model.LOG_DB = originalLogDB
 	})
 
 	return db
@@ -84,6 +88,8 @@ func initModelListColumnNames(t *testing.T) {
 	common.UsingPostgreSQL = false
 	require.NoError(t, os.Setenv("SQL_DSN", "local"))
 
+	originalDB := model.DB
+	originalLogDB := model.LOG_DB
 	require.NoError(t, model.InitDB())
 	if model.DB != nil {
 		sqlDB, err := model.DB.DB()
@@ -91,6 +97,8 @@ func initModelListColumnNames(t *testing.T) {
 			_ = sqlDB.Close()
 		}
 	}
+	model.DB = originalDB
+	model.LOG_DB = originalLogDB
 }
 
 func withTieredBillingConfig(t *testing.T, modes map[string]string, exprs map[string]string) {
