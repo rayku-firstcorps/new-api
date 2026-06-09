@@ -55,7 +55,6 @@ const BILLING_SECTIONS = [
   {
     id: 'quota',
     titleKey: 'Quota Settings',
-    descriptionKey: 'Configure user quota allocation and rewards',
     build: (settings: BillingSettings) => (
       <QuotaSettingsSection
         defaultValues={{
@@ -83,7 +82,6 @@ const BILLING_SECTIONS = [
   {
     id: 'currency',
     titleKey: 'Currency & Display',
-    descriptionKey: 'Configure currency conversion and quota display options',
     build: (settings: BillingSettings) => (
       <PricingSection
         defaultValues={{
@@ -107,11 +105,9 @@ const BILLING_SECTIONS = [
   {
     id: 'model-pricing',
     titleKey: 'Model Pricing',
-    descriptionKey: 'Configure model pricing ratios and tool prices',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Model Pricing'
-        descriptionKey='Configure model pricing ratios and tool prices'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_price_setting.prices']}
@@ -122,11 +118,9 @@ const BILLING_SECTIONS = [
   {
     id: 'group-pricing',
     titleKey: 'Group Pricing',
-    descriptionKey: 'Configure group ratios and group-specific pricing rules',
     build: (settings: BillingSettings) => (
       <RatioSettingsCard
         titleKey='Group Pricing'
-        descriptionKey='Configure group ratios and group-specific pricing rules'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_price_setting.prices']}
@@ -137,7 +131,6 @@ const BILLING_SECTIONS = [
   {
     id: 'payment',
     titleKey: 'Payment Gateway',
-    descriptionKey: 'Configure payment gateway integrations',
     build: (settings: BillingSettings) => (
       <PaymentSettingsSection
         defaultValues={{
@@ -179,19 +172,9 @@ const BILLING_SECTIONS = [
           WaffoPayMethods: settings.WaffoPayMethods ?? '[]',
         }}
         waffoPancakeDefaultValues={{
-          WaffoPancakeEnabled: settings.WaffoPancakeEnabled ?? false,
-          WaffoPancakeSandbox: settings.WaffoPancakeSandbox ?? false,
           WaffoPancakeMerchantID: settings.WaffoPancakeMerchantID ?? '',
           WaffoPancakePrivateKey: settings.WaffoPancakePrivateKey ?? '',
-          WaffoPancakeWebhookPublicKey:
-            settings.WaffoPancakeWebhookPublicKey ?? '',
-          WaffoPancakeWebhookTestKey: settings.WaffoPancakeWebhookTestKey ?? '',
-          WaffoPancakeStoreID: settings.WaffoPancakeStoreID ?? '',
-          WaffoPancakeProductID: settings.WaffoPancakeProductID ?? '',
           WaffoPancakeReturnURL: settings.WaffoPancakeReturnURL ?? '',
-          WaffoPancakeCurrency: settings.WaffoPancakeCurrency ?? 'USD',
-          WaffoPancakeUnitPrice: settings.WaffoPancakeUnitPrice ?? 1,
-          WaffoPancakeMinTopUp: settings.WaffoPancakeMinTopUp ?? 1,
         }}
         airwallexDefaultValues={{
           AirwallexEnabled: settings.AirwallexEnabled ?? false,
@@ -223,6 +206,8 @@ const BILLING_SECTIONS = [
           AntomMinTopUp: settings.AntomMinTopUp ?? 1,
           AntomPaymentMethods: settings.AntomPaymentMethods ?? '[]',
         }}
+        waffoPancakeProvisionedStoreID={settings.WaffoPancakeStoreID ?? ''}
+        waffoPancakeProvisionedProductID={settings.WaffoPancakeProductID ?? ''}
         complianceDefaults={{
           confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
           termsVersion:
@@ -258,7 +243,6 @@ const BILLING_SECTIONS = [
   {
     id: 'checkin',
     titleKey: 'Check-in Rewards',
-    descriptionKey: 'Configure daily check-in rewards for users',
     build: (settings: BillingSettings) => (
       <CheckinSettingsSection
         defaultValues={{
@@ -287,3 +271,4 @@ export const BILLING_SECTION_IDS = billingRegistry.sectionIds
 export const BILLING_DEFAULT_SECTION = billingRegistry.defaultSection
 export const getBillingSectionNavItems = billingRegistry.getSectionNavItems
 export const getBillingSectionContent = billingRegistry.getSectionContent
+export const getBillingSectionMeta = billingRegistry.getSectionMeta

@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useStatus } from '@/hooks/use-status'
-import { HomeAnnouncementSplash } from '@/features/home/components'
 import { AuthLayout } from '../auth-layout'
 import { TermsFooter } from '../components/terms-footer'
 import { SignUpForm } from './components/sign-up-form'
@@ -30,7 +29,6 @@ export function SignUp() {
 
   return (
     <AuthLayout>
-      <HomeAnnouncementSplash />
       <div className='w-full space-y-8'>
         <div className='space-y-2'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>

@@ -33,6 +33,7 @@ const (
 	PaymentMethodAirwallex    = "airwallex"
 	PaymentMethodPayssion     = "payssion"
 	PaymentMethodAntom        = "antom"
+	PaymentMethodBalance      = "balance"
 )
 
 const (
@@ -44,6 +45,7 @@ const (
 	PaymentProviderAirwallex    = "airwallex"
 	PaymentProviderPayssion     = "payssion"
 	PaymentProviderAntom        = "antom"
+	PaymentProviderBalance      = "balance"
 )
 
 var (

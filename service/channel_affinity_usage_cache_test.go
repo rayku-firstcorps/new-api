@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,6 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func resetChannelAffinityUsageCacheStatsForTest() {
+	channelAffinityUsageCacheStatsCache = nil
+	channelAffinityUsageCacheStatsOnce = sync.Once{}
+}
 
 func buildChannelAffinityStatsContextForTest(ruleName, usingGroup, keyFP string) *gin.Context {
 	rec := httptest.NewRecorder()
@@ -26,6 +32,7 @@ func buildChannelAffinityStatsContextForTest(ruleName, usingGroup, keyFP string)
 }
 
 func TestObserveChannelAffinityUsageCacheByRelayFormat_ClaudeMode(t *testing.T) {
+	resetChannelAffinityUsageCacheStatsForTest()
 	ruleName := fmt.Sprintf("rule_%d", time.Now().UnixNano())
 	usingGroup := "default"
 	keyFP := fmt.Sprintf("fp_%d", time.Now().UnixNano())
@@ -53,6 +60,7 @@ func TestObserveChannelAffinityUsageCacheByRelayFormat_ClaudeMode(t *testing.T) 
 }
 
 func TestObserveChannelAffinityUsageCacheByRelayFormat_MixedMode(t *testing.T) {
+	resetChannelAffinityUsageCacheStatsForTest()
 	ruleName := fmt.Sprintf("rule_%d", time.Now().UnixNano())
 	usingGroup := "default"
 	keyFP := fmt.Sprintf("fp_%d", time.Now().UnixNano())
@@ -83,6 +91,7 @@ func TestObserveChannelAffinityUsageCacheByRelayFormat_MixedMode(t *testing.T) {
 }
 
 func TestObserveChannelAffinityUsageCacheByRelayFormat_UnsupportedModeKeepsEmpty(t *testing.T) {
+	resetChannelAffinityUsageCacheStatsForTest()
 	ruleName := fmt.Sprintf("rule_%d", time.Now().UnixNano())
 	usingGroup := "default"
 	keyFP := fmt.Sprintf("fp_%d", time.Now().UnixNano())
