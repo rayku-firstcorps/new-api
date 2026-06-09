@@ -28,6 +28,7 @@ const STATUS_RELATED_KEYS = [
   'HeaderNavModules',
   'SidebarModulesAdmin',
   'OfficialSocialLinks',
+  'PromotionRewardBanner',
   'Notice',
   'LogConsumeEnabled',
   'QuotaPerUnit',

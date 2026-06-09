@@ -108,6 +108,7 @@ func GetStatus(c *gin.Context) {
 		"SidebarModulesAdmin":   common.OptionMap["SidebarModulesAdmin"],
 		"OfficialSocialLinks":   officialSocialLinks,
 		"official_social_links": officialSocialLinks,
+		"PromotionRewardBanner": common.OptionMap[model.OptionKeyPromotionRewardBannerConfig],
 
 		"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
 		"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,

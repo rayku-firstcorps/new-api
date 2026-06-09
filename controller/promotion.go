@@ -17,7 +17,7 @@ type promotionClickRequest struct {
 
 func GetPromotionLinks(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	links, total, err := model.GetPromotionLinks(pageInfo, c.Query("keyword"), c.Query("channel_tag"))
+	links, total, err := model.GetPromotionLinks(pageInfo, c.Query("keyword"), c.Query("channel_tag"), c.Query("activity_type"))
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -35,6 +35,24 @@ func GetPromotionLink(c *gin.Context) {
 	}
 	link, err := model.GetPromotionLinkByID(id)
 	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, link)
+}
+
+func GetPublicPromotionLinkByCode(c *gin.Context) {
+	code := c.Param("code")
+	link, err := model.GetPromotionLinkByCode(code)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.ApiErrorMsg(c, "promotion link not found")
+			return
+		}
+		common.ApiError(c, err)
+		return
+	}
+	if err := link.IsAvailable(common.GetTimestamp()); err != nil {
 		common.ApiError(c, err)
 		return
 	}
@@ -95,6 +113,94 @@ func DeletePromotionLink(c *gin.Context) {
 		return
 	}
 	common.ApiSuccess(c, nil)
+}
+
+type promotionRewardAllowedDomainsRequest struct {
+	Domains []string `json:"domains"`
+}
+
+func GetPromotionRewardAllowedEmailDomains(c *gin.Context) {
+	common.ApiSuccess(c, gin.H{
+		"domains": model.GetPromotionRewardAllowedEmailDomains(),
+	})
+}
+
+func UpdatePromotionRewardAllowedEmailDomains(c *gin.Context) {
+	var req promotionRewardAllowedDomainsRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		common.ApiErrorMsg(c, "invalid request body")
+		return
+	}
+	if err := model.SetPromotionRewardAllowedEmailDomains(req.Domains); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"domains": model.GetPromotionRewardAllowedEmailDomains(),
+	})
+}
+
+func ResetPromotionRewardAllowedEmailDomains(c *gin.Context) {
+	if err := model.ResetPromotionRewardAllowedEmailDomains(); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"domains": model.GetPromotionRewardAllowedEmailDomains(),
+	})
+}
+
+func GetPromotionRewardBannerConfig(c *gin.Context) {
+	common.ApiSuccess(c, model.GetPromotionRewardBannerConfig())
+}
+
+func UpdatePromotionRewardBannerConfig(c *gin.Context) {
+	var config model.PromotionRewardBannerConfig
+	if err := common.DecodeJson(c.Request.Body, &config); err != nil {
+		common.ApiErrorMsg(c, "invalid request body")
+		return
+	}
+	if err := model.SetPromotionRewardBannerConfig(config); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, model.GetPromotionRewardBannerConfig())
+}
+
+func ResetPromotionRewardBannerConfig(c *gin.Context) {
+	if err := model.ResetPromotionRewardBannerConfig(); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, model.GetPromotionRewardBannerConfig())
+}
+
+func GetSelfPromotionReward(c *gin.Context) {
+	user, err := model.GetUserById(c.GetInt("id"), false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	data, err := model.GetPromotionRewardStatus(user)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, data)
+}
+
+func ClaimSelfPromotionReward(c *gin.Context) {
+	registration, err := model.ClaimPromotionReward(c.GetInt("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"reward_status":  registration.RewardStatus,
+		"granted_quota":  registration.GrantedQuota,
+		"granted_amount": float64(registration.GrantedQuota) / common.QuotaPerUnit,
+		"granted_at":     registration.GrantedAt,
+	})
 }
 
 func EnablePromotionLink(c *gin.Context) {

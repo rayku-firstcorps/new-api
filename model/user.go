@@ -547,6 +547,12 @@ func (user *User) ClearBinding(bindingType string) error {
 		return errors.New("user id is empty")
 	}
 
+	if bindingType == "email" {
+		if err := ValidateEmailBindingRemoval(user.Id); err != nil {
+			return err
+		}
+	}
+
 	bindingColumnMap := map[string]string{
 		"email":    "email",
 		"github":   "github_id",

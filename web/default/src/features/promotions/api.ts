@@ -24,6 +24,8 @@ import type {
   GetPromotionsResponse,
   PromotionFormData,
   PromotionLink,
+  PromotionRewardClaimResult,
+  PromotionRewardInfo,
 } from './types'
 
 export async function getPromotions(
@@ -37,6 +39,13 @@ export async function getPromotion(
   id: number
 ): Promise<ApiResponse<PromotionLink>> {
   const res = await api.get(`/api/promotion/${id}`)
+  return res.data
+}
+
+export async function getPublicPromotionByCode(
+  code: string
+): Promise<ApiResponse<PromotionLink>> {
+  const res = await api.get(`/api/promotion/public/${encodeURIComponent(code)}`)
   return res.data
 }
 
@@ -84,5 +93,19 @@ export async function getPromotionRegistrations(
 
 export async function recordPromotionClick(code: string): Promise<ApiResponse> {
   const res = await api.post('/api/promotion/click', { code })
+  return res.data
+}
+
+export async function getSelfPromotionReward(): Promise<
+  ApiResponse<PromotionRewardInfo>
+> {
+  const res = await api.get('/api/user/self/promotion-reward')
+  return res.data
+}
+
+export async function claimSelfPromotionReward(): Promise<
+  ApiResponse<PromotionRewardClaimResult>
+> {
+  const res = await api.post('/api/user/self/promotion-reward/claim')
   return res.data
 }

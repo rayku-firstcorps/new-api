@@ -54,6 +54,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
 		apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
 		apiRouter.POST("/promotion/click", middleware.CriticalRateLimit(), controller.RecordPromotionClick)
+		apiRouter.GET("/promotion/public/:code", controller.GetPublicPromotionLinkByCode)
 
 		externalBalanceRoute := apiRouter.Group("/external/balance")
 		externalBalanceRoute.Use(middleware.CriticalRateLimit())
@@ -104,6 +105,8 @@ func SetApiRouter(router *gin.Engine) {
 			{
 				selfRoute.GET("/self/groups", controller.GetUserGroups)
 				selfRoute.GET("/self", controller.GetSelf)
+				selfRoute.GET("/self/promotion-reward", controller.GetSelfPromotionReward)
+				selfRoute.POST("/self/promotion-reward/claim", middleware.CriticalRateLimit(), controller.ClaimSelfPromotionReward)
 				selfRoute.GET("/models", controller.GetUserModels)
 				selfRoute.PUT("/self", controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
@@ -352,6 +355,12 @@ func SetApiRouter(router *gin.Engine) {
 			promotionRoute.POST("/:id/enable", controller.EnablePromotionLink)
 			promotionRoute.POST("/:id/disable", controller.DisablePromotionLink)
 			promotionRoute.GET("/:id/registrations", controller.GetPromotionRegistrations)
+			promotionRoute.GET("/reward/allowed-email-domains", controller.GetPromotionRewardAllowedEmailDomains)
+			promotionRoute.PUT("/reward/allowed-email-domains", controller.UpdatePromotionRewardAllowedEmailDomains)
+			promotionRoute.POST("/reward/allowed-email-domains/reset", controller.ResetPromotionRewardAllowedEmailDomains)
+			promotionRoute.GET("/reward/banner", controller.GetPromotionRewardBannerConfig)
+			promotionRoute.PUT("/reward/banner", controller.UpdatePromotionRewardBannerConfig)
+			promotionRoute.POST("/reward/banner/reset", controller.ResetPromotionRewardBannerConfig)
 		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.GET("/", middleware.AdminAuth(), controller.GetAllLogs)

@@ -23,6 +23,7 @@ import { WorkerSettingsSection } from '../integrations/worker-settings-section'
 import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
+import { PromotionRewardSection } from './promotion-reward-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
@@ -76,6 +77,19 @@ const OPERATIONS_SECTIONS = [
           SMTPToken: settings.SMTPToken,
           SMTPSSLEnabled: settings.SMTPSSLEnabled,
           SMTPForceAuthLogin: settings.SMTPForceAuthLogin,
+        }}
+      />
+    ),
+  },
+  {
+    id: 'promotion-reward',
+    titleKey: 'Promotion Reward Banner',
+    build: (settings: OperationsSettings) => (
+      <PromotionRewardSection
+        defaultValues={{
+          PromotionRewardAllowedEmailDomains:
+            settings.PromotionRewardAllowedEmailDomains,
+          PromotionRewardBanner: settings.PromotionRewardBanner,
         }}
       />
     ),

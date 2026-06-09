@@ -21,6 +21,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Markdown } from '@/components/ui/markdown'
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
+import { PromotionLandingDialog } from '@/features/promotions/components/promotion-landing-dialog'
 import { CTA, Features, Hero, HowItWorks, Stats } from './components'
 import { useHomePageContent } from './hooks'
 
@@ -43,6 +44,7 @@ export function Home() {
   if (content) {
     return (
       <PublicLayout showMainContainer={false}>
+        <PromotionLandingDialog />
         <main className='overflow-x-hidden'>
           {isUrl ? (
             <iframe
@@ -62,6 +64,7 @@ export function Home() {
 
   return (
     <PublicLayout showMainContainer={false}>
+      <PromotionLandingDialog />
       <Hero isAuthenticated={isAuthenticated} />
       <Stats />
       <Features />

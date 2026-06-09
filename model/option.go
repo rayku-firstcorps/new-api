@@ -58,6 +58,10 @@ func InitOptionMap() {
 	common.OptionMap["EmailDomainRestrictionEnabled"] = strconv.FormatBool(common.EmailDomainRestrictionEnabled)
 	common.OptionMap["EmailAliasRestrictionEnabled"] = strconv.FormatBool(common.EmailAliasRestrictionEnabled)
 	common.OptionMap["EmailDomainWhitelist"] = strings.Join(common.EmailDomainWhitelist, ",")
+	promotionRewardDomainsBytes, _ := common.Marshal(DefaultPromotionRewardAllowedEmailDomains)
+	common.OptionMap[OptionKeyPromotionRewardAllowedEmailDomains] = string(promotionRewardDomainsBytes)
+	promotionRewardBannerBytes, _ := common.Marshal(DefaultPromotionRewardBannerConfig())
+	common.OptionMap[OptionKeyPromotionRewardBannerConfig] = string(promotionRewardBannerBytes)
 	common.OptionMap["SMTPServer"] = ""
 	common.OptionMap["SMTPFrom"] = ""
 	common.OptionMap["SMTPPort"] = strconv.Itoa(common.SMTPPort)

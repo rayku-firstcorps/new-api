@@ -30,7 +30,6 @@ import {
   Settings,
   Ticket,
   User,
-  Command,
   Sparkles,
   Users,
   Wallet,

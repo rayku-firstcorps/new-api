@@ -2,6 +2,7 @@
   "401 / token invalid": "401 / token invalid",
   "Claude Messages": "Claude Messages",
   "Gemini Generate Content": "Gemini Generate Content",
+  "Markdown": "Markdown",
   "OpenAI Responses": "OpenAI Responses",
   "Redirect URIs": "重定向 URI",
   "Stream disconnected": "Stream disconnected"
