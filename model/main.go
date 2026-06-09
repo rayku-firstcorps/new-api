@@ -254,6 +254,9 @@ func migrateDB() error {
 	if err := migrateTokenModelLimitsToText(); err != nil {
 		return err
 	}
+	if err := migratePromotionLandingContentColumn(); err != nil {
+		return err
+	}
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -463,6 +466,46 @@ PRIMARY KEY (` + "`id`" + `)
 		if err := DB.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func migratePromotionLandingContentColumn() error {
+	tableName := "promotion_links"
+	columnName := "landing_content"
+
+	if !DB.Migrator().HasTable(tableName) {
+		return nil
+	}
+
+	if !DB.Migrator().HasColumn(&PromotionLink{}, columnName) {
+		var addColumnSQL string
+		switch {
+		case common.UsingPostgreSQL:
+			addColumnSQL = fmt.Sprintf(`ALTER TABLE %s ADD COLUMN %s text`, tableName, columnName)
+		default:
+			addColumnSQL = fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` text", tableName, columnName)
+		}
+		if err := DB.Exec(addColumnSQL).Error; err != nil {
+			return fmt.Errorf("failed to add %s.%s: %w", tableName, columnName, err)
+		}
+	}
+
+	if err := DB.Exec("UPDATE promotion_links SET landing_content = '' WHERE landing_content IS NULL").Error; err != nil {
+		return fmt.Errorf("failed to backfill %s.%s: %w", tableName, columnName, err)
+	}
+
+	var alterColumnSQL string
+	switch {
+	case common.UsingPostgreSQL:
+		alterColumnSQL = fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s SET NOT NULL`, tableName, columnName)
+	case common.UsingMySQL:
+		alterColumnSQL = fmt.Sprintf("ALTER TABLE `%s` MODIFY COLUMN `%s` text NOT NULL", tableName, columnName)
+	default:
+		return nil
+	}
+	if err := DB.Exec(alterColumnSQL).Error; err != nil {
+		return fmt.Errorf("failed to enforce NOT NULL for %s.%s: %w", tableName, columnName, err)
 	}
 	return nil
 }

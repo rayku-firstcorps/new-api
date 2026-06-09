@@ -62,34 +62,34 @@ var DefaultPromotionRewardAllowedEmailDomains = []string{
 }
 
 type PromotionLink struct {
-	Id                    int            `json:"id"`
-	Code                  string         `json:"code" gorm:"type:varchar(64);uniqueIndex;not null"`
-	Name                  string         `json:"name" gorm:"type:varchar(100);not null"`
-	ChannelTag            string         `json:"channel_tag" gorm:"type:varchar(64);not null;index"`
-	LandingTitle          string         `json:"landing_title" gorm:"type:varchar(200);not null;default:''"`
-	LandingContentFormat  string         `json:"landing_content_format" gorm:"type:varchar(32);not null;default:'plain_text'"`
-	LandingContent        string         `json:"landing_content" gorm:"type:text;not null;default:''"`
-	LandingImageUrl       string         `json:"landing_image_url" gorm:"type:varchar(1024);not null;default:''"`
-	LandingImagePosition  string         `json:"landing_image_position" gorm:"type:varchar(32);not null;default:'right'"`
-	LandingMinWidth       int            `json:"landing_min_width" gorm:"type:int;not null;default:960"`
-	LandingMinHeight      int            `json:"landing_min_height" gorm:"type:int;not null;default:720"`
-	LandingPrimaryButton  string         `json:"landing_primary_button" gorm:"type:varchar(100);not null;default:''"`
-	LandingSecondaryButton string        `json:"landing_secondary_button" gorm:"type:varchar(100);not null;default:''"`
-	ActivityType          string         `json:"activity_type" gorm:"type:varchar(32);not null;default:'quota_reward';index"`
-	RewardQuota           int            `json:"reward_quota" gorm:"type:int;not null;default:0"`
-	TrialCouponQuota      int            `json:"trial_coupon_quota" gorm:"type:int;not null;default:0"`
-	FirstTopupRewardQuota int            `json:"first_topup_reward_quota" gorm:"type:int;not null;default:0"`
-	FirstTopupMinAmount   int            `json:"first_topup_min_amount" gorm:"type:int;not null;default:0"`
-	FirstTopupCount       int            `json:"first_topup_count" gorm:"type:int;not null;default:0"`
-	Enabled               bool           `json:"enabled" gorm:"not null;default:true;index"`
-	Clicks                int            `json:"clicks" gorm:"type:int;not null;default:0"`
-	Registrations         int            `json:"registrations" gorm:"type:int;not null;default:0"`
-	MaxRegistrations      int            `json:"max_registrations" gorm:"type:int;not null;default:0"`
-	ExpiresAt             int64          `json:"expires_at" gorm:"type:bigint;not null;default:0;index"`
-	CreatedBy             int            `json:"created_by" gorm:"type:int;not null;default:0;index"`
-	CreatedAt             int64          `json:"created_at" gorm:"autoCreateTime;column:created_at"`
-	UpdatedAt             int64          `json:"updated_at" gorm:"autoUpdateTime;column:updated_at"`
-	DeletedAt             gorm.DeletedAt `json:"-" gorm:"index"`
+	Id                     int            `json:"id"`
+	Code                   string         `json:"code" gorm:"type:varchar(64);uniqueIndex;not null"`
+	Name                   string         `json:"name" gorm:"type:varchar(100);not null"`
+	ChannelTag             string         `json:"channel_tag" gorm:"type:varchar(64);not null;index"`
+	LandingTitle           string         `json:"landing_title" gorm:"type:varchar(200);not null;default:''"`
+	LandingContentFormat   string         `json:"landing_content_format" gorm:"type:varchar(32);not null;default:'plain_text'"`
+	LandingContent         string         `json:"landing_content" gorm:"type:text;not null"`
+	LandingImageUrl        string         `json:"landing_image_url" gorm:"type:varchar(1024);not null;default:''"`
+	LandingImagePosition   string         `json:"landing_image_position" gorm:"type:varchar(32);not null;default:'right'"`
+	LandingMinWidth        int            `json:"landing_min_width" gorm:"type:int;not null;default:960"`
+	LandingMinHeight       int            `json:"landing_min_height" gorm:"type:int;not null;default:720"`
+	LandingPrimaryButton   string         `json:"landing_primary_button" gorm:"type:varchar(100);not null;default:''"`
+	LandingSecondaryButton string         `json:"landing_secondary_button" gorm:"type:varchar(100);not null;default:''"`
+	ActivityType           string         `json:"activity_type" gorm:"type:varchar(32);not null;default:'quota_reward';index"`
+	RewardQuota            int            `json:"reward_quota" gorm:"type:int;not null;default:0"`
+	TrialCouponQuota       int            `json:"trial_coupon_quota" gorm:"type:int;not null;default:0"`
+	FirstTopupRewardQuota  int            `json:"first_topup_reward_quota" gorm:"type:int;not null;default:0"`
+	FirstTopupMinAmount    int            `json:"first_topup_min_amount" gorm:"type:int;not null;default:0"`
+	FirstTopupCount        int            `json:"first_topup_count" gorm:"type:int;not null;default:0"`
+	Enabled                bool           `json:"enabled" gorm:"not null;default:true;index"`
+	Clicks                 int            `json:"clicks" gorm:"type:int;not null;default:0"`
+	Registrations          int            `json:"registrations" gorm:"type:int;not null;default:0"`
+	MaxRegistrations       int            `json:"max_registrations" gorm:"type:int;not null;default:0"`
+	ExpiresAt              int64          `json:"expires_at" gorm:"type:bigint;not null;default:0;index"`
+	CreatedBy              int            `json:"created_by" gorm:"type:int;not null;default:0;index"`
+	CreatedAt              int64          `json:"created_at" gorm:"autoCreateTime;column:created_at"`
+	UpdatedAt              int64          `json:"updated_at" gorm:"autoUpdateTime;column:updated_at"`
+	DeletedAt              gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 type PromotionRegistration struct {
