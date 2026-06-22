@@ -47,7 +47,7 @@ export function OfficialSocialLinks({ links }: OfficialSocialLinksProps) {
     return (
       <Button
         variant='outline'
-        className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
+        className='border-border/50 hover:border-border hover:bg-muted/50 h-11 rounded-lg px-5 text-sm font-medium'
         render={<a href={link.url} target='_blank' rel='noopener noreferrer' />}
       >
         <Icon className='size-4' aria-hidden='true' />
