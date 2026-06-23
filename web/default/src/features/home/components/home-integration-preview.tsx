@@ -30,15 +30,13 @@ import {
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { useGatewayBaseUrl } from '@/hooks/use-gateway-base-url'
+import { useSystemConfig } from '@/hooks/use-system-config'
 import { Button } from '@/components/ui/button'
 
 interface HomeIntegrationPreviewProps {
   className?: string
 }
-
-const CONFIG_TEXT = `base_url: https://api.example.com/v1
-api_key: sk-********************************
-model: claude-sonnet-4-5`
 
 const clients = [
   { name: 'Codex', meta: 'OpenAI workflow', icon: TerminalSquare },
@@ -54,12 +52,12 @@ const models = [
   { name: 'DeepSeek', meta: 'DeepSeek R2', icon: Bot },
 ]
 
-function CopyButton() {
+function CopyButton({ configText }: { configText: string }) {
   const { t } = useTranslation()
   const { copiedText, copyToClipboard } = useCopyToClipboard({
     successMessage: t('Configuration copied'),
   })
-  const copied = copiedText === CONFIG_TEXT
+  const copied = copiedText === configText
 
   return (
     <Button
@@ -68,7 +66,7 @@ function CopyButton() {
       size='icon-sm'
       className='text-muted-foreground hover:text-foreground size-7 rounded-md'
       aria-label={t('Copy config')}
-      onClick={() => void copyToClipboard(CONFIG_TEXT)}
+      onClick={() => void copyToClipboard(configText)}
     >
       {copied ? (
         <CheckCircle2 className='size-3.5 text-emerald-600 dark:text-emerald-400' />
@@ -81,6 +79,12 @@ function CopyButton() {
 
 export function HomeIntegrationPreview(props: HomeIntegrationPreviewProps) {
   const { t } = useTranslation()
+  const { systemName } = useSystemConfig()
+  const gatewayBaseUrl = useGatewayBaseUrl()
+  const gatewayV1Url = `${gatewayBaseUrl}/v1`
+  const configText = `base_url: ${gatewayV1Url}
+api_key: sk-********************************
+model: claude-sonnet-4-5`
 
   return (
     <div
@@ -95,8 +99,8 @@ export function HomeIntegrationPreview(props: HomeIntegrationPreviewProps) {
           <span className='size-2.5 rounded-full bg-amber-300' />
           <span className='size-2.5 rounded-full bg-emerald-300' />
         </div>
-        <span className='text-muted-foreground text-xs font-medium'>
-          new-api
+        <span className='text-muted-foreground max-w-[12rem] truncate text-xs font-medium'>
+          {systemName}
         </span>
       </div>
 
@@ -153,7 +157,9 @@ export function HomeIntegrationPreview(props: HomeIntegrationPreviewProps) {
               <span className='flex size-9 items-center justify-center rounded-xl bg-[#f05a53] text-sm font-bold text-white'>
                 N
               </span>
-              <span className='mt-2 text-sm font-semibold'>new-api</span>
+              <span className='mt-2 max-w-24 truncate text-sm font-semibold'>
+                {systemName}
+              </span>
             </div>
           </div>
 
@@ -189,9 +195,9 @@ export function HomeIntegrationPreview(props: HomeIntegrationPreviewProps) {
           <div className='min-w-0 font-mono text-xs'>
             <span className='text-muted-foreground'>base_url</span>
             <span className='mx-2 text-[#f05a53]'>/</span>
-            <span className='truncate'>https://api.example.com/v1</span>
+            <span className='truncate'>{gatewayV1Url}</span>
           </div>
-          <CopyButton />
+          <CopyButton configText={configText} />
         </div>
       </div>
     </div>

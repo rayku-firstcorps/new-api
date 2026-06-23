@@ -39,7 +39,7 @@ const INTERNAL_DOCS_ROUTE = '/docs'
 export function Hero(props: HeroProps) {
   const { t } = useTranslation()
   const { status } = useStatus()
-  const { officialSocialLinks } = useSystemConfig()
+  const { officialSocialLinks, systemName } = useSystemConfig()
   const statusRecord = status as Record<string, unknown> | null
   const primaryAction = getLandingPrimaryAction(
     statusRecord,
@@ -86,12 +86,12 @@ export function Hero(props: HeroProps) {
             <span className='sm:hidden'>
               {t(
                 'Connect once through new-api, then use leading models from your favorite AI tools.'
-              )}
+              ).replace('new-api', systemName)}
             </span>
             <span className='hidden sm:inline'>
               {t(
                 'Connect once through new-api, route Codex, Claude Code, Cherry Studio, and Open WebUI to GPT, Claude, Gemini, and more.'
-              )}
+              ).replace('new-api', systemName)}
             </span>
           </p>
 
