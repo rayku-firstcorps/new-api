@@ -30,10 +30,12 @@ import { NavigationProgress } from '@/components/navigation-progress'
 import {
   saveAffiliateCode,
   savePromotionCode,
+  saveRegistrationSource,
 } from '@/features/auth/lib/storage'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 import { getSetupStatus } from '@/features/setup/api'
+import { SplashAdDialog } from '@/features/splash-ad/components/splash-ad-dialog'
 
 function RootComponent() {
   // Load system configuration (logo, system name, etc.) from backend
@@ -47,6 +49,14 @@ function RootComponent() {
       searchParams.get('promo')?.trim()
     const aff =
       searchParams.get('aff_code')?.trim() || searchParams.get('aff')?.trim()
+
+    // 承接外部广告位来源（utm_source / registration_source），无论是否带 promo/aff 都记录
+    const source =
+      searchParams.get('utm_source')?.trim() ||
+      searchParams.get('registration_source')?.trim()
+    if (source) {
+      saveRegistrationSource(source)
+    }
 
     if (promo) {
       savePromotionCode(promo, 'promotion_code', landingPath)
@@ -62,6 +72,7 @@ function RootComponent() {
     <ThemeCustomizationProvider>
       <NavigationProgress />
       <Outlet />
+      <SplashAdDialog />
       <Toaster closeButton duration={5000} position='top-center' richColors />
     </ThemeCustomizationProvider>
   )

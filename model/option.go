@@ -62,6 +62,8 @@ func InitOptionMap() {
 	common.OptionMap[OptionKeyPromotionRewardAllowedEmailDomains] = string(promotionRewardDomainsBytes)
 	promotionRewardBannerBytes, _ := common.Marshal(DefaultPromotionRewardBannerConfig())
 	common.OptionMap[OptionKeyPromotionRewardBannerConfig] = string(promotionRewardBannerBytes)
+	splashAdBytes, _ := common.Marshal(DefaultSplashAdConfig())
+	common.OptionMap[OptionKeySplashAdConfig] = string(splashAdBytes)
 	common.OptionMap["SMTPServer"] = ""
 	common.OptionMap["SMTPFrom"] = ""
 	common.OptionMap["SMTPPort"] = strconv.Itoa(common.SMTPPort)

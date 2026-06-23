@@ -24,6 +24,7 @@ import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
 import { PromotionRewardSection } from './promotion-reward-section'
+import { SplashAdSection } from './splash-ad-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
@@ -90,6 +91,17 @@ const OPERATIONS_SECTIONS = [
           PromotionRewardAllowedEmailDomains:
             settings.PromotionRewardAllowedEmailDomains,
           PromotionRewardBanner: settings.PromotionRewardBanner,
+        }}
+      />
+    ),
+  },
+  {
+    id: 'splash-ad',
+    titleKey: 'Splash Ad',
+    build: (settings: OperationsSettings) => (
+      <SplashAdSection
+        defaultValues={{
+          SplashAdConfig: settings.SplashAdConfig,
         }}
       />
     ),

@@ -40,6 +40,7 @@ const (
 const (
 	OptionKeyPromotionRewardAllowedEmailDomains = "PromotionRewardAllowedEmailDomains"
 	OptionKeyPromotionRewardBannerConfig        = "PromotionRewardBannerConfig"
+	OptionKeySplashAdConfig                     = "SplashAdConfig"
 )
 
 var DefaultPromotionRewardAllowedEmailDomains = []string{
@@ -134,6 +135,21 @@ type PromotionRewardBannerConfig struct {
 	SecondaryButton string `json:"secondary_button"`
 }
 
+// SplashAdConfig 开屏广告配置（拉新）：仅对未登录访客展示的全屏开屏弹窗。
+// 以单个 JSON option(SplashAdConfig) 存储，通过公开接口 GET /api/status 暴露给前端。
+type SplashAdConfig struct {
+	Enabled       bool    `json:"enabled"`        // 总开关
+	ImageUrl      string  `json:"image_url"`      // 广告图片
+	Title         string  `json:"title"`          // 标题
+	ContentFormat string  `json:"content_format"` // plain_text | markdown | html
+	Content       string  `json:"content"`        // 文案
+	CtaText       string  `json:"cta_text"`       // CTA 按钮文案
+	CtaLink       string  `json:"cta_link"`       // CTA 跳转链接，默认 /sign-up
+	RewardAmount  float64 `json:"reward_amount"`  // 赠送金额(面额)，供文案占位符 {amount} 替换使用，运营手填
+	StartTime     int64   `json:"start_time"`     // 投放开始时间(Unix 秒)，0=不限
+	EndTime       int64   `json:"end_time"`       // 投放结束时间(Unix 秒)，0=不限
+}
+
 type PromotionRewardStatusResponse struct {
 	HasPendingReward     bool                        `json:"has_pending_reward"`
 	ActivityType         string                      `json:"activity_type,omitempty"`
@@ -164,6 +180,77 @@ func DefaultPromotionRewardBannerConfig() PromotionRewardBannerConfig {
 		Content:       "绑定常见邮箱即可领取 5 元体验券",
 		ImagePosition: PromotionBannerImagePositionRight,
 	}
+}
+
+func DefaultSplashAdConfig() SplashAdConfig {
+	return SplashAdConfig{
+		Enabled:       false,
+		ContentFormat: PromotionBannerContentFormatPlainText,
+		CtaText:       "立即免费注册",
+		CtaLink:       "/sign-up",
+	}
+}
+
+func ValidateSplashAdConfig(config *SplashAdConfig) error {
+	if config == nil {
+		return errors.New("splash ad config is required")
+	}
+	if config.ContentFormat == "" {
+		config.ContentFormat = PromotionBannerContentFormatPlainText
+	}
+	switch config.ContentFormat {
+	case PromotionBannerContentFormatPlainText, PromotionBannerContentFormatMarkdown, PromotionBannerContentFormatHTML:
+	default:
+		return errors.New("invalid splash ad content format")
+	}
+	if len(config.Title) > 200 {
+		return errors.New("splash ad title is too long")
+	}
+	if len(config.Content) > 5000 {
+		return errors.New("splash ad content is too long")
+	}
+	if config.StartTime > 0 && config.EndTime > 0 && config.EndTime < config.StartTime {
+		return errors.New("splash ad end time is earlier than start time")
+	}
+	return nil
+}
+
+func ParseSplashAdConfig(raw string) (SplashAdConfig, error) {
+	defaultConfig := DefaultSplashAdConfig()
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return defaultConfig, nil
+	}
+	var config SplashAdConfig
+	if err := common.UnmarshalJsonStr(raw, &config); err != nil {
+		return defaultConfig, errors.New("invalid splash ad config")
+	}
+	if err := ValidateSplashAdConfig(&config); err != nil {
+		return defaultConfig, err
+	}
+	return config, nil
+}
+
+func GetSplashAdConfig() SplashAdConfig {
+	common.OptionMapRWMutex.RLock()
+	raw := common.OptionMap[OptionKeySplashAdConfig]
+	common.OptionMapRWMutex.RUnlock()
+	config, err := ParseSplashAdConfig(raw)
+	if err != nil {
+		return DefaultSplashAdConfig()
+	}
+	return config
+}
+
+func SetSplashAdConfig(config SplashAdConfig) error {
+	if err := ValidateSplashAdConfig(&config); err != nil {
+		return err
+	}
+	jsonBytes, err := common.Marshal(config)
+	if err != nil {
+		return err
+	}
+	return UpdateOption(OptionKeySplashAdConfig, string(jsonBytes))
 }
 
 func normalizePromotionCode(code string) string {

@@ -109,6 +109,7 @@ func GetStatus(c *gin.Context) {
 		"OfficialSocialLinks":   officialSocialLinks,
 		"official_social_links": officialSocialLinks,
 		"PromotionRewardBanner": common.OptionMap[model.OptionKeyPromotionRewardBannerConfig],
+		"SplashAdConfig":        common.OptionMap[model.OptionKeySplashAdConfig],
 
 		"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
 		"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,

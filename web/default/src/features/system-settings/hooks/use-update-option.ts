@@ -29,6 +29,7 @@ const STATUS_RELATED_KEYS = [
   'SidebarModulesAdmin',
   'OfficialSocialLinks',
   'PromotionRewardBanner',
+  'SplashAdConfig',
   'Notice',
   'LogConsumeEnabled',
   'QuotaPerUnit',

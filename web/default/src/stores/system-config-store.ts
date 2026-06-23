@@ -20,6 +20,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_SYSTEM_NAME, DEFAULT_LOGO } from '@/lib/constants'
 import type { OfficialSocialLink } from '@/features/official-social-links'
+import type { SplashAdConfig } from '@/features/splash-ad/types'
 
 export type CurrencyDisplayType = 'USD' | 'CNY' | 'TOKENS' | 'CUSTOM'
 
@@ -46,6 +47,8 @@ export interface SystemConfig {
   displayTokenStatEnabled?: boolean
   officialSocialLinks: OfficialSocialLink[]
   currency: CurrencyConfig
+  /** Splash ad config for unauthenticated visitors; null when unset/invalid */
+  splashAd?: SplashAdConfig | null
 }
 
 export const DEFAULT_CURRENCY_CONFIG: CurrencyConfig = {

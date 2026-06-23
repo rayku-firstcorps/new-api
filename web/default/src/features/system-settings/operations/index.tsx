@@ -32,6 +32,7 @@ const defaultOperationsSettings: OperationsSettings = {
   SelfUseModeEnabled: false,
   PromotionRewardAllowedEmailDomains: '',
   PromotionRewardBanner: '',
+  SplashAdConfig: '',
   ChannelDisableThreshold: '',
   QuotaRemindThreshold: '',
   AutomaticDisableChannelEnabled: false,

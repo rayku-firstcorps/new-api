@@ -222,11 +222,12 @@ func Register(c *gin.Context) {
 		inviterId = 0
 	}
 	cleanUser := model.User{
-		Username:    user.Username,
-		Password:    user.Password,
-		DisplayName: user.Username,
-		InviterId:   inviterId,
-		Role:        common.RoleCommonUser, // 明确设置角色为普通用户
+		Username:           user.Username,
+		Password:           user.Password,
+		DisplayName:        user.Username,
+		InviterId:          inviterId,
+		Role:               common.RoleCommonUser,           // 明确设置角色为普通用户
+		RegistrationSource: strings.TrimSpace(user.RegistrationSource), // 注册来源（外部广告位 utm_source）
 	}
 	if common.EmailVerificationEnabled {
 		cleanUser.Email = user.Email
@@ -254,6 +255,10 @@ func Register(c *gin.Context) {
 	if err := model.DB.Where("username = ?", cleanUser.Username).First(&insertedUser).Error; err != nil {
 		common.ApiErrorI18n(c, i18n.MsgUserRegisterFailed)
 		return
+	}
+	// 邮箱验证开启时，注册当下邮箱已通过验证，发放新用户免费额度（防薅：仅验证邮箱后才发）
+	if common.EmailVerificationEnabled {
+		model.TryGrantNewUserQuota(insertedUser.Id)
 	}
 	// 生成默认令牌
 	if constant.GenerateDefaultToken {
@@ -1112,6 +1117,8 @@ func EmailBind(c *gin.Context) {
 		return
 	}
 	model.TryAutoClaimPromotionReward(user.Id)
+	// 补绑邮箱（含 OAuth 注册用户）后发放新用户免费额度
+	model.TryGrantNewUserQuota(user.Id)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

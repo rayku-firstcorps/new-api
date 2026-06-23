@@ -46,6 +46,23 @@ import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
 import { useSettingsForm } from '../hooks/use-settings-form'
 import { useUpdateOption } from '../hooks/use-update-option'
+import {
+  parseQuotaFromDollars,
+  quotaUnitsToDollars,
+} from '@/lib/format'
+import { getCurrencyLabel } from '@/lib/currency'
+
+// 这些字段在数据库中以原始 quota 单位存储（500000 = $1），
+// 但在后台以实际面额（按当前货币显示设置）展示，提交时再换算回 quota。
+// 注意：AffCommissionRate(百分比)、AffCommissionDurationDays(天)、
+// AffFirstTopupMinAmount(充值金额，单位为分) 不属于 quota 体系，不参与换算。
+const QUOTA_AMOUNT_FIELDS = [
+  'QuotaForNewUser',
+  'PreConsumedQuota',
+  'QuotaForInviter',
+  'QuotaForInvitee',
+  'AffCommissionMaxPerTopup',
+] as const
 
 const quotaSchema = z.object({
   QuotaForNewUser: z.coerce.number().min(0),
@@ -78,6 +95,7 @@ export function QuotaSettingsSection({
 }: QuotaSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
+  const currencyLabel = getCurrencyLabel()
   const handleNumberChange =
     (onChange: (value: number | string) => void) =>
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +104,18 @@ export function QuotaSettingsSection({
       )
     }
 
+  // 入口：把以 quota 单位存储的额度字段换算成面额用于显示
+  const displayDefaultValues: QuotaFormValues = {
+    ...defaultValues,
+    QuotaForNewUser: quotaUnitsToDollars(defaultValues.QuotaForNewUser),
+    PreConsumedQuota: quotaUnitsToDollars(defaultValues.PreConsumedQuota),
+    QuotaForInviter: quotaUnitsToDollars(defaultValues.QuotaForInviter),
+    QuotaForInvitee: quotaUnitsToDollars(defaultValues.QuotaForInvitee),
+    AffCommissionMaxPerTopup: quotaUnitsToDollars(
+      defaultValues.AffCommissionMaxPerTopup
+    ),
+  }
+
   const { form, handleSubmit, isDirty, isSubmitting } =
     useSettingsForm<QuotaFormValues>({
       resolver: zodResolver(quotaSchema) as Resolver<
@@ -93,12 +123,18 @@ export function QuotaSettingsSection({
         unknown,
         QuotaFormValues
       >,
-      defaultValues,
+      defaultValues: displayDefaultValues,
       onSubmit: async (_data, changedFields) => {
         for (const [key, value] of Object.entries(changedFields)) {
+          // 出口：额度字段从面额换算回 quota 单位再保存
+          const outValue =
+            (QUOTA_AMOUNT_FIELDS as readonly string[]).includes(key) &&
+            typeof value === 'number'
+              ? parseQuotaFromDollars(value)
+              : (value as string | number | boolean)
           await updateOption.mutateAsync({
             key,
-            value: value as string | number | boolean,
+            value: outValue,
           })
         }
       },
@@ -135,6 +171,7 @@ export function QuotaSettingsSection({
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -143,7 +180,7 @@ export function QuotaSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Initial quota given to new users')}
+                    {t('Initial quota given to new users')}（{currencyLabel}）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -159,6 +196,7 @@ export function QuotaSettingsSection({
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -167,7 +205,7 @@ export function QuotaSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota consumed before charging users')}
+                    {t('Quota consumed before charging users')}（{currencyLabel}）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -183,6 +221,7 @@ export function QuotaSettingsSection({
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -191,7 +230,7 @@ export function QuotaSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota given to users who invite others')}
+                    {t('Quota given to users who invite others')}（{currencyLabel}）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -207,6 +246,7 @@ export function QuotaSettingsSection({
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -215,7 +255,7 @@ export function QuotaSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Quota given to invited users')}
+                    {t('Quota given to invited users')}（{currencyLabel}）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -287,6 +327,7 @@ export function QuotaSettingsSection({
                   <FormControl>
                     <Input
                       type='number'
+                      step='0.01'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -299,6 +340,7 @@ export function QuotaSettingsSection({
                     {t(
                       'Maximum commission quota per single top-up (0 for unlimited)'
                     )}
+                    （{currencyLabel}）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

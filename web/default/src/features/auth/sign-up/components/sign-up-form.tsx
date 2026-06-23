@@ -49,6 +49,7 @@ import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
 import {
   getAffiliateCode,
   getPromotionCode,
+  getRegistrationSource,
   saveAffiliateCode,
 } from '@/features/auth/lib/storage'
 
@@ -165,6 +166,7 @@ export function SignUpForm({
         promotion_code: getPromotionCode() || undefined,
         aff_code: getAffiliateCode() || undefined,
         aff: getAffiliateCode() || undefined,
+        registration_source: getRegistrationSource() || undefined,
         turnstile: turnstileToken,
       })
 

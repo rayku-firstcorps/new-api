@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
@@ -30,6 +31,10 @@ func GenerateOAuthCode(c *gin.Context) {
 	promotionCode := firstNonEmpty(c.Query("promotion_code"), c.Query("promo"))
 	if promotionCode != "" {
 		session.Set("promotion_code", promotionCode)
+	}
+	registrationSource := firstNonEmpty(c.Query("registration_source"), c.Query("utm_source"))
+	if registrationSource != "" {
+		session.Set("registration_source", registrationSource)
 	}
 	session.Set("oauth_state", state)
 	err := session.Save()
@@ -285,6 +290,13 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	}
 	if promotionLink != nil {
 		inviterId = 0
+	}
+
+	// Handle registration source (utm_source from external ad placement)
+	if sessionSource := session.Get("registration_source"); sessionSource != nil {
+		if src, ok := sessionSource.(string); ok {
+			user.RegistrationSource = strings.TrimSpace(src)
+		}
 	}
 
 	// Use transaction to ensure user creation and OAuth binding are atomic

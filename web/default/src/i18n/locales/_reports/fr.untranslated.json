@@ -40,5 +40,7 @@
   "Use the root URL for Claude and Gemini, and the /v1 URL for Codex.": "Use the root URL for Claude and Gemini, and the /v1 URL for Codex.",
   "Use this checklist before publishing the tutorial to users or support teams.": "Use this checklist before publishing the tutorial to users or support teams.",
   "Use this gateway as the single entry point for terminal AI agents, with unified keys, billing, rate limits, logs, and upstream routing.": "Use this gateway as the single entry point for terminal AI agents, with unified keys, billing, rate limits, logs, and upstream routing.",
-  "Verify the gateway key and route before opening a long-running CLI agent session.": "Verify the gateway key and route before opening a long-running CLI agent session."
+  "Verify the gateway key and route before opening a long-running CLI agent session.": "Verify the gateway key and route before opening a long-running CLI agent session.",
+  "Shown once per day to logged-out visitors only": "Shown once per day to logged-out visitors only",
+  "Use {amount} in the title or content; it will be replaced with this value": "Use {amount} in the title or content; it will be replaced with this value"
 }

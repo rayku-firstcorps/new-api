@@ -28,6 +28,7 @@ const STORAGE_KEYS = {
   USER_ID: 'uid',
   AFFILIATE: 'aff',
   PROMOTION: 'promotion_source',
+  REGISTRATION_SOURCE: 'registration_source',
   STATUS: 'status',
 } as const
 
@@ -110,6 +111,43 @@ export function saveAffiliateCode(code: string): void {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to save affiliate code:', error)
+  }
+}
+
+// ============================================================================
+// Registration Source Storage (utm_source from external ad placements)
+// ============================================================================
+
+/**
+ * Get registration source (channel / utm_source) from localStorage
+ */
+export function getRegistrationSource(): string {
+  if (typeof window === 'undefined') return ''
+  try {
+    return window.localStorage.getItem(STORAGE_KEYS.REGISTRATION_SOURCE) ?? ''
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to get registration source:', error)
+    return ''
+  }
+}
+
+/**
+ * Save registration source (channel / utm_source) to localStorage.
+ * First-touch wins: keep the earliest source unless it is empty.
+ */
+export function saveRegistrationSource(source: string): void {
+  if (typeof window === 'undefined') return
+  try {
+    const normalized = source.trim()
+    if (!normalized) return
+    // 不覆盖已有来源，保留首次触点（first-touch attribution）
+    const existing = window.localStorage.getItem(STORAGE_KEYS.REGISTRATION_SOURCE)
+    if (existing && existing.trim()) return
+    window.localStorage.setItem(STORAGE_KEYS.REGISTRATION_SOURCE, normalized.slice(0, 64))
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to save registration source:', error)
   }
 }
 

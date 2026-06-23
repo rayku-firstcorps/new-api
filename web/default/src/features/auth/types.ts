@@ -42,6 +42,7 @@ export interface RegisterPayload {
   aff_code?: string
   promo?: string
   promotion_code?: string
+  registration_source?: string
   turnstile?: string
 }
 

@@ -50,6 +50,8 @@ type User struct {
 	PromotionChannelTag string         `json:"promotion_channel_tag" gorm:"type:varchar(64);column:promotion_channel_tag;index"`
 	FirstTopupRewarded  bool           `json:"first_topup_rewarded" gorm:"not null;default:false;column:first_topup_rewarded"`
 	AffFirstTopupPassed bool           `json:"aff_first_topup_passed" gorm:"not null;default:false;column:aff_first_topup_passed"`
+	NewUserQuotaRewarded bool          `json:"new_user_quota_rewarded" gorm:"not null;default:false;column:new_user_quota_rewarded"`            // 新用户邮箱验证赠送额度防重复标记
+	RegistrationSource  string         `json:"registration_source" gorm:"type:varchar(64);column:registration_source;index"`                   // 注册来源（utm_source / 外部广告位渠道）
 	LinuxDOId           string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
 	Setting             string         `json:"setting" gorm:"type:text;column:setting"`
 	Remark              string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
@@ -913,6 +915,57 @@ func increaseUserQuota(id int, quota int) (err error) {
 		return err
 	}
 	return err
+}
+
+// TryGrantNewUserQuota 在用户邮箱验证通过后，自动发放新用户免费额度（QuotaForNewUser）。
+// 仅当 QuotaForNewUser > 0 且用户已绑定/验证邮箱时发放，使用行锁 + 防重复字段保证只发一次。
+// 触发点：邮箱注册成功后（Register）、OAuth 用户补绑邮箱后（EmailBind）。
+func TryGrantNewUserQuota(userId int) {
+	if common.QuotaForNewUser <= 0 {
+		return
+	}
+	var user User
+	if err := DB.Select("id", "email", "new_user_quota_rewarded").Where("id = ?", userId).First(&user).Error; err != nil {
+		return
+	}
+	// 必须已绑定/验证邮箱，且未发放过
+	if user.NewUserQuotaRewarded || strings.TrimSpace(user.Email) == "" {
+		return
+	}
+
+	granted := false
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var locked User
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Select("id", "email", "new_user_quota_rewarded").
+			Where("id = ?", userId).First(&locked).Error; err != nil {
+			return err
+		}
+		if locked.NewUserQuotaRewarded || strings.TrimSpace(locked.Email) == "" {
+			return nil
+		}
+		if err := tx.Model(&User{}).Where("id = ?", userId).Updates(map[string]interface{}{
+			"quota":                   gorm.Expr("quota + ?", common.QuotaForNewUser),
+			"new_user_quota_rewarded": true,
+		}).Error; err != nil {
+			return err
+		}
+		granted = true
+		return nil
+	})
+	if err != nil {
+		common.SysError(fmt.Sprintf("failed to grant new user quota: user_id=%d error=%s", userId, err.Error()))
+		return
+	}
+	if !granted {
+		return
+	}
+
+	// 同步用户额度缓存，避免缓存读到旧值（与 IncreaseUserQuota 行为对齐）
+	if err := cacheIncrUserQuota(userId, int64(common.QuotaForNewUser)); err != nil {
+		common.SysLog("failed to sync cache after granting new user quota: " + err.Error())
+	}
+	RecordLog(userId, LogTypeSystem, fmt.Sprintf("新用户邮箱验证赠送 %s", logger.LogQuota(common.QuotaForNewUser)))
 }
 
 func DecreaseUserQuota(id int, quota int, db bool) (err error) {

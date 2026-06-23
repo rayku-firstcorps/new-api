@@ -315,6 +315,7 @@ export type OperationsSettings = {
   SelfUseModeEnabled: boolean
   PromotionRewardAllowedEmailDomains: string
   PromotionRewardBanner: string
+  SplashAdConfig: string
   ChannelDisableThreshold: string
   QuotaRemindThreshold: string
   AutomaticDisableChannelEnabled: boolean

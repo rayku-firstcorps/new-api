@@ -30,6 +30,7 @@ import {
   normalizeOfficialSocialLinksForDisplay,
   type OfficialSocialLink,
 } from '@/features/official-social-links'
+import { parseSplashAdConfig } from '@/features/splash-ad/types'
 
 interface UseSystemConfigOptions {
   /** Automatically fetch config from backend (use only in root component) */
@@ -52,6 +53,7 @@ interface StatusApiResponse {
     custom_currency_exchange_rate?: number
     official_social_links?: OfficialSocialLink[]
     OfficialSocialLinks?: OfficialSocialLink[]
+    SplashAdConfig?: string
   }
 }
 
@@ -107,6 +109,7 @@ export function mapStatusDataToConfig(
       data.official_social_links ?? data.OfficialSocialLinks
     ),
     currency,
+    splashAd: parseSplashAdConfig(data.SplashAdConfig),
   }
 }
 
