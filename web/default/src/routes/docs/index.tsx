@@ -16,675 +16,507 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
 import {
-  ArrowRight,
-  BookOpen,
   Bot,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   Code2,
-  GitBranch,
-  KeyRound,
+  Copy,
+  Globe2,
+  MonitorUp,
   Network,
-  ServerCog,
-  ShieldCheck,
-  Terminal,
-  TriangleAlert,
-  Wrench,
+  Server,
+  Sparkles,
+  TerminalSquare,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { PublicLayout } from '@/components/layout'
 
-const sidebarSections = [
-  { id: 'overview', key: 'CLI Agent Docs' },
-  { id: 'gateway-setup', key: 'Gateway Setup' },
-  { id: 'preflight', key: 'Preflight Checks' },
-  { id: 'claude-code', key: 'Claude Code' },
-  { id: 'gemini-cli', key: 'Gemini CLI' },
-  { id: 'codex-cli', key: 'Codex CLI' },
-  { id: 'cc-switch', key: 'CC Switch' },
-  { id: 'troubleshooting', key: 'Troubleshooting' },
-  { id: 'acceptance', key: 'Acceptance' },
+type ProtocolId = 'openai' | 'claude' | 'gemini' | 'faq'
+type ClientId = 'codex' | 'cursor' | 'claude-code' | 'opencode' | 'cherry'
+
+type ClientGuide = {
+  id: ClientId
+  protocol: ProtocolId
+  name: string
+  model: string
+  icon: typeof TerminalSquare
+  install: string
+  verify: string
+  configPath: string
+  config: string
+  run: string
+  summary: string
+}
+
+const protocols: Array<{ id: ProtocolId; label: string }> = [
+  { id: 'openai', label: 'OpenAI compatible' },
+  { id: 'claude', label: 'Claude compatible' },
+  { id: 'gemini', label: 'Gemini compatible' },
+  { id: 'faq', label: 'FAQ' },
 ]
 
-const outcomeCards = [
+const clientGuides: ClientGuide[] = [
   {
-    title: '10-minute first connection',
-    description:
-      'Create one gateway key, set the correct base URL, and verify a real CLI request.',
-    icon: Terminal,
-  },
-  {
-    title: 'Unified keys and billing',
-    description:
-      'Route CLI traffic through the same quota, model permission, billing, and audit controls.',
-    icon: KeyRound,
-  },
-  {
-    title: 'Sticky routing for long sessions',
-    description:
-      'Use Channel Affinity templates to keep Claude Code and Codex sessions on stable upstream channels.',
-    icon: GitBranch,
-  },
-]
+    id: 'codex',
+    protocol: 'openai',
+    name: 'Codex',
+    model: 'gpt-5.4',
+    icon: TerminalSquare,
+    install: 'npm install -g @openai/codex',
+    verify: 'codex --version',
+    configPath: 'C:\\Users\\<username>\\.codex\\config.toml',
+    config: `model = "gpt-5.4"
+model_provider = "new-api"
+model_reasoning_effort = "high"
 
-const gatewaySteps = [
-  {
-    title: 'Configure upstream channels',
-    description:
-      'Enable Claude Messages, Gemini API, and OpenAI Responses capable channels for agent traffic.',
-    icon: Network,
+[model_providers.new-api]
+name = "new-api"
+base_url = "https://api.example.com/v1"
+requires_openai_auth = true
+wire_api = "responses"`,
+    run: 'codex',
+    summary: 'Use the OpenAI Responses route and set the base URL to the gateway /v1 endpoint.',
   },
   {
-    title: 'Create model mappings',
-    description:
-      'Expose practical model names such as claude-*, gemini-*, and gpt-*-codex to developers.',
-    icon: Bot,
+    id: 'cursor',
+    protocol: 'openai',
+    name: 'Cursor',
+    model: 'gpt-5.4',
+    icon: Code2,
+    install: 'Open Settings -> Models -> Add custom OpenAI compatible provider',
+    verify: 'Send a short chat message from Cursor',
+    configPath: 'Cursor custom provider',
+    config: `Provider name: new-api
+Base URL: https://api.example.com/v1
+API Key: sk-********************************
+Model: gpt-5.4`,
+    run: 'Choose the new-api provider in Cursor and start a chat.',
+    summary: 'Use an OpenAI-compatible provider entry for editor chat and agent workflows.',
   },
-  {
-    title: 'Issue a dedicated CLI key',
-    description:
-      'Use a separate group, quota, rate limit, and model allowlist for terminal agents.',
-    icon: KeyRound,
-  },
-  {
-    title: 'Enable Channel Affinity',
-    description:
-      'Append the built-in Claude CLI and Codex CLI templates before production rollout.',
-    icon: GitBranch,
-  },
-]
-
-const endpointRows = [
-  {
-    client: 'Claude Code',
-    path: '/v1/messages',
-    auth: 'x-api-key: sk-xxx',
-    baseUrl: 'https://api.example.com',
-  },
-  {
-    client: 'Gemini CLI',
-    path: '/v1beta/models/{model}:generateContent',
-    auth: 'x-goog-api-key: sk-xxx',
-    baseUrl: 'https://api.example.com',
-  },
-  {
-    client: 'Codex CLI',
-    path: '/v1/responses',
-    auth: 'Authorization: Bearer sk-xxx',
-    baseUrl: 'https://api.example.com/v1',
-  },
-]
-
-const toolSections = [
   {
     id: 'claude-code',
-    title: 'Claude Code',
-    description:
-      'Claude Code uses the Anthropic Messages route. Set the base URL to the gateway root, without /v1.',
+    protocol: 'claude',
+    name: 'Claude Code',
+    model: 'claude-opus-4-7',
+    icon: Sparkles,
     install: 'npm install -g @anthropic-ai/claude-code',
-    bash: `export ANTHROPIC_BASE_URL="https://api.example.com"
-export ANTHROPIC_AUTH_TOKEN="sk-xxx"
-export ANTHROPIC_MODEL="claude-3-7-sonnet-20250219-thinking"
-
-claude`,
-    powershell: `$env:ANTHROPIC_BASE_URL="https://api.example.com"
-$env:ANTHROPIC_AUTH_TOKEN="sk-xxx"
-$env:ANTHROPIC_MODEL="claude-3-7-sonnet-20250219-thinking"
-
-claude`,
-    persistLabel: '~/.claude/settings.json',
-    persist: `{
+    verify: 'claude --version',
+    configPath: 'C:\\Users\\<username>\\.claude\\settings.json',
+    config: `{
   "env": {
     "ANTHROPIC_BASE_URL": "https://api.example.com",
-    "ANTHROPIC_AUTH_TOKEN": "sk-xxx",
-    "ANTHROPIC_MODEL": "claude-3-7-sonnet-20250219-thinking"
+    "ANTHROPIC_AUTH_TOKEN": "sk-********************************",
+    "ANTHROPIC_MODEL": "claude-opus-4-7",
+    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
   }
 }`,
-    verify: 'Usage logs should show /v1/messages.',
+    run: 'claude',
+    summary: 'Use the Anthropic Messages route and keep the base URL at the gateway root.',
   },
   {
-    id: 'gemini-cli',
-    title: 'Gemini CLI',
-    description:
-      'Gemini CLI uses the Gemini route. Set the gateway root as the base URL, without /v1beta.',
-    install: 'npm install -g @google/gemini-cli',
-    bash: `export GEMINI_API_KEY="sk-xxx"
-export GOOGLE_GEMINI_BASE_URL="https://api.example.com"
-export GEMINI_MODEL="gemini-2.5-flash"
-
-gemini -p "Reply with OK"`,
-    powershell: `$env:GEMINI_API_KEY="sk-xxx"
-$env:GOOGLE_GEMINI_BASE_URL="https://api.example.com"
-$env:GEMINI_MODEL="gemini-2.5-flash"
-
-gemini -p "Reply with OK"`,
-    persistLabel: '~/.gemini/.env',
-    persist: `GEMINI_API_KEY=sk-xxx
-GOOGLE_GEMINI_BASE_URL=https://api.example.com
-GEMINI_MODEL=gemini-2.5-flash`,
-    verify: 'Usage logs should show /v1beta/models/{model}:generateContent.',
+    id: 'opencode',
+    protocol: 'claude',
+    name: 'OpenCode',
+    model: 'claude-opus-4-6',
+    icon: Bot,
+    install: 'npm install -g opencode-ai',
+    verify: 'opencode -v',
+    configPath: 'C:\\Users\\<username>\\.config\\opencode\\opencode.json',
+    config: `{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "new-api": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "new-api",
+      "options": {
+        "baseURL": "https://api.example.com/v1",
+        "apiKey": "sk-********************************"
+      }
+    }
+  }
+}`,
+    run: 'opencode',
+    summary: 'Use the Anthropic SDK provider and point it to the gateway route.',
   },
   {
-    id: 'codex-cli',
-    title: 'Codex CLI',
-    description:
-      'Codex CLI should use the OpenAI Responses protocol. Set the provider base URL to the gateway /v1 root.',
-    install: 'npm i -g @openai/codex',
-    bash: `export NEW_API_KEY="sk-xxx"
-codex --profile newapi`,
-    powershell: `$env:NEW_API_KEY="sk-xxx"
-codex --profile newapi`,
-    persistLabel: '~/.codex/config.toml',
-    persist: `model = "gpt-5-codex"
-model_provider = "newapi"
-
-[model_providers.newapi]
-name = "New API Gateway"
-base_url = "https://api.example.com/v1"
-wire_api = "responses"
-env_key = "NEW_API_KEY"
-
-[profiles.newapi]
-model_provider = "newapi"
-model = "gpt-5-codex"`,
-    verify: 'Usage logs should show /v1/responses.',
+    id: 'cherry',
+    protocol: 'gemini',
+    name: 'Cherry Studio',
+    model: 'gemini-3.1-pro',
+    icon: MonitorUp,
+    install: 'Open Settings -> Model Provider -> Add custom Gemini provider',
+    verify: 'Send a one-line test prompt in Cherry Studio',
+    configPath: 'Cherry Studio provider settings',
+    config: `Provider: new-api
+API Type: Gemini
+Base URL: https://api.example.com
+API Key: sk-********************************
+Model: gemini-3.1-pro`,
+    run: 'Select the new-api Gemini provider and start a chat.',
+    summary: 'Use the Gemini route for desktop clients that support custom Gemini endpoints.',
   },
 ]
 
-const troubleshootingRows = [
+const routeOptions = [
   {
-    error: '401 / token invalid',
-    cause: 'The API key is wrong, disabled, expired, or not loaded by the shell.',
-    fix: 'Re-copy the gateway key and verify the active environment variable.',
+    title: 'Primary route',
+    url: 'api.example.com',
+    description: 'Recommended for daily use',
+    active: true,
   },
   {
-    error: '404 /v1/v1/...',
-    cause: 'The base URL already contains an API version and the client appended another one.',
-    fix: 'Use the root URL for Claude and Gemini, and the /v1 URL for Codex.',
+    title: 'Overseas route',
+    url: 'global-api.example.com',
+    description: 'Use when the primary route is slow',
+    active: false,
   },
   {
-    error: 'Gemini still calls Google',
-    cause: 'The custom Gemini base URL is missing or overridden by an older local env file.',
-    fix: 'Check the current shell and ~/.gemini/.env before restarting Gemini CLI.',
-  },
-  {
-    error: 'Stream disconnected',
-    cause: 'The upstream channel is unstable or a long session switched channels mid-task.',
-    fix: 'Enable Channel Affinity and review upstream health in the channel list.',
+    title: 'CDN route',
+    url: 'cdn-api.example.com',
+    description: 'Use for static network acceleration',
+    active: false,
   },
 ]
 
-const acceptanceItems = [
-  'Claude Code completes one request through /v1/messages.',
-  'Gemini CLI completes one request through /v1beta/models/{model}:generateContent.',
-  'Codex CLI completes one request through /v1/responses.',
-  'Usage logs record user key, model, channel, tokens, and status.',
-  'Channel Affinity keeps repeated agent turns on a successful upstream channel.',
+const faqItems = [
+  {
+    question: 'Which base URL should I use?',
+    answer: 'OpenAI-compatible clients usually use /v1. Claude and Gemini clients usually use the gateway root unless the client asks for a versioned endpoint.',
+  },
+  {
+    question: 'Where do I get the API key?',
+    answer: 'Create a dedicated key in the console, then limit its group, quota, model permissions, and rate limits for CLI tools.',
+  },
+  {
+    question: 'How do I verify the setup?',
+    answer: 'Run one short request, then check usage logs for model, channel, status, and token usage.',
+  },
 ]
 
-function CodeBlock({ children }: { children: string }) {
+function CodePanel({
+  title,
+  code,
+  className,
+}: {
+  title: string
+  code: string
+  className?: string
+}) {
+  const { t } = useTranslation()
+  const { copiedText, copyToClipboard } = useCopyToClipboard({
+    successMessage: t('Configuration copied'),
+  })
+  const copied = copiedText === code
+
   return (
-    <pre className='bg-muted/60 border-border/70 overflow-x-auto rounded-lg border p-4 text-xs leading-relaxed'>
-      <code>{children}</code>
-    </pre>
+    <div
+      className={cn(
+        'border-border/80 bg-muted/25 w-full max-w-full min-w-0 overflow-hidden rounded-xl border',
+        className
+      )}
+    >
+      <div className='border-border/70 bg-background/80 flex h-10 items-center justify-between border-b px-3'>
+        <div className='flex min-w-0 items-center gap-2'>
+          <span className='size-2.5 rounded-full bg-red-300' />
+          <span className='size-2.5 rounded-full bg-amber-300' />
+          <span className='size-2.5 rounded-full bg-emerald-300' />
+          <span className='text-muted-foreground truncate pl-1 text-xs'>
+            {title}
+          </span>
+        </div>
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon-sm'
+          className='text-muted-foreground size-7 rounded-md'
+          aria-label={t('Copy config')}
+          onClick={() => void copyToClipboard(code)}
+        >
+          {copied ? (
+            <CheckCircle2 className='size-3.5 text-emerald-600' />
+          ) : (
+            <Copy className='size-3.5' />
+          )}
+        </Button>
+      </div>
+      <pre className='max-w-full overflow-x-auto px-4 py-4 text-[13px] leading-7'>
+        <code>{code}</code>
+      </pre>
+    </div>
   )
 }
 
-function SectionHeader({
-  eyebrow,
+function StepRow({
+  index,
   title,
-  description,
+  children,
 }: {
-  eyebrow?: string
+  index: number
   title: string
-  description?: string
+  children?: React.ReactNode
 }) {
   const { t } = useTranslation()
 
   return (
-    <div className='space-y-2'>
-      {eyebrow && (
-        <div className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-          {t(eyebrow)}
+    <div className='grid gap-3 sm:grid-cols-[2rem_minmax(0,1fr)]'>
+      <div className='border-border bg-background text-muted-foreground flex size-8 items-center justify-center rounded-full border text-sm font-semibold'>
+        {index}
+      </div>
+      <div className='min-w-0 space-y-3 pt-1'>
+        <p className='text-sm leading-6 font-medium'>{t(title)}</p>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function RouteSelector() {
+  const { t } = useTranslation()
+
+  return (
+    <aside className='space-y-3'>
+      <div className='text-muted-foreground text-xs font-semibold tracking-wide uppercase'>
+        {t('Route selection')}
+      </div>
+      <div className='grid gap-3 lg:block lg:space-y-3'>
+        {routeOptions.map((route) => (
+          <button
+            key={route.title}
+            type='button'
+            className={cn(
+              'border-border bg-background hover:border-primary/40 relative w-full rounded-xl border p-4 text-left transition-colors',
+              route.active &&
+                'border-emerald-400 bg-emerald-50/70 shadow-[0_0_0_1px_rgba(52,211,153,0.18)] dark:bg-emerald-950/20'
+            )}
+          >
+            {route.active ? (
+              <span className='absolute top-3 right-3 size-2 rounded-full bg-emerald-500' />
+            ) : null}
+            <div className='text-sm font-semibold'>{t(route.title)}</div>
+            <div className='text-muted-foreground mt-1 text-xs'>
+              {route.url}
+            </div>
+            <div className='text-muted-foreground/80 mt-3 text-xs leading-5'>
+              {t(route.description)}
+            </div>
+          </button>
+        ))}
+      </div>
+    </aside>
+  )
+}
+
+function GuideBody({ guide }: { guide: ClientGuide }) {
+  const { t } = useTranslation()
+
+  return (
+    <div className='max-w-full min-w-0 space-y-7 overflow-hidden'>
+      <div className='border-border/70 bg-background w-full max-w-full min-w-0 rounded-xl border p-5'>
+        <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
+          <div className='min-w-0'>
+            <div className='text-muted-foreground text-xs font-semibold tracking-wide uppercase'>
+              {t('Current guide')}
+            </div>
+            <h1 className='mt-2 break-words text-2xl font-semibold tracking-tight md:text-3xl'>
+              {guide.name} · {guide.model}
+            </h1>
+            <p className='text-muted-foreground mt-3 max-w-2xl break-words text-sm leading-7'>
+              {t(guide.summary)}
+            </p>
+          </div>
+          <div className='border-border/70 bg-muted/30 flex max-w-full min-w-0 items-center gap-2 self-start rounded-full border px-3 py-2 text-xs font-medium'>
+            <Server className='size-3.5 text-emerald-600' />
+            <span className='min-w-0 truncate'>https://api.example.com</span>
+          </div>
         </div>
-      )}
-      <h2 className='text-2xl font-semibold tracking-tight'>{t(title)}</h2>
-      {description && (
-        <p className='text-muted-foreground max-w-3xl leading-7'>
-          {t(description)}
-        </p>
-      )}
+      </div>
+
+      <div className='max-w-full min-w-0 space-y-7 overflow-hidden'>
+        <StepRow index={1} title='Install or update the client.'>
+          <CodePanel title='install' code={guide.install} />
+        </StepRow>
+        <StepRow index={2} title='Run the version command to confirm the client is available.'>
+          <CodePanel title='verify' code={guide.verify} />
+        </StepRow>
+        <StepRow
+          index={3}
+          title='Open the configuration file and create the directory first if it does not exist.'
+        >
+          <CodePanel title={guide.configPath} code={guide.configPath} />
+        </StepRow>
+        <StepRow index={4} title='Write the following configuration and save the file.'>
+          <CodePanel title={guide.configPath} code={guide.config} />
+        </StepRow>
+        <StepRow index={5} title='Start the client and send one short message.'>
+          <CodePanel title='run' code={guide.run} />
+        </StepRow>
+        <StepRow index={6} title='Check usage logs and confirm the request route is recorded.'>
+          <div className='border-border/70 bg-emerald-50/60 flex max-w-full min-w-0 items-start gap-3 rounded-xl border p-4 text-sm leading-6 dark:bg-emerald-950/20'>
+            <ClipboardCheck className='mt-0.5 size-4 shrink-0 text-emerald-600' />
+            <span className='min-w-0 break-words'>
+              {t(
+                'The log should include the user key, model, upstream channel, status, and token usage.'
+              )}
+            </span>
+          </div>
+        </StepRow>
+      </div>
+    </div>
+  )
+}
+
+function FaqBody() {
+  const { t } = useTranslation()
+
+  return (
+    <div className='space-y-4'>
+      {faqItems.map((item) => (
+        <details
+          key={item.question}
+          className='border-border/70 bg-background group rounded-xl border p-5'
+        >
+          <summary className='flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold'>
+            {t(item.question)}
+            <ChevronDown className='text-muted-foreground size-4 transition-transform group-open:rotate-180' />
+          </summary>
+          <p className='text-muted-foreground mt-3 text-sm leading-7'>
+            {t(item.answer)}
+          </p>
+        </details>
+      ))}
     </div>
   )
 }
 
 function DocsPage() {
   const { t } = useTranslation()
+  const [activeProtocol, setActiveProtocol] = useState<ProtocolId>('openai')
+  const [activeClientId, setActiveClientId] = useState<ClientId>('codex')
+
+  const visibleClients = useMemo(
+    () => clientGuides.filter((client) => client.protocol === activeProtocol),
+    [activeProtocol]
+  )
+  const activeGuide =
+    visibleClients.find((client) => client.id === activeClientId) ||
+    visibleClients[0]
+
+  const selectProtocol = (protocol: ProtocolId) => {
+    setActiveProtocol(protocol)
+    const firstClient = clientGuides.find((client) => client.protocol === protocol)
+    if (firstClient) {
+      setActiveClientId(firstClient.id)
+    }
+  }
 
   return (
     <PublicLayout showMainContainer={false}>
-      <main className='mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 pt-24 pb-16 md:px-6 lg:grid-cols-[230px_minmax(0,1fr)_230px]'>
-        <aside className='hidden lg:block'>
-          <nav className='sticky top-24 space-y-1'>
-            {sidebarSections.map((item) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className='text-muted-foreground hover:bg-muted hover:text-foreground block rounded-md px-3 py-2 text-sm transition-colors'
-              >
-                {t(item.key)}
-              </a>
-            ))}
-          </nav>
-        </aside>
-
-        <article className='min-w-0 space-y-10'>
-          <section id='overview' className='space-y-6 scroll-mt-24'>
-            <div className='space-y-4'>
-              <Badge variant='secondary' className='gap-1.5'>
-                <Terminal className='size-3' />
-                {t('CLI Agent Access Guide')}
-              </Badge>
-              <div className='space-y-3'>
-                <h1 className='max-w-4xl text-3xl font-semibold tracking-tight md:text-5xl'>
-                  {t('Connect Claude Code, Gemini CLI, and Codex CLI')}
-                </h1>
-                <p className='text-muted-foreground max-w-3xl text-base leading-7 md:text-lg'>
-                  {t(
-                    'Use this gateway as the single entry point for terminal AI agents, with unified keys, billing, rate limits, logs, and upstream routing.'
+      <main className='bg-background min-h-svh w-full max-w-[100vw] overflow-x-hidden pt-16'>
+        <div className='border-border/70 bg-background/95 sticky top-16 z-30 border-b backdrop-blur-xl'>
+          <div className='mx-auto flex max-w-7xl min-w-0 flex-col gap-4 px-4 py-4 md:px-6'>
+            <div className='-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0'>
+              {protocols.map((protocol) => (
+                <button
+                  key={protocol.id}
+                  type='button'
+                  onClick={() => selectProtocol(protocol.id)}
+                  className={cn(
+                    'h-10 shrink-0 rounded-none border-b-2 px-4 text-sm font-semibold transition-colors',
+                    activeProtocol === protocol.id
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
                   )}
-                </p>
-              </div>
-              <div className='flex flex-wrap gap-3'>
-                <Button render={<a href='#gateway-setup' />}>
-                  {t('Start with gateway setup')}
-                  <ArrowRight className='size-4' />
-                </Button>
-                <Button variant='outline' render={<Link to='/dashboard' />}>
-                  {t('Open Console')}
-                </Button>
-              </div>
-            </div>
-            <div className='grid gap-3 md:grid-cols-3'>
-              {outcomeCards.map((card) => {
-                const Icon = card.icon
-                return (
-                  <Card key={card.title} className='rounded-lg'>
-                    <CardHeader>
-                      <div className='bg-muted mb-2 flex size-9 items-center justify-center rounded-md'>
-                        <Icon className='size-4' />
-                      </div>
-                      <CardTitle>{t(card.title)}</CardTitle>
-                      <CardDescription>{t(card.description)}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                )
-              })}
-            </div>
-          </section>
-
-          <Separator />
-
-          <section id='gateway-setup' className='space-y-5 scroll-mt-24'>
-            <SectionHeader
-              eyebrow='Admin workflow'
-              title='Gateway Setup'
-              description='Prepare channels, model mappings, developer keys, and sticky routing before sharing CLI snippets with users.'
-            />
-            <div className='grid gap-3 md:grid-cols-2'>
-              {gatewaySteps.map((step, index) => {
-                const Icon = step.icon
-                return (
-                  <Card key={step.title} className='rounded-lg'>
-                    <CardHeader>
-                      <div className='bg-muted mb-2 flex size-9 items-center justify-center rounded-md'>
-                        <Icon className='size-4' />
-                      </div>
-                      <CardTitle>
-                        {index + 1}. {t(step.title)}
-                      </CardTitle>
-                      <CardDescription>{t(step.description)}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                )
-              })}
-            </div>
-            <div className='overflow-x-auto rounded-lg border'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('Client')}</TableHead>
-                    <TableHead>{t('Gateway Path')}</TableHead>
-                    <TableHead>{t('Auth Header')}</TableHead>
-                    <TableHead>{t('Base URL Rule')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {endpointRows.map((row) => (
-                    <TableRow key={row.client}>
-                      <TableCell className='font-medium'>{row.client}</TableCell>
-                      <TableCell>
-                        <code className='text-xs'>{row.path}</code>
-                      </TableCell>
-                      <TableCell>
-                        <code className='text-xs'>{row.auth}</code>
-                      </TableCell>
-                      <TableCell>
-                        <code className='text-xs'>{row.baseUrl}</code>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </section>
-
-          <section id='preflight' className='space-y-5 scroll-mt-24'>
-            <SectionHeader
-              eyebrow='Developer check'
-              title='Preflight Checks'
-              description='Verify the gateway key and route before opening a long-running CLI agent session.'
-            />
-            <div className='grid gap-4 xl:grid-cols-3'>
-              <div className='space-y-2'>
-                <h3 className='font-medium'>{t('OpenAI Responses')}</h3>
-                <CodeBlock>{`curl "$NEW_API_BASE_URL/v1/responses" \\
-  -H "Authorization: Bearer $NEW_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"gpt-5-codex","input":"Reply with OK."}'`}</CodeBlock>
-              </div>
-              <div className='space-y-2'>
-                <h3 className='font-medium'>{t('Claude Messages')}</h3>
-                <CodeBlock>{`curl "$NEW_API_BASE_URL/v1/messages" \\
-  -H "x-api-key: $NEW_API_KEY" \\
-  -H "anthropic-version: 2023-06-01" \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"claude-3-7-sonnet-20250219-thinking","max_tokens":64,"messages":[{"role":"user","content":"Reply with OK."}]}'`}</CodeBlock>
-              </div>
-              <div className='space-y-2'>
-                <h3 className='font-medium'>{t('Gemini Generate Content')}</h3>
-                <CodeBlock>{`curl "$NEW_API_BASE_URL/v1beta/models/gemini-2.5-flash:generateContent" \\
-  -H "x-goog-api-key: $NEW_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"contents":[{"parts":[{"text":"Reply with OK."}]}]}'`}</CodeBlock>
-              </div>
-            </div>
-          </section>
-
-          {toolSections.map((tool) => (
-            <section key={tool.id} id={tool.id} className='space-y-5 scroll-mt-24'>
-              <SectionHeader
-                eyebrow='CLI setup'
-                title={tool.title}
-                description={tool.description}
-              />
-              <div className='grid gap-4 xl:grid-cols-2'>
-                <Card className='rounded-lg'>
-                  <CardHeader>
-                    <CardTitle className='flex items-center gap-2'>
-                      <Code2 className='size-4' />
-                      {t('Install')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CodeBlock>{tool.install}</CodeBlock>
-                  </CardContent>
-                </Card>
-                <Card className='rounded-lg'>
-                  <CardHeader>
-                    <CardTitle className='flex items-center gap-2'>
-                      <ClipboardCheck className='size-4' />
-                      {t('Expected log route')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className='text-muted-foreground text-sm'>
-                      {t(tool.verify)}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-              <div className='grid gap-4 xl:grid-cols-2'>
-                <div className='space-y-2'>
-                  <h3 className='font-medium'>Bash</h3>
-                  <CodeBlock>{tool.bash}</CodeBlock>
-                </div>
-                <div className='space-y-2'>
-                  <h3 className='font-medium'>PowerShell</h3>
-                  <CodeBlock>{tool.powershell}</CodeBlock>
-                </div>
-              </div>
-              <div className='space-y-2'>
-                <h3 className='font-medium'>
-                  {t('Persistent config')}: <code>{tool.persistLabel}</code>
-                </h3>
-                <CodeBlock>{tool.persist}</CodeBlock>
-              </div>
-            </section>
-          ))}
-
-          <section id='cc-switch' className='space-y-5 scroll-mt-24'>
-            <SectionHeader
-              eyebrow='Config switching'
-              title='CC Switch'
-              description='Use CC Switch style tools to manage multiple local profiles while the gateway remains the billing and audit boundary.'
-            />
-            <div className='overflow-x-auto rounded-lg border'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('Provider Field')}</TableHead>
-                    <TableHead>Claude Code</TableHead>
-                    <TableHead>Gemini CLI</TableHead>
-                    <TableHead>Codex CLI</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>{t('Base URL')}</TableCell>
-                    <TableCell>
-                      <code className='text-xs'>https://api.example.com</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>https://api.example.com</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>https://api.example.com/v1</code>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>{t('API Key')}</TableCell>
-                    <TableCell>
-                      <code className='text-xs'>sk-xxx</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>sk-xxx</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>sk-xxx</code>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>{t('Model')}</TableCell>
-                    <TableCell>
-                      <code className='text-xs'>claude-*</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>gemini-*</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>gpt-*-codex</code>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>{t('Config target')}</TableCell>
-                    <TableCell>
-                      <code className='text-xs'>~/.claude/settings.json</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>~/.gemini/.env</code>
-                    </TableCell>
-                    <TableCell>
-                      <code className='text-xs'>~/.codex/config.toml</code>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            <div className='grid gap-4 md:grid-cols-2'>
-              <Card className='rounded-lg'>
-                <CardHeader>
-                  <CardTitle>{t('Direct config mode')}</CardTitle>
-                  <CardDescription>
-                    {t(
-                      'Switch the profile, then restart the active Claude, Gemini, or Codex session.'
-                    )}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-              <Card className='rounded-lg'>
-                <CardHeader>
-                  <CardTitle>{t('Local router mode')}</CardTitle>
-                  <CardDescription>
-                    {t(
-                      'Point each CLI to a local 127.0.0.1 route, then let CC Switch forward to the gateway upstream.'
-                    )}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </div>
-          </section>
-
-          <section id='troubleshooting' className='space-y-5 scroll-mt-24'>
-            <SectionHeader
-              eyebrow='Operations'
-              title='Troubleshooting'
-              description='Most CLI connection failures come from key loading, duplicated URL versions, or upstream route mismatch.'
-            />
-            <div className='overflow-x-auto rounded-lg border'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('Error')}</TableHead>
-                    <TableHead>{t('Likely cause')}</TableHead>
-                    <TableHead>{t('Fix')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {troubleshootingRows.map((row) => (
-                    <TableRow key={row.error}>
-                      <TableCell className='font-medium'>
-                        <code className='text-xs'>{row.error}</code>
-                      </TableCell>
-                      <TableCell>{t(row.cause)}</TableCell>
-                      <TableCell>{t(row.fix)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </section>
-
-          <section id='acceptance' className='space-y-5 scroll-mt-24'>
-            <SectionHeader
-              eyebrow='Release checklist'
-              title='Acceptance'
-              description='Use this checklist before publishing the tutorial to users or support teams.'
-            />
-            <div className='grid gap-3'>
-              {acceptanceItems.map((item) => (
-                <div
-                  key={item}
-                  className='border-border flex items-start gap-3 rounded-lg border p-4'
                 >
-                  <CheckCircle2 className='text-primary mt-0.5 size-4 shrink-0' />
-                  <span className='text-sm'>{t(item)}</span>
-                </div>
+                  {t(protocol.label)}
+                </button>
               ))}
             </div>
-          </section>
-        </article>
 
-        <aside className='hidden xl:block'>
-          <div className='sticky top-24 space-y-3 text-sm'>
-            <div className='text-muted-foreground flex items-center gap-2 font-medium'>
-              <BookOpen className='size-4' />
-              {t('On this page')}
-            </div>
-            <div className='border-border space-y-2 border-l pl-4'>
-              {sidebarSections.slice(1).map((item) => (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  className='text-muted-foreground hover:text-foreground block transition-colors'
-                >
-                  {t(item.key)}
-                </a>
-              ))}
-            </div>
-            <div className='bg-muted/50 space-y-2 rounded-lg p-3'>
-              <div className='flex items-center gap-2 font-medium'>
-                <ServerCog className='size-4' />
-                {t('Gateway base')}
+            {activeProtocol !== 'faq' ? (
+              <div className='flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center'>
+                <div className='flex items-center gap-3'>
+                  <span className='text-muted-foreground text-sm'>
+                    {t('Model')}
+                  </span>
+                  <button
+                    type='button'
+                    className='border-border bg-background inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm'
+                  >
+                    {activeGuide?.model}
+                    <ChevronDown className='text-muted-foreground size-3.5' />
+                  </button>
+                </div>
+
+                <div className='flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center'>
+                  <span className='text-muted-foreground shrink-0 text-sm'>
+                    {t('Client')}
+                  </span>
+                  <div className='-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:pb-0'>
+                    {visibleClients.map((client) => {
+                      const Icon = client.icon
+                      return (
+                        <button
+                          key={client.id}
+                          type='button'
+                          onClick={() => setActiveClientId(client.id)}
+                          className={cn(
+                            'border-border bg-background inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors',
+                            activeGuide?.id === client.id &&
+                              'border-emerald-400 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                          )}
+                        >
+                          <Icon className='size-3.5' />
+                          {client.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
-              <code className='text-muted-foreground block text-xs'>
-                https://api.example.com
-              </code>
-              <code className='text-muted-foreground block text-xs'>
-                https://api.example.com/v1
-              </code>
-            </div>
-            <div className='bg-muted/50 space-y-2 rounded-lg p-3'>
-              <div className='flex items-center gap-2 font-medium'>
-                <ShieldCheck className='size-4' />
-                {t('Safety note')}
+            ) : null}
+          </div>
+        </div>
+
+        <div className='mx-auto grid w-full max-w-7xl min-w-0 gap-8 px-4 py-8 md:px-6 lg:grid-cols-[minmax(0,1fr)_220px]'>
+          <article className='w-full max-w-full min-w-0 overflow-hidden'>
+            {activeProtocol === 'faq' || !activeGuide ? (
+              <FaqBody />
+            ) : (
+              <GuideBody guide={activeGuide} />
+            )}
+          </article>
+
+          <div className='lg:sticky lg:top-40 lg:self-start'>
+            <RouteSelector />
+            <div className='border-border/70 bg-muted/25 mt-5 rounded-xl border p-4 text-sm leading-6'>
+              <div className='flex items-center gap-2 font-semibold'>
+                <Network className='size-4 text-emerald-600' />
+                {t('Route rule')}
               </div>
-              <p className='text-muted-foreground text-xs leading-5'>
-                {t('Never publish real API keys in docs, repos, or screenshots.')}
-              </p>
-            </div>
-            <div className='bg-muted/50 space-y-2 rounded-lg p-3'>
-              <div className='flex items-center gap-2 font-medium'>
-                <TriangleAlert className='size-4' />
-                {t('Common pitfall')}
-              </div>
-              <p className='text-muted-foreground text-xs leading-5'>
-                {t('Do not add /v1 to Claude or Gemini base URLs.')}
-              </p>
-            </div>
-            <div className='bg-muted/50 space-y-2 rounded-lg p-3'>
-              <div className='flex items-center gap-2 font-medium'>
-                <Wrench className='size-4' />
-                {t('Need deeper specs?')}
-              </div>
-              <p className='text-muted-foreground text-xs leading-5'>
+              <p className='text-muted-foreground mt-2 text-xs leading-5'>
                 {t(
-                  'See the AI CLI Agent access tutorial PRD in the docs directory.'
+                  'Use /v1 for OpenAI-compatible clients. Use the gateway root for Claude and Gemini clients unless the client requires a versioned URL.'
                 )}
               </p>
             </div>
+            <div className='border-border/70 bg-muted/25 mt-3 rounded-xl border p-4 text-sm leading-6'>
+              <div className='flex items-center gap-2 font-semibold'>
+                <Globe2 className='size-4 text-emerald-600' />
+                {t('Before publishing')}
+              </div>
+              <p className='text-muted-foreground mt-2 text-xs leading-5'>
+                {t('Never publish real API keys in docs, repos, or screenshots.')}
+              </p>
+            </div>
           </div>
-        </aside>
+        </div>
       </main>
     </PublicLayout>
   )

@@ -30,12 +30,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Markdown } from '@/components/ui/markdown'
-import type { PromotionLink, PromotionRewardBannerConfig } from '../types'
 import { getPublicPromotionByCode, recordPromotionClick } from '../api'
 import {
   DEFAULT_PROMOTION_REWARD_BANNER,
   sanitizePromotionBannerHtml,
 } from '../lib'
+import type { PromotionLink, PromotionRewardBannerConfig } from '../types'
 
 const DEFAULT_LANDING_MIN_WIDTH = 960
 const DEFAULT_LANDING_MIN_HEIGHT = 720
@@ -63,9 +63,7 @@ function getExplicitPromotionCode(): string {
   if (typeof window === 'undefined') return ''
   const params = new URLSearchParams(window.location.search)
   return (
-    params.get('promo')?.trim() ||
-    params.get('promotion_code')?.trim() ||
-    ''
+    params.get('promo')?.trim() || params.get('promotion_code')?.trim() || ''
   )
 }
 
@@ -91,13 +89,18 @@ export function PromotionLandingDialog() {
       return DEFAULT_PROMOTION_REWARD_BANNER
     }
     return {
-      title: link.landing_title || link.name || DEFAULT_PROMOTION_REWARD_BANNER.title,
+      title:
+        link.landing_title ||
+        link.name ||
+        DEFAULT_PROMOTION_REWARD_BANNER.title,
       content_format:
-        link.landing_content_format || DEFAULT_PROMOTION_REWARD_BANNER.content_format,
+        link.landing_content_format ||
+        DEFAULT_PROMOTION_REWARD_BANNER.content_format,
       content: link.landing_content || DEFAULT_PROMOTION_REWARD_BANNER.content,
       image_url: link.landing_image_url || '',
       image_position:
-        link.landing_image_position || DEFAULT_PROMOTION_REWARD_BANNER.image_position,
+        link.landing_image_position ||
+        DEFAULT_PROMOTION_REWARD_BANNER.image_position,
       primary_button: link.landing_primary_button || '',
       secondary_button: link.landing_secondary_button || '',
     }
@@ -120,12 +123,13 @@ export function PromotionLandingDialog() {
     })
   }, [dismissed, linkQuery.data, promoCode])
 
-  if (!promoCode || dismissed || linkQuery.isError || !linkQuery.data) return null
+  if (!promoCode || dismissed || linkQuery.isError || !linkQuery.data)
+    return null
 
   return (
     <Dialog open onOpenChange={(open) => setDismissed(!open)}>
       <DialogContent
-        className='overflow-hidden border-amber-200/70 bg-white p-0 shadow-2xl dark:border-amber-800/50 dark:bg-background'
+        className='dark:bg-background overflow-hidden border-amber-200/70 bg-white p-0 shadow-2xl dark:border-amber-800/50'
         style={{
           width: `min(${popupMinWidth}px, calc(100vw - 2rem))`,
           minWidth: `min(${popupMinWidth}px, calc(100vw - 2rem))`,
@@ -135,7 +139,7 @@ export function PromotionLandingDialog() {
         }}
       >
         <div
-          className='overflow-hidden rounded-inherit'
+          className='rounded-inherit overflow-hidden'
           style={{
             minHeight: `min(${popupMinHeight}px, calc(100vh - 2rem))`,
           }}
@@ -155,8 +159,8 @@ export function PromotionLandingDialog() {
                 />
               </div>
             ) : (
-              <div className='from-amber-100 via-orange-50 to-white dark:from-amber-950/30 dark:via-background dark:to-background absolute inset-0 flex h-full w-full items-center justify-center bg-linear-to-br'>
-                <div className='bg-background/80 text-amber-700 dark:text-amber-300 flex h-28 w-28 items-center justify-center rounded-3xl border border-amber-200/70 shadow-sm dark:border-amber-800/50'>
+              <div className='dark:via-background dark:to-background absolute inset-0 flex h-full w-full items-center justify-center bg-linear-to-br from-amber-100 via-orange-50 to-white dark:from-amber-950/30'>
+                <div className='bg-background/80 flex h-28 w-28 items-center justify-center rounded-3xl border border-amber-200/70 text-amber-700 shadow-sm dark:border-amber-800/50 dark:text-amber-300'>
                   <Gift className='h-12 w-12' />
                 </div>
               </div>
@@ -166,21 +170,22 @@ export function PromotionLandingDialog() {
 
           <div className='space-y-5 p-6 md:p-8'>
             <DialogHeader className='space-y-3 text-left'>
-              <DialogTitle className='text-2xl leading-8 font-semibold text-foreground md:text-3xl'>
+              <DialogTitle className='text-foreground text-2xl leading-8 font-semibold md:text-3xl'>
                 {banner.title || t('Welcome Gift for New Users')}
               </DialogTitle>
-              <DialogDescription asChild>
-                <div className='text-foreground'>
-                  <BannerContent
-                    format={banner.content_format}
-                    content={banner.content || DEFAULT_PROMOTION_REWARD_BANNER.content}
-                  />
-                </div>
+              <DialogDescription render={<div className='text-foreground' />}>
+                <BannerContent
+                  format={banner.content_format}
+                  content={
+                    banner.content || DEFAULT_PROMOTION_REWARD_BANNER.content
+                  }
+                />
               </DialogDescription>
             </DialogHeader>
 
-            <div className='text-sm text-muted-foreground'>
-              {t('Promotion Code')}: <span className='font-mono'>{promoCode}</span>
+            <div className='text-muted-foreground text-sm'>
+              {t('Promotion Code')}:{' '}
+              <span className='font-mono'>{promoCode}</span>
             </div>
 
             <div className='flex flex-wrap gap-3'>
@@ -191,7 +196,11 @@ export function PromotionLandingDialog() {
               >
                 {banner.primary_button || t('Get Started')}
               </Button>
-              <Button variant='outline' size='lg' onClick={() => setDismissed(true)}>
+              <Button
+                variant='outline'
+                size='lg'
+                onClick={() => setDismissed(true)}
+              >
                 {banner.secondary_button || t('Later')}
               </Button>
             </div>

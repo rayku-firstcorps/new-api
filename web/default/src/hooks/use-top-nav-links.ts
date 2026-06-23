@@ -82,6 +82,13 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
   }
 
+  // Image Generation
+  const imageGen = modules?.['image-generation']
+  if (imageGen && typeof imageGen === 'object' && imageGen.enabled) {
+    const requiresAuth = imageGen.requireAuth && !isAuthed
+    links.push({ title: t('Image Generation'), href: '/image-generation', requiresAuth })
+  }
+
   // Docs
   if (modules?.docs !== false) {
     links.push({ title: t('Docs'), href: '/docs' })

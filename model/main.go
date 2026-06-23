@@ -290,6 +290,7 @@ func migrateDB() error {
 		&SSOAuthorizationCode{},
 		&SSOAuthorizationLog{},
 		&PerfMetric{},
+		&ImageGenerationTemplate{},
 	)
 	if err != nil {
 		return err

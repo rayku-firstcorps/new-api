@@ -43,18 +43,18 @@ export const AI_MODELS = [
   'Gemini.Color',
 ] as const
 
-// Hero section - Gateway Features
+// Hero section - Product benefits
 export const GATEWAY_FEATURES = [
   'Cost Tracking',
   'Model Access',
   'Guardrails',
   'Observability',
   'Budgets',
-  'Load Balancing',
-  'Rate Limiting',
-  'Token Mgmt',
-  'Prompt Caching',
-  'Pass-Through',
+  'App Connections',
+  'Usage Records',
+  'Shared Quota',
+  'Request Costs',
+  'Developer Docs',
 ] as const
 
 // Stats section - Default statistics
@@ -62,68 +62,62 @@ export const DEFAULT_STATS = [
   {
     value: '50',
     suffix: '+',
-    description: 'upstream services integrated',
+    description: 'leading model services',
   },
   {
     value: '100',
     suffix: '+',
-    description: 'model billing support',
+    description: 'billable models',
   },
   {
-    value: '50',
+    value: '4',
     suffix: '+',
-    description: 'compatible API routes',
+    description: 'AI app integrations',
   },
   {
-    value: '10',
-    suffix: '+',
-    description: 'scheduling controls',
+    value: 'Real-time',
+    suffix: '',
+    description: 'usage and cost records',
   },
 ] as const
 
 // Features section - Default features
 export const DEFAULT_FEATURES = [
   {
-    title: 'Lightning Fast',
+    title: 'Unified model access',
     description:
-      'Optimized network architecture ensures millisecond response times',
-    iconName: 'Zap',
+      'Use multiple model providers through one account and one control surface.',
+    iconName: 'Boxes',
   },
   {
-    title: 'Secure & Reliable',
+    title: 'Clear usage and cost',
     description:
-      'Enterprise-grade security with comprehensive permission management',
-    iconName: 'Shield',
+      'See balance, request records, and per-use costs in real time.',
+    iconName: 'WalletCards',
   },
   {
-    title: 'Global Coverage',
-    description: 'Multi-region deployment for stable global access',
-    iconName: 'Globe',
+    title: 'Works with common AI tools',
+    description:
+      'Connect to Cherry Studio, Open WebUI, LobeChat, ChatBox, and similar clients.',
+    iconName: 'PlugZap',
   },
   {
-    title: 'Developer Friendly',
-    description: 'Compatible API routes for common AI application workflows',
-    iconName: 'Code',
-  },
-  {
-    title: 'High Performance',
-    description: 'Support for high concurrency with automatic load balancing',
-    iconName: 'Gauge',
-  },
-  {
-    title: 'Transparent Billing',
-    description: 'Pay-as-you-go with real-time usage monitoring',
-    iconName: 'DollarSign',
-  },
-  {
-    title: 'Team Collaboration',
-    description: 'Multi-user management with flexible permission allocation',
+    title: 'Team sharing and permissions',
+    description:
+      'Manage members, quota, permissions, and records in one place.',
     iconName: 'Users',
   },
   {
-    title: 'Open Source',
-    description: 'Community driven, self-hosted, and extensible',
-    iconName: 'HeartHandshake',
+    title: 'Reliable availability',
+    description:
+      'Reduce interruptions and repeated configuration through managed service routing.',
+    iconName: 'ShieldCheck',
+  },
+  {
+    title: 'Developer-ready access',
+    description:
+      'Keep compatible APIs and documentation available for advanced integrations.',
+    iconName: 'Code2',
   },
 ] as const
 

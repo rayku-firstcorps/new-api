@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Settings, Zap, BarChart3 } from 'lucide-react'
+import { BarChart3, ClipboardList, LogIn, PlugZap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { AnimateInView } from '@/components/animate-in-view'
 
@@ -26,24 +26,28 @@ export function HowItWorks() {
   const steps = [
     {
       num: '1',
-      title: t('Configure'),
-      desc: t(
-        'Add your API keys, set up channels and configure access permissions'
-      ),
-      icon: <Settings className='size-6' strokeWidth={1.5} />,
+      title: t('Create an account'),
+      desc: t('Sign up and enter the console.'),
+      icon: <LogIn className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '2',
-      title: t('Connect'),
-      desc: t(
-        'Connect through OpenAI, Claude, Gemini, and other compatible API routes'
-      ),
-      icon: <Zap className='size-6' strokeWidth={1.5} />,
+      title: t('Get connection settings'),
+      desc: t('Create a token and choose available models or plans.'),
+      icon: <ClipboardList className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '3',
-      title: t('Monitor'),
-      desc: t('Track usage, costs and performance with real-time analytics'),
+      title: t('Paste into your AI tool'),
+      desc: t(
+        'Use the configuration in Cherry Studio, Open WebUI, LobeChat, or another supported client.'
+      ),
+      icon: <PlugZap className='size-6' strokeWidth={1.5} />,
+    },
+    {
+      num: '4',
+      title: t('Track usage and cost'),
+      desc: t('Check balance, request records, and cost details anytime.'),
       icon: <BarChart3 className='size-6' strokeWidth={1.5} />,
     },
   ]
@@ -56,17 +60,17 @@ export function HowItWorks() {
             {t('How It Works')}
           </p>
           <h2 className='text-2xl font-bold tracking-tight md:text-3xl'>
-            {t('Three steps to get started')}
+            {t('Four steps to start using AI tools')}
           </h2>
         </AnimateInView>
 
-        <div className='grid gap-8 md:grid-cols-3 md:gap-12'>
+        <div className='grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6'>
           {steps.map((step, i) => (
             <AnimateInView
               key={step.num}
-              delay={i * 150}
+              delay={i * 120}
               animation='fade-up'
-              className='relative flex flex-col items-center text-center'
+              className='relative flex min-w-0 flex-col items-center text-center'
             >
               <div className='relative mb-6'>
                 <div className='text-muted-foreground border-border/50 bg-muted/30 flex size-16 items-center justify-center rounded-2xl border transition-colors'>
@@ -77,7 +81,7 @@ export function HowItWorks() {
                 </div>
               </div>
               <h3 className='mb-2 text-base font-semibold'>{step.title}</h3>
-              <p className='text-muted-foreground max-w-[240px] text-sm leading-relaxed'>
+              <p className='text-muted-foreground max-w-[260px] text-sm leading-relaxed'>
                 {step.desc}
               </p>
             </AnimateInView>

@@ -22,8 +22,8 @@ import { useRouter } from '@tanstack/react-router'
 import { Gift, Mail, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { getSelf } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
+import { getSelf } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -75,7 +75,10 @@ export function PromotionRewardBanner() {
 
   useEffect(() => {
     setDismissed(false)
-  }, [rewardQuery.data?.data?.promotion_code, rewardQuery.data?.data?.reward_status])
+  }, [
+    rewardQuery.data?.data?.promotion_code,
+    rewardQuery.data?.data?.reward_status,
+  ])
 
   const reward = rewardQuery.data?.data
   const banner = reward?.banner ?? DEFAULT_PROMOTION_REWARD_BANNER
@@ -142,10 +145,10 @@ export function PromotionRewardBanner() {
 
   return (
     <Dialog open={shouldShow} onOpenChange={(open) => setDismissed(!open)}>
-      <DialogContent className='max-w-xl overflow-hidden border-amber-200/70 bg-linear-to-br from-amber-50 via-white to-sky-50 p-0 shadow-xl dark:border-amber-800/50 dark:from-amber-950/20 dark:via-background dark:to-sky-950/20'>
+      <DialogContent className='dark:via-background max-w-xl overflow-hidden border-amber-200/70 bg-linear-to-br from-amber-50 via-white to-sky-50 p-0 shadow-xl dark:border-amber-800/50 dark:from-amber-950/20 dark:to-sky-950/20'>
         <div className='p-6'>
           <div className='flex items-start gap-4'>
-            <div className='bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl'>
+            <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'>
               {reward.email_bound ? (
                 <Gift className='h-5 w-5' />
               ) : (
@@ -158,22 +161,20 @@ export function PromotionRewardBanner() {
                   <Sparkles className='h-4 w-4' />
                   {t('Registration Trial Coupon')}
                 </div>
-                <DialogTitle className='text-xl leading-7 font-semibold text-foreground'>
+                <DialogTitle className='text-foreground text-xl leading-7 font-semibold'>
                   {banner.title || t('Bind email to claim trial coupon')}
                 </DialogTitle>
-                <DialogDescription asChild>
-                  <div>
-                    <BannerContent
-                      format={banner.content_format}
-                      content={
-                        banner.content || DEFAULT_PROMOTION_REWARD_BANNER.content
-                      }
-                    />
-                  </div>
+                <DialogDescription render={<div />}>
+                  <BannerContent
+                    format={banner.content_format}
+                    content={
+                      banner.content || DEFAULT_PROMOTION_REWARD_BANNER.content
+                    }
+                  />
                 </DialogDescription>
               </DialogHeader>
 
-              <div className='flex flex-wrap items-center gap-2 text-sm text-muted-foreground'>
+              <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-sm'>
                 <span>
                   {t('Trial Coupon Amount')}: {reward.reward_amount}
                 </span>
