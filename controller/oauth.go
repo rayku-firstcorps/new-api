@@ -32,7 +32,10 @@ func GenerateOAuthCode(c *gin.Context) {
 	if promotionCode != "" {
 		session.Set("promotion_code", promotionCode)
 	}
-	registrationSource := firstNonEmpty(c.Query("registration_source"), c.Query("utm_source"))
+	registrationSource := strings.TrimSpace(firstNonEmpty(c.Query("registration_source"), c.Query("utm_source")))
+	if len(registrationSource) > 64 {
+		registrationSource = registrationSource[:64]
+	}
 	if registrationSource != "" {
 		session.Set("registration_source", registrationSource)
 	}
@@ -295,7 +298,11 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	// Handle registration source (utm_source from external ad placement)
 	if sessionSource := session.Get("registration_source"); sessionSource != nil {
 		if src, ok := sessionSource.(string); ok {
-			user.RegistrationSource = strings.TrimSpace(src)
+			trimmed := strings.TrimSpace(src)
+			if len(trimmed) > 64 {
+				trimmed = trimmed[:64]
+			}
+			user.RegistrationSource = trimmed
 		}
 	}
 

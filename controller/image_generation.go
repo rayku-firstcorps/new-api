@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -191,8 +190,8 @@ type imageGenImportItem struct {
 	Description string          `json:"description"`
 	Prompt      string          `json:"prompt"`
 	ImageUrl    string          `json:"image_url"`
-	ImageUrls   json.RawMessage `json:"image_urls"`
-	Tags        json.RawMessage `json:"tags"`
+	ImageUrls   common.RawMessage `json:"image_urls"`
+	Tags        common.RawMessage `json:"tags"`
 	Sort        int             `json:"sort"`
 	Visible     bool            `json:"visible"`
 }
@@ -203,7 +202,7 @@ type imageGenImportRequest struct {
 
 // normalizeStringArrayField 把导入字段统一归一化为「JSON 数组字符串」用于入库。
 // 支持三种输入：JSON 数组（["a","b"]）、JSON 字符串（"[\"a\"]" 或 "a"）、空值。
-func normalizeStringArrayField(raw json.RawMessage) string {
+func normalizeStringArrayField(raw common.RawMessage) string {
 	trimmed := strings.TrimSpace(string(raw))
 	if trimmed == "" || trimmed == "null" {
 		return ""

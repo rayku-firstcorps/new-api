@@ -51,7 +51,7 @@ type User struct {
 	FirstTopupRewarded  bool           `json:"first_topup_rewarded" gorm:"not null;default:false;column:first_topup_rewarded"`
 	AffFirstTopupPassed bool           `json:"aff_first_topup_passed" gorm:"not null;default:false;column:aff_first_topup_passed"`
 	NewUserQuotaRewarded bool          `json:"new_user_quota_rewarded" gorm:"not null;default:false;column:new_user_quota_rewarded"`            // 新用户邮箱验证赠送额度防重复标记
-	RegistrationSource  string         `json:"registration_source" gorm:"type:varchar(64);column:registration_source;index"`                   // 注册来源（utm_source / 外部广告位渠道）
+	RegistrationSource  string         `json:"registration_source" gorm:"type:varchar(64);column:registration_source;index" validate:"max=64"` // 注册来源（utm_source / 外部广告位渠道）
 	LinuxDOId           string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
 	Setting             string         `json:"setting" gorm:"type:text;column:setting"`
 	Remark              string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
@@ -366,7 +366,7 @@ func (user *User) TransferAffQuotaToQuota(quota int) error {
 	defer tx.Rollback() // 确保在函数退出时事务能回滚
 
 	// 加锁查询用户以确保数据一致性
-	err := tx.Set("gorm:query_option", "FOR UPDATE").First(&user, user.Id).Error
+	err := LockForUpdate(tx).First(&user, user.Id).Error
 	if err != nil {
 		return err
 	}
@@ -936,7 +936,7 @@ func TryGrantNewUserQuota(userId int) {
 	granted := false
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		var locked User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+		if err := LockForUpdate(tx).
 			Select("id", "email", "new_user_quota_rewarded").
 			Where("id = ?", userId).First(&locked).Error; err != nil {
 			return err

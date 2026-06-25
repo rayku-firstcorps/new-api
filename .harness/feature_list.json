@@ -1,0 +1,87 @@
+{
+  "project": "new-api",
+  "schema_version": "1.0",
+  "current_stage": "stage1",
+  "features": [
+    {
+      "id": "promotion-backend-model",
+      "title": "推广链接后端模型与迁移",
+      "status": "pending",
+      "scope": ["model/promotion.go", "model/main.go"],
+      "acceptance": [
+        "PromotionLink 和 PromotionRegistration GORM 结构体存在",
+        "AutoMigrate 在 SQLite/MySQL/PostgreSQL 三库通过",
+        "users 表增加 promotion_code、promotion_channel_tag 字段"
+      ]
+    },
+    {
+      "id": "promotion-backend-api",
+      "title": "推广链接 CRUD 接口",
+      "status": "pending",
+      "depends_on": ["promotion-backend-model"],
+      "scope": ["controller/promotion.go", "router/api-router.go"],
+      "acceptance": [
+        "GET/POST/PUT/DELETE /api/promotion 接口可用",
+        "Admin 权限校验通过",
+        "GET /api/promotion/:id/registrations 注册明细接口可用"
+      ]
+    },
+    {
+      "id": "promotion-registration-flow",
+      "title": "注册流程接入推广归因",
+      "status": "pending",
+      "depends_on": ["promotion-backend-api"],
+      "scope": ["controller/user.go", "model/user.go"],
+      "acceptance": [
+        "promo/promotion_code/aff/aff_code 参数全部兼容",
+        "推广成功时用户获得 reward_quota",
+        "promotion_registrations 写入归因记录",
+        "同一用户不能重复领取推广奖励",
+        "OAuth 注册复用同一套归因逻辑"
+      ]
+    },
+    {
+      "id": "promotion-frontend-capture",
+      "title": "前端 URL 参数采集与注册提交",
+      "status": "pending",
+      "scope": [
+        "web/default/src/routes/__root.tsx",
+        "web/default/src/features/auth/lib/storage.ts",
+        "web/default/src/features/auth/types.ts",
+        "web/default/src/features/auth/api.ts",
+        "web/default/src/features/auth/sign-up/components/sign-up-form.tsx"
+      ],
+      "acceptance": [
+        "?promo=xxx 参数保存到 localStorage",
+        "?aff=xxx 向后兼容保存",
+        "注册请求携带 promotion_code 字段"
+      ]
+    },
+    {
+      "id": "promotion-frontend-admin",
+      "title": "前端推广管理页面",
+      "status": "pending",
+      "depends_on": ["promotion-frontend-capture", "promotion-backend-api"],
+      "scope": ["web/default/src/features/promotions/"],
+      "acceptance": [
+        "推广链接列表、创建、编辑、启停流程可用",
+        "复制推广链接功能可用",
+        "查看注册明细可用",
+        "管理端侧边栏新增「推广链接」菜单（仅 admin/root 可见）",
+        "i18n 文案同步：bun run i18n:sync 通过"
+      ]
+    }
+  ],
+  "out_of_scope": [
+    "分佣结算",
+    "多级推广",
+    "复杂 ROI 看板",
+    "A/B 实验",
+    "设备指纹",
+    "点击实时埋点的复杂漏斗分析",
+    "推广链接落地页编辑器",
+    "临时邮箱黑名单",
+    "首次成功调用 API 后再发奖励（延迟发放）",
+    "首次充值后再发邀请人奖励"
+  ]
+}

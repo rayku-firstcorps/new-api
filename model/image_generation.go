@@ -2,9 +2,23 @@ package model
 
 import (
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
+
+	"gorm.io/gorm"
 )
+
+// imageGenerationTagsCache 缓存 GetImageGenerationTags 的聚合结果，
+// 避免每次公开请求都对 ImageGenerationTemplate 全表扫描 + JSON 解析。
+var (
+	imageGenerationTagsCache      []map[string]interface{}
+	imageGenerationTagsCacheAt    int64
+	imageGenerationTagsCacheMutex sync.RWMutex
+)
+
+const imageGenerationTagsCacheTTL int64 = 60 // 秒
 
 type ImageGenerationTemplate struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
@@ -131,6 +145,23 @@ func (t *ImageGenerationTemplate) ToExportItem() ImageGenerationTemplateExportIt
 }
 
 func GetImageGenerationTags() ([]map[string]interface{}, error) {
+	now := time.Now().Unix()
+
+	imageGenerationTagsCacheMutex.RLock()
+	if imageGenerationTagsCache != nil && now-imageGenerationTagsCacheAt < imageGenerationTagsCacheTTL {
+		cached := imageGenerationTagsCache
+		imageGenerationTagsCacheMutex.RUnlock()
+		return cached, nil
+	}
+	imageGenerationTagsCacheMutex.RUnlock()
+
+	imageGenerationTagsCacheMutex.Lock()
+	defer imageGenerationTagsCacheMutex.Unlock()
+	// double-check：避免多个 goroutine 同时穿透到 DB
+	if imageGenerationTagsCache != nil && now-imageGenerationTagsCacheAt < imageGenerationTagsCacheTTL {
+		return imageGenerationTagsCache, nil
+	}
+
 	var templates []ImageGenerationTemplate
 	if err := DB.Where("visible = ?", true).Select("tags").Find(&templates).Error; err != nil {
 		return nil, err
@@ -153,7 +184,19 @@ func GetImageGenerationTags() ([]map[string]interface{}, error) {
 			"count": count,
 		})
 	}
+
+	imageGenerationTagsCache = result
+	imageGenerationTagsCacheAt = now
 	return result, nil
+}
+
+// InvalidateImageGenerationTagsCache 在模板增删改后立即过期 tags 缓存。
+// 没有调用方时也无害，仅会让下一次 Get 走 DB。
+func InvalidateImageGenerationTagsCache() {
+	imageGenerationTagsCacheMutex.Lock()
+	imageGenerationTagsCache = nil
+	imageGenerationTagsCacheAt = 0
+	imageGenerationTagsCacheMutex.Unlock()
 }
 
 func GetImageGenerationTemplates(keyword, tag string, page, pageSize int) ([]ImageGenerationTemplate, int64, error) {
@@ -167,15 +210,17 @@ func GetImageGenerationTemplates(keyword, tag string, page, pageSize int) ([]Ima
 	query := DB.Model(&ImageGenerationTemplate{}).Where("visible = ?", true)
 
 	if keyword != "" {
-		like := "%" + keyword + "%"
-		query = query.Where("title LIKE ? OR description LIKE ? OR prompt LIKE ? OR tags LIKE ?",
+		like := "%" + escapeLikePattern(keyword) + "%"
+		query = query.Where(
+			"title LIKE ? ESCAPE '!' OR description LIKE ? ESCAPE '!' OR prompt LIKE ? ESCAPE '!' OR tags LIKE ? ESCAPE '!'",
 			like, like, like, like)
 	}
 
 	if tag != "" {
-		// 匹配 JSON 数组中包含该标签（TEXT 存储，使用 LIKE 近似匹配）
-		tagLike := "%" + tag + "%"
-		query = query.Where("tags LIKE ?", tagLike)
+		// tags 字段以 JSON 数组字符串存储（如 `["art","abstract"]`），
+		// 用带双引号的 LIKE 模式精确匹配 tag 边界，避免 "art" 误命中 "abstract"。
+		tagLike := `%"` + escapeLikePattern(tag) + `"%`
+		query = query.Where("tags LIKE ? ESCAPE '!'", tagLike)
 	}
 
 	var total int64
@@ -262,6 +307,7 @@ func AdminCreateImageGenerationTemplate(input *ImageGenerationTemplateInput) (*I
 	if err := DB.Create(t).Error; err != nil {
 		return nil, err
 	}
+	InvalidateImageGenerationTagsCache()
 	return t, nil
 }
 
@@ -281,11 +327,16 @@ func AdminUpdateImageGenerationTemplate(id int, input *ImageGenerationTemplateIn
 	if err := DB.Save(t).Error; err != nil {
 		return nil, err
 	}
+	InvalidateImageGenerationTagsCache()
 	return t, nil
 }
 
 func AdminDeleteImageGenerationTemplate(id int) error {
-	return DB.Delete(&ImageGenerationTemplate{}, id).Error
+	if err := DB.Delete(&ImageGenerationTemplate{}, id).Error; err != nil {
+		return err
+	}
+	InvalidateImageGenerationTagsCache()
+	return nil
 }
 
 // AdminExportAllImageGenerationTemplates 返回全部模板（不分页、不过滤 visible），用于导出。
@@ -299,29 +350,51 @@ func AdminExportAllImageGenerationTemplates() ([]ImageGenerationTemplate, error)
 
 // AdminBatchCreateImageGenerationTemplates 批量创建模板（忽略传入 ID，全部作为新记录）。
 // title / prompt / image_url 任一为空的行会被跳过。返回成功创建的条数。
+// 整体包裹在事务内：任意一条失败即回滚已写入的全部行，避免脏数据。
 func AdminBatchCreateImageGenerationTemplates(inputs []ImageGenerationTemplateInput) (int, error) {
 	imported := 0
-	for i := range inputs {
-		input := inputs[i]
-		if strings.TrimSpace(input.Title) == "" ||
-			strings.TrimSpace(input.Prompt) == "" ||
-			strings.TrimSpace(input.ImageUrl) == "" {
-			continue
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		for i := range inputs {
+			input := inputs[i]
+			if strings.TrimSpace(input.Title) == "" ||
+				strings.TrimSpace(input.Prompt) == "" ||
+				strings.TrimSpace(input.ImageUrl) == "" {
+				continue
+			}
+			t := &ImageGenerationTemplate{
+				Title:       input.Title,
+				Description: input.Description,
+				Prompt:      input.Prompt,
+				ImageUrl:    input.ImageUrl,
+				ImageUrls:   input.ImageUrls,
+				Tags:        input.Tags,
+				Sort:        input.Sort,
+				Visible:     input.Visible,
+			}
+			if err := tx.Create(t).Error; err != nil {
+				return err
+			}
+			imported++
 		}
-		t := &ImageGenerationTemplate{
-			Title:       input.Title,
-			Description: input.Description,
-			Prompt:      input.Prompt,
-			ImageUrl:    input.ImageUrl,
-			ImageUrls:   input.ImageUrls,
-			Tags:        input.Tags,
-			Sort:        input.Sort,
-			Visible:     input.Visible,
-		}
-		if err := DB.Create(t).Error; err != nil {
-			return imported, err
-		}
-		imported++
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	if imported > 0 {
+		InvalidateImageGenerationTagsCache()
 	}
 	return imported, nil
+}
+
+// escapeLikePattern 转义 SQL LIKE 模式中的元字符（% 和 _），
+// 防止用户输入污染搜索范围。
+// 使用 ! 作为 ESCAPE 字符，与 model/token.go 中 sanitizeLikePattern 的约定一致——
+// 避免 MySQL 字符串字面量中反斜杠的二次转义歧义。
+// 调用方必须配套使用 `LIKE ? ESCAPE '!'`。
+func escapeLikePattern(s string) string {
+	s = strings.ReplaceAll(s, "!", "!!")
+	s = strings.ReplaceAll(s, "%", "!%")
+	s = strings.ReplaceAll(s, "_", "!_")
+	return s
 }

@@ -135,3 +135,34 @@ For request structs that are parsed from client JSON and then re-marshaled to up
 ### Rule 7: Billing Expression System — Read `pkg/billingexpr/expr.md`
 
 When working on tiered/dynamic billing (expression-based pricing), you MUST read `pkg/billingexpr/expr.md` first. It documents the design philosophy, expression language (variables, functions, examples), full system architecture (editor → storage → pre-consume → settlement → log display), token normalization rules (`p`/`c` auto-exclusion), quota conversion, and expression versioning. All code changes to the billing expression system must follow the patterns described in that document.
+
+## Harness 协议
+
+### 会话启动
+
+每次会话开始必须按顺序完成：
+
+1. 阅读 `claude-progress.md` — 找到上次断点和下一步
+2. 阅读 `.harness/feature_list.json` — 确认当前 pending/in_progress 的 feature 和 out_of_scope 列表
+3. 确认已读本文档全部规则
+4. 向用户声明本次会话将实现哪个 feature，以及明确**不会**触碰的范围
+
+可调用 `.agents/skills/harness-start/SKILL.md` 中的启动 skill 完成以上步骤。
+
+### 单功能原则
+
+每次会话只处理一个 feature。跨越范围前必须先更新 `.harness/feature_list.json` 并告知用户。
+
+### 会话结束
+
+每次会话结束前必须完成：
+
+1. 将进行中的 feature 在 `.harness/feature_list.json` 中标记为 `"in_progress"` 或 `"done"`
+2. 完成时运行 `bash .harness/verify.sh [feature-id]`，验证通过才能标记为 `"done"`
+3. 更新 `claude-progress.md`：填写本次进展、遗留问题、下一步具体动作
+
+### 范围纪律
+
+- `.harness/feature_list.json` 的 `out_of_scope` 中列出的功能，本 Stage 内**绝对不实现**
+- 不在 `features` 列表中的新需求，先加入 feature_list.json 再实现
+- 验收标准以 `acceptance` 数组中的条目为准，逐条确认

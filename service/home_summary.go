@@ -1,6 +1,7 @@
 package service
 
 import (
+	"math"
 	"sync"
 	"time"
 
@@ -8,6 +9,15 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 )
+
+// roundDisplayAmount 将展示金额四舍五入到指定小数位，避免序列化 float64 尾数。
+// Tokens 类型保持整数，其他货币保留 4 位小数。
+func roundDisplayAmount(amount float64, displayType string) float64 {
+	if displayType == operation_setting.QuotaDisplayTypeTokens {
+		return math.Round(amount)
+	}
+	return math.Round(amount*10000) / 10000
+}
 
 const (
 	HomeLandingCacheTTLSeconds = 60
@@ -214,7 +224,7 @@ func quotaToDisplayAmount(rawQuota int) HomeDisplayAmount {
 
 	return HomeDisplayAmount{
 		Amount:        amount,
-		DisplayAmount: amount,
+		DisplayAmount: roundDisplayAmount(amount, displayType),
 		DisplayType:   displayType,
 		Symbol:        operation_setting.GetCurrencySymbol(),
 	}

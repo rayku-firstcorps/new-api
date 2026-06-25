@@ -6,6 +6,13 @@ import (
 	"io"
 )
 
+// RawMessage 别名，让业务代码引用 common.RawMessage 而不必直接 import encoding/json
+// （Rule 1：所有 JSON 操作通过 common.* 包）。
+type RawMessage = json.RawMessage
+
+// Number 别名，同上。
+type Number = json.Number
+
 func Unmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }

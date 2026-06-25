@@ -209,8 +209,18 @@ func ValidateSplashAdConfig(config *SplashAdConfig) error {
 	if len(config.Content) > 5000 {
 		return errors.New("splash ad content is too long")
 	}
+	if config.ImageUrl != "" && !isAllowedPromotionBannerImageURL(config.ImageUrl) {
+		return errors.New("unsupported splash ad image URL")
+	}
 	if config.StartTime > 0 && config.EndTime > 0 && config.EndTime < config.StartTime {
 		return errors.New("splash ad end time is earlier than start time")
+	}
+	if config.ContentFormat == PromotionBannerContentFormatHTML {
+		sanitized, err := sanitizePromotionBannerHTML(config.Content)
+		if err != nil {
+			return err
+		}
+		config.Content = sanitized
 	}
 	return nil
 }
@@ -251,6 +261,28 @@ func SetSplashAdConfig(config SplashAdConfig) error {
 		return err
 	}
 	return UpdateOption(OptionKeySplashAdConfig, string(jsonBytes))
+}
+
+// NormalizeSplashAdConfigJSONString 解析、校验并消毒来自 PUT /api/option 通用接口
+// 提交的 SplashAdConfig JSON 字符串，返回消毒后的 JSON 串。
+// 空串返回空串，由调用方自行决定是否回退到默认值。
+func NormalizeSplashAdConfigJSONString(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	var config SplashAdConfig
+	if err := common.UnmarshalJsonStr(raw, &config); err != nil {
+		return "", errors.New("invalid splash ad config")
+	}
+	if err := ValidateSplashAdConfig(&config); err != nil {
+		return "", err
+	}
+	jsonBytes, err := common.Marshal(config)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }
 
 func normalizePromotionCode(code string) string {
@@ -1062,12 +1094,12 @@ func ClaimPromotionReward(userId int) (*PromotionRegistration, error) {
 	var claimed *PromotionRegistration
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		var user User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", userId).First(&user).Error; err != nil {
+		if err := LockForUpdate(tx).Where("id = ?", userId).First(&user).Error; err != nil {
 			return err
 		}
 
 		var registration PromotionRegistration
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("user_id = ?", userId).First(&registration).Error; err != nil {
+		if err := LockForUpdate(tx).Where("user_id = ?", userId).First(&registration).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.New("promotion reward not found")
 			}
@@ -1163,7 +1195,7 @@ func TryGrantFirstTopUpReward(userId int, topUpAmount int64) {
 
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		var lockedUser User
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+		if err := LockForUpdate(tx).
 			Select("id", "promotion_code", "first_topup_rewarded").
 			Where("id = ?", userId).First(&lockedUser).Error; err != nil {
 			return err
