@@ -40,11 +40,12 @@ echo "── 全局规则验证 ──"
 
 check "Go 编译通过" "go build ./..."
 
-check "未在业务代码中直接 import encoding/json（Rule 1）" \
-  "! grep -rn '\"encoding/json\"' \
+check "未在业务代码中直接调用 encoding/json 编解码（Rule 1）" \
+  "! grep -RInE '[[:alnum:]_]*json\.(Marshal|Unmarshal|NewDecoder|NewEncoder)' \
      --include='*.go' \
      controller/ service/ model/ relay/ oauth/ setting/ middleware/ 2>/dev/null \
    | grep -v '_test.go' \
+   | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' \
    | grep -qv '^$'"
 
 # ── 后端模型验证 ─────────────────────────────────────

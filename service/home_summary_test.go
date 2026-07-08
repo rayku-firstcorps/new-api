@@ -20,13 +20,10 @@ func setupHomeSummaryTestDB(t *testing.T) *gorm.DB {
 
 	initHomeSummaryColumnNames(t)
 
-	originalUsingSQLite := common.UsingSQLite
-	originalUsingMySQL := common.UsingMySQL
-	originalUsingPostgreSQL := common.UsingPostgreSQL
+	originalMainDatabaseType := common.MainDatabaseType()
+	originalLogDatabaseType := common.LogDatabaseType()
 	originalRedisEnabled := common.RedisEnabled
-	common.UsingSQLite = true
-	common.UsingMySQL = false
-	common.UsingPostgreSQL = false
+	common.SetDatabaseTypes(common.DatabaseTypeSQLite, common.DatabaseTypeSQLite)
 	common.RedisEnabled = false
 
 	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared", strings.ReplaceAll(t.Name(), "/", "_"))
@@ -58,9 +55,7 @@ func setupHomeSummaryTestDB(t *testing.T) *gorm.DB {
 		}
 		model.DB = originalDB
 		model.LOG_DB = originalLogDB
-		common.UsingSQLite = originalUsingSQLite
-		common.UsingMySQL = originalUsingMySQL
-		common.UsingPostgreSQL = originalUsingPostgreSQL
+		common.SetDatabaseTypes(originalMainDatabaseType, originalLogDatabaseType)
 		common.RedisEnabled = originalRedisEnabled
 	})
 
@@ -72,18 +67,15 @@ func initHomeSummaryColumnNames(t *testing.T) {
 
 	originalIsMasterNode := common.IsMasterNode
 	originalSQLitePath := common.SQLitePath
-	originalUsingSQLite := common.UsingSQLite
-	originalUsingMySQL := common.UsingMySQL
-	originalUsingPostgreSQL := common.UsingPostgreSQL
+	originalMainDatabaseType := common.MainDatabaseType()
+	originalLogDatabaseType := common.LogDatabaseType()
 	originalSQLDSN, hadSQLDSN := os.LookupEnv("SQL_DSN")
 	originalDB := model.DB
 	originalLogDB := model.LOG_DB
 
 	common.IsMasterNode = false
 	common.SQLitePath = fmt.Sprintf("file:%s_init?mode=memory&cache=shared", strings.ReplaceAll(t.Name(), "/", "_"))
-	common.UsingSQLite = false
-	common.UsingMySQL = false
-	common.UsingPostgreSQL = false
+	common.SetDatabaseTypes(common.DatabaseType(""), common.DatabaseType(""))
 	require.NoError(t, os.Setenv("SQL_DSN", "local"))
 	require.NoError(t, model.InitDB())
 	if model.DB != nil {
@@ -97,9 +89,7 @@ func initHomeSummaryColumnNames(t *testing.T) {
 	model.LOG_DB = originalLogDB
 	common.IsMasterNode = originalIsMasterNode
 	common.SQLitePath = originalSQLitePath
-	common.UsingSQLite = originalUsingSQLite
-	common.UsingMySQL = originalUsingMySQL
-	common.UsingPostgreSQL = originalUsingPostgreSQL
+	common.SetDatabaseTypes(originalMainDatabaseType, originalLogDatabaseType)
 	if hadSQLDSN {
 		require.NoError(t, os.Setenv("SQL_DSN", originalSQLDSN))
 	} else {

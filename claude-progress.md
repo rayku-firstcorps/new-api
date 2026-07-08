@@ -13,6 +13,7 @@
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
+| upstream-merge-preserve-custom-ui | done | 已合并 upstream/main；首页、导航栏-生图、导航栏-文档、footer 保持 fork 定制版本 |
 | promotion-backend-model | pending | 尚未开始 |
 | promotion-backend-api | pending | 依赖 model |
 | promotion-registration-flow | pending | 依赖 api |
@@ -21,15 +22,25 @@
 
 ## 上次停在哪里
 
-首次会话，尚无进展。
+本次会话完成 fork 与 upstream/main 的合并整理。保留了 fork 定制的首页、导航栏生图入口、导航栏文档入口、footer，以及已存在的推广/支付/社交/启动页/生图等定制功能；未解决冲突列表为空，受保护 UI 路径在工作区和索引中均无差异。
 
 **下一步：** 从 `promotion-backend-model` 开始，创建 `model/promotion.go`，实现 `PromotionLink` 和 `PromotionRegistration` 结构体，并接入 `model/main.go` AutoMigrate。
 
 ## 已知问题 / 待决策
 
+- [ ] 当前处于 merge 未提交状态；如需固化合并结果，下一步由用户确认后提交 merge commit
 - [ ] `users` 表新增 `promotion_code`、`promotion_channel_tag` 字段：优先通过 GORM AutoMigrate，如遇 SQLite ALTER COLUMN 问题需参考 `model/main.go` 现有模式手工补字段
 - [ ] OAuth 注册（GitHub/Discord/OIDC）是否需要同步接入推广码逻辑？（建议：是，抽 finalize 函数复用）
 - [ ] 推广码与用户 `aff_code` 冲突检测：创建推广链接时需校验 code 不与现有用户 aff_code 重名
+
+## 本次验证
+
+- `go test ./...` 通过
+- `bun run i18n:sync` 通过（web/default）
+- `bun run build:check` 通过（web/default）
+- `C:\Program Files\Git\bin\bash.exe .harness/verify.sh upstream-merge-preserve-custom-ui` 通过
+- `git diff --name-only --diff-filter=U` 为空
+- 受保护 UI 路径 `git diff` / `git diff --cached` 均为空
 
 ## 关键约束（每次会话必读）
 
@@ -58,4 +69,4 @@
 
 ---
 
-*最后更新：Harness 初始化 + 文档整理（首次会话）*
+*最后更新：合并 upstream/main 并保留 fork 定制 UI（2026-07-08）*

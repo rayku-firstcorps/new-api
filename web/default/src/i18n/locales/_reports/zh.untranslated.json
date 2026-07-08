@@ -1,9 +1,12 @@
 {
-  "401 / token invalid": "401 / token invalid",
   "Claude Messages": "Claude Messages",
+  "footer.columns.related.links.midjourney": "Midjourney-Proxy",
   "Gemini Generate Content": "Gemini Generate Content",
-  "Markdown": "Markdown",
   "OpenAI Responses": "OpenAI Responses",
+  "401 / token invalid": "401 / token invalid",
+  "Markdown": "Markdown",
+  "Midjourney": "Midjourney",
+  "MidjourneyPlus": "MidjourneyPlus",
   "Redirect URIs": "重定向 URI",
   "Stream disconnected": "Stream disconnected"
 }

@@ -196,4 +196,3 @@ func TestTryGrantAffCommission_ComplianceNotConfirmed(t *testing.T) {
 	require.NoError(t, DB.Where("id = ?", 1).First(&inviter).Error)
 	assert.Equal(t, 0, inviter.AffQuota, "compliance not confirmed should not grant commission")
 }
-

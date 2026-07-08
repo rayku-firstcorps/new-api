@@ -186,14 +186,14 @@ func AdminExportImageGenerationTemplates(c *gin.Context) {
 // imageGenImportItem 是导入交换格式。image_urls / tags 既兼容数组（来自 JSON 导出），
 // 也兼容字符串（来自表格单元格里的 JSON 文本）。
 type imageGenImportItem struct {
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	Prompt      string          `json:"prompt"`
-	ImageUrl    string          `json:"image_url"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Prompt      string            `json:"prompt"`
+	ImageUrl    string            `json:"image_url"`
 	ImageUrls   common.RawMessage `json:"image_urls"`
 	Tags        common.RawMessage `json:"tags"`
-	Sort        int             `json:"sort"`
-	Visible     bool            `json:"visible"`
+	Sort        int               `json:"sort"`
+	Visible     bool              `json:"visible"`
 }
 
 type imageGenImportRequest struct {

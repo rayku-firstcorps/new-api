@@ -18,16 +18,17 @@ func setupPromotionTestDB(t *testing.T) *gorm.DB {
 	oldDB := DB
 	oldLogDB := LOG_DB
 	oldOptionMap := common.OptionMap
-	oldUsingSQLite := common.UsingSQLite
+	oldMainDatabaseType := common.MainDatabaseType()
+	oldLogDatabaseType := common.LogDatabaseType()
 	DB = db
 	LOG_DB = db
-	common.UsingSQLite = true
+	common.SetDatabaseTypes(common.DatabaseTypeSQLite, common.DatabaseTypeSQLite)
 	common.OptionMap = make(map[string]string)
 	t.Cleanup(func() {
 		DB = oldDB
 		LOG_DB = oldLogDB
 		common.OptionMap = oldOptionMap
-		common.UsingSQLite = oldUsingSQLite
+		common.SetDatabaseTypes(oldMainDatabaseType, oldLogDatabaseType)
 	})
 	require.NoError(t, db.AutoMigrate(&User{}, &PromotionLink{}, &PromotionRegistration{}, &Option{}, &Log{}))
 	return db

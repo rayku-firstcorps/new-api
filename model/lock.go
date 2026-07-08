@@ -16,7 +16,7 @@ import (
 // SQLite 不支持 `FOR UPDATE` 子句，由于它本身采用全库写锁串行化所有写
 // 事务，幂等性已由引擎保证，故在 SQLite 下直接返回原始 tx，不附加 Clauses。
 func LockForUpdate(tx *gorm.DB) *gorm.DB {
-	if common.UsingSQLite {
+	if common.UsingMainDatabase(common.DatabaseTypeSQLite) {
 		return tx
 	}
 	return tx.Clauses(clause.Locking{Strength: "UPDATE"})

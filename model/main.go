@@ -595,7 +595,7 @@ func migratePromotionLandingContentColumn() error {
 	if !DB.Migrator().HasColumn(&PromotionLink{}, columnName) {
 		var addColumnSQL string
 		switch {
-		case common.UsingPostgreSQL:
+		case common.UsingMainDatabase(common.DatabaseTypePostgreSQL):
 			addColumnSQL = fmt.Sprintf(`ALTER TABLE %s ADD COLUMN %s text`, tableName, columnName)
 		default:
 			addColumnSQL = fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` text", tableName, columnName)
@@ -611,9 +611,9 @@ func migratePromotionLandingContentColumn() error {
 
 	var alterColumnSQL string
 	switch {
-	case common.UsingPostgreSQL:
+	case common.UsingMainDatabase(common.DatabaseTypePostgreSQL):
 		alterColumnSQL = fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s SET NOT NULL`, tableName, columnName)
-	case common.UsingMySQL:
+	case common.UsingMainDatabase(common.DatabaseTypeMySQL):
 		alterColumnSQL = fmt.Sprintf("ALTER TABLE `%s` MODIFY COLUMN `%s` text NOT NULL", tableName, columnName)
 	default:
 		return nil

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ImageOff, Wand2, X } from 'lucide-react'
+import { ImageOff, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {

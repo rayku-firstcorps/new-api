@@ -155,11 +155,13 @@ export function ImageGenTemplateTable(props: Props) {
             {props.importing ? t('Importing...') : t('Import')}
           </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant='outline' size='sm' disabled={props.exporting}>
-                <Download className='mr-1.5 h-4 w-4' />
-                {props.exporting ? t('Exporting...') : t('Export')}
-              </Button>
+            <DropdownMenuTrigger
+              render={
+                <Button variant='outline' size='sm' disabled={props.exporting} />
+              }
+            >
+              <Download className='mr-1.5 h-4 w-4' />
+              {props.exporting ? t('Exporting...') : t('Export')}
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end'>
               <DropdownMenuItem onClick={props.onExportJson}>

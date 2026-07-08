@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { ImageOff, Info, Wand2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { ImageGenerationTemplateListItem } from '../types'
 
