@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+
 import { DEFAULT_SYSTEM_NAME, DEFAULT_LOGO } from '@/lib/constants'
 import type { OfficialSocialLink } from '@/features/official-social-links'
 import type { SplashAdConfig } from '@/features/splash-ad/types'

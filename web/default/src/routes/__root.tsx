@@ -16,17 +16,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect } from 'react'
 import { type QueryClient } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import {
   createRootRouteWithContext,
   Outlet,
   redirect,
 } from '@tanstack/react-router'
-import { ThemeCustomizationProvider } from '@/context/theme-customization-provider'
-import { useSystemConfig } from '@/hooks/use-system-config'
-import { Toaster } from '@/components/ui/sonner'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { useEffect } from 'react'
+
 import { NavigationProgress } from '@/components/navigation-progress'
+import { Toaster } from '@/components/ui/sonner'
+import { ThemeCustomizationProvider } from '@/context/theme-customization-provider'
 import {
   saveAffiliateCode,
   savePromotionCode,
@@ -36,6 +38,7 @@ import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 import { getSetupStatus } from '@/features/setup/api'
 import { SplashAdDialog } from '@/features/splash-ad/components/splash-ad-dialog'
+import { useSystemConfig } from '@/hooks/use-system-config'
 
 function RootComponent() {
   // Load system configuration (logo, system name, etc.) from backend
