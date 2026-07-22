@@ -13,7 +13,8 @@
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
-| upstream-merge-preserve-custom-ui | done | 已合并 upstream/main；首页、导航栏-生图、导航栏-文档、footer 保持 fork 定制版本 |
+| utf8-file-reading | done | 项目文本文件读取统一显式使用 UTF-8 编码 |
+| upstream-merge-preserve-custom-ui | done | 已合并 upstream/main（b6b97a66）；首页、导航栏-生图、导航栏-文档、footer 保持 fork 定制版本 |
 | antom-safari-popup-plan | done | 已输出 Safari 下 Antom 支付弹窗优化实施计划，未修改支付业务代码 |
 | antom-safari-popup-fix | done | 已实现 Antom 支付窗口同步预开、失败清理和同页降级；待部署环境 Safari 真机验收 |
 | promotion-backend-model | pending | 尚未开始 |
@@ -30,7 +31,6 @@
 
 ## 已知问题 / 待决策
 
-- [ ] 当前处于 merge 未提交状态；如需固化合并结果，下一步由用户确认后提交 merge commit
 - [ ] `users` 表新增 `promotion_code`、`promotion_channel_tag` 字段：优先通过 GORM AutoMigrate，如遇 SQLite ALTER COLUMN 问题需参考 `model/main.go` 现有模式手工补字段
 - [ ] OAuth 注册（GitHub/Discord/OIDC）是否需要同步接入推广码逻辑？（建议：是，抽 finalize 函数复用）
 - [ ] 推广码与用户 `aff_code` 冲突检测：创建推广链接时需校验 code 不与现有用户 aff_code 重名

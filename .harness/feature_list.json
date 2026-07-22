@@ -4,6 +4,16 @@
   "current_stage": "stage1",
   "features": [
     {
+      "id": "utf8-file-reading",
+      "title": "文件读取统一使用 UTF-8 编码",
+      "status": "done",
+      "scope": ["AGENTS.md", "claude-progress.md"],
+      "acceptance": [
+        "AGENTS.md 明确文件读取使用 UTF-8 编码",
+        "会话进度记录本次约定"
+      ]
+    },
+    {
       "id": "upstream-merge-preserve-custom-ui",
       "title": "合并 upstream/main 并保留 fork 定制界面",
       "status": "done",
