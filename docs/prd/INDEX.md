@@ -23,6 +23,7 @@
 | 文件 | 说明 |
 |---|---|
 | [payment-prd.md](payment-prd.md) | 支付业务 PRD — 完整流程分析与优化建议 |
+| [antom-safari-popup-optimization-plan.md](antom-safari-popup-optimization-plan.md) | Antom Safari 支付弹窗优化实施计划 |
 | [payssion-integration-prd.md](payssion-integration-prd.md) | Payssion 支付接入开发流程 |
 
 ## SSO

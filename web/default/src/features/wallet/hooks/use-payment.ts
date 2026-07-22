@@ -178,7 +178,7 @@ export function usePayment() {
         }
 
         if (isApiSuccess(response) && response.data) {
-          const calculatedAmount = parseFloat(response.data)
+          const calculatedAmount = Number.parseFloat(response.data)
           setAmount(calculatedAmount)
           return calculatedAmount
         }
@@ -186,7 +186,7 @@ export function usePayment() {
         // Don't show error for calculation, just set to 0
         setAmount(0)
         return 0
-      } catch (_error) {
+      } catch {
         setAmount(0)
         return 0
       } finally {
@@ -199,6 +199,8 @@ export function usePayment() {
   // Process payment
   const processPayment = useCallback(
     async (topupAmount: number, paymentType: string) => {
+      let antomPaymentWindow: Window | null = null
+
       try {
         setProcessing(true)
 
@@ -207,6 +209,13 @@ export function usePayment() {
         const isPayssion = isPayssionPayment(paymentType)
         const isAntom = isAntomPayment(paymentType)
         const amount = Math.floor(topupAmount)
+
+        if (isAntom) {
+          antomPaymentWindow = window.open('', '_blank')
+          if (antomPaymentWindow) {
+            antomPaymentWindow.opener = null
+          }
+        }
 
         let response
         if (isStripe) {
@@ -235,6 +244,7 @@ export function usePayment() {
         }
 
         if (!isApiSuccess(response)) {
+          antomPaymentWindow?.close()
           toast.error(response.message || i18next.t('Payment request failed'))
           return false
         }
@@ -273,7 +283,7 @@ export function usePayment() {
           }
         }
 
-        if (isAntom && response.data) {
+        if (isAntom) {
           const data = response.data
           const paymentUrl =
             typeof data === 'string'
@@ -281,14 +291,23 @@ export function usePayment() {
               : getStringField(data, 'payment_url') || ''
           const orderId =
             typeof data === 'object' ? getStringField(data, 'order_id') : null
-          if (paymentUrl) {
-            window.open(paymentUrl, '_blank')
-            toast.success(i18next.t('Redirecting to payment page...'))
-            if (orderId) {
-              startAntomPaymentConfirmation(orderId)
-            }
-            return true
+
+          if (!paymentUrl) {
+            antomPaymentWindow?.close()
+            toast.error(i18next.t('Payment request failed'))
+            return false
           }
+
+          if (antomPaymentWindow && !antomPaymentWindow.closed) {
+            antomPaymentWindow.location.replace(paymentUrl)
+          } else {
+            window.location.assign(paymentUrl)
+          }
+          toast.success(i18next.t('Redirecting to payment page...'))
+          if (orderId) {
+            startAntomPaymentConfirmation(orderId)
+          }
+          return true
         }
 
         // Handle non-Stripe payment
@@ -309,7 +328,8 @@ export function usePayment() {
         }
 
         return false
-      } catch (_error) {
+      } catch {
+        antomPaymentWindow?.close()
         toast.error(i18next.t('Payment request failed'))
         return false
       } finally {

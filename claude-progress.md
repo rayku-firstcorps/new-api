@@ -14,6 +14,8 @@
 | 功能 | 状态 | 说明 |
 |---|---|---|
 | upstream-merge-preserve-custom-ui | done | 已合并 upstream/main；首页、导航栏-生图、导航栏-文档、footer 保持 fork 定制版本 |
+| antom-safari-popup-plan | done | 已输出 Safari 下 Antom 支付弹窗优化实施计划，未修改支付业务代码 |
+| antom-safari-popup-fix | done | 已实现 Antom 支付窗口同步预开、失败清理和同页降级；待部署环境 Safari 真机验收 |
 | promotion-backend-model | pending | 尚未开始 |
 | promotion-backend-api | pending | 依赖 model |
 | promotion-registration-flow | pending | 依赖 api |
@@ -22,7 +24,7 @@
 
 ## 上次停在哪里
 
-本次会话完成 fork 与 upstream/main 的合并整理。保留了 fork 定制的首页、导航栏生图入口、导航栏文档入口、footer，以及已存在的推广/支付/社交/启动页/生图等定制功能；未解决冲突列表为空，受保护 UI 路径在工作区和索引中均无差异。
+本次完成 `antom-safari-popup-fix`。`usePayment().processPayment()` 现会在 Antom 下单请求前同步预开支付窗口并断开 `window.opener`；下单失败、网络异常或缺少支付链接时关闭空白窗口；弹窗不可用或已关闭时改为当前页跳转。其他支付渠道保持原行为。实施和验证记录已追加到 `docs/prd/antom-safari-popup-optimization-plan.md`。
 
 **下一步：** 从 `promotion-backend-model` 开始，创建 `model/promotion.go`，实现 `PromotionLink` 和 `PromotionRegistration` 结构体，并接入 `model/main.go` AutoMigrate。
 
@@ -39,6 +41,9 @@
 - `bun run i18n:sync` 通过（web/default）
 - `bun run build:check` 通过（web/default）
 - `C:\Program Files\Git\bin\bash.exe .harness/verify.sh upstream-merge-preserve-custom-ui` 通过
+- `C:\Program Files\Git\bin\bash.exe .harness/verify.sh antom-safari-popup-plan` 通过（Go 编译、全局 JSON 规则）
+- `bun run typecheck`、目标文件 oxlint/oxfmt、`bun run build:check` 通过（web/default）
+- `C:\Program Files\Git\bin\bash.exe .harness/verify.sh antom-safari-popup-fix` 通过（Go 编译、全局 JSON 规则）
 - `git diff --name-only --diff-filter=U` 为空
 - 受保护 UI 路径 `git diff` / `git diff --cached` 均为空
 
@@ -69,4 +74,4 @@
 
 ---
 
-*最后更新：合并 upstream/main 并保留 fork 定制 UI（2026-07-08）*
+*最后更新：完成 Antom Safari 支付弹窗修复（2026-07-22）；下一步完成 Safari 真机发布验收，之后继续 `promotion-backend-model`。*

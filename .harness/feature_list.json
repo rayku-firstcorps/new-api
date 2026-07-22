@@ -16,6 +16,38 @@
       ]
     },
     {
+      "id": "antom-safari-popup-plan",
+      "title": "Antom Safari 支付弹窗优化实施计划",
+      "status": "done",
+      "scope": [
+        "docs/prd/antom-safari-popup-optimization-plan.md",
+        "docs/prd/INDEX.md"
+      ],
+      "acceptance": [
+        "说明 Safari 拦截 Antom 支付弹窗的根因和现有调用链",
+        "给出可直接实施的前端改造步骤、异常降级和安全约束",
+        "定义浏览器测试矩阵、自动化测试点和完成标准",
+        "本 feature 只产出计划文档，不修改支付业务代码"
+      ]
+    },
+    {
+      "id": "antom-safari-popup-fix",
+      "title": "修复 Safari 拦截 Antom 支付弹窗",
+      "status": "done",
+      "depends_on": ["antom-safari-popup-plan"],
+      "scope": [
+        "web/default/src/features/wallet/hooks/use-payment.ts",
+        "docs/prd/antom-safari-popup-optimization-plan.md"
+      ],
+      "acceptance": [
+        "Antom 在异步下单前同步预开支付窗口",
+        "下单失败或支付链接缺失时关闭预开窗口",
+        "弹窗被拦截时使用当前页面打开支付链接",
+        "支付窗口断开 window.opener 且其他支付渠道行为不变",
+        "前端类型检查、lint、构建和 Harness 验证通过"
+      ]
+    },
+    {
       "id": "promotion-backend-model",
       "title": "推广链接后端模型与迁移",
       "status": "pending",
