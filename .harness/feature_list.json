@@ -17,7 +17,7 @@
       "id": "upstream-merge-preserve-custom-ui",
       "title": "合并 upstream/main 并保留 fork 定制界面",
       "status": "done",
-      "scope": ["repository merge", "web/default"],
+      "scope": ["repository merge", "web"],
       "acceptance": [
         "upstream/main 的非定制改动合并到当前 fork",
         "首页、导航栏-生图、导航栏-文档、footer 保持 fork 定制版本",
