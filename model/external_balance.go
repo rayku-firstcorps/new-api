@@ -252,11 +252,14 @@ func DeductUserQuotaAtomically(params DeductParams) (*ExternalBalanceTransaction
 }
 
 func RefreshUserQuotaCache(userId int) error {
-	quota, err := GetUserQuota(userId, true)
-	if err != nil {
+	if !common.RedisEnabled {
+		return nil
+	}
+	if err := invalidateUserCache(userId); err != nil {
 		return err
 	}
-	return updateUserQuotaCache(userId, quota)
+	_, err := GetUserCache(userId)
+	return err
 }
 
 func findExternalBalanceUserWithDB(db *gorm.DB, identifier UserIdentifier) (*User, error) {

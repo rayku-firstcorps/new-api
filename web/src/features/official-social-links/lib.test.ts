@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import { describe, test } from 'node:test'
+import { describe, expect, test } from 'vitest'
 
 import { normalizeOfficialSocialLinksForDisplay } from './lib'
 
@@ -66,14 +65,13 @@ describe('normalizeOfficialSocialLinksForDisplay', () => {
 
     const normalized = normalizeOfficialSocialLinksForDisplay(links)
 
-    assert.deepEqual(
+    expect(
       normalized.map((link) => link.id),
-      ['whatsapp', 'telegram', 'instagram']
-    )
+    ).toEqual(['whatsapp', 'telegram', 'instagram'])
   })
 
   test('returns an empty list when no valid links are configured', () => {
-    assert.deepEqual(normalizeOfficialSocialLinksForDisplay([]), [])
-    assert.deepEqual(normalizeOfficialSocialLinksForDisplay(undefined), [])
+    expect(normalizeOfficialSocialLinksForDisplay([])).toEqual([])
+    expect(normalizeOfficialSocialLinksForDisplay(undefined)).toEqual([])
   })
 })
