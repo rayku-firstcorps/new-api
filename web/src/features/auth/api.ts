@@ -22,10 +22,10 @@ import { api, refreshAuthentication, type RefreshOutcome } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
 
 import {
-  getAffiliateCode,
-  getPromotionCode,
-  getRegistrationSource,
-} from './lib/storage'
+  clearPasswordEncryptionCache,
+  encryptPassword,
+} from './lib/password-encryption'
+import { getAffiliateCode } from './lib/storage'
 import type { TelegramAuthorization } from './lib/telegram-login'
 import type {
   LoginPayload,
@@ -45,17 +45,39 @@ import type {
 // ----------------------------------------------------------------------------
 
 // User login with username and password
-export async function login(payload: LoginPayload) {
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const turnstile = payload.turnstile ?? ''
-  const res = await api.post<LoginResponse>(
-    `/api/user/login?turnstile=${turnstile}`,
-    {
-      username: payload.username,
-      password: payload.password,
-    },
-    { skipAuthRefresh: true }
-  )
-  return res.data
+  try {
+    let passwordFields:
+      | { password: string }
+      | { password_encrypted: string; encryption_key_id: string }
+    if (payload.passwordEncryptionEnabled) {
+      const encryptedPassword = await encryptPassword(payload.password)
+      passwordFields = {
+        password_encrypted: encryptedPassword.password_encrypted,
+        encryption_key_id: encryptedPassword.encryption_key_id,
+      }
+    } else {
+      passwordFields = { password: payload.password }
+    }
+    const res = await api.post<LoginResponse>(
+      `/api/user/login?turnstile=${turnstile}`,
+      {
+        username: payload.username,
+        ...passwordFields,
+      },
+      { skipAuthRefresh: true }
+    )
+    if (payload.passwordEncryptionEnabled && !res.data?.success) {
+      clearPasswordEncryptionCache()
+    }
+    return res.data
+  } catch (error: unknown) {
+    if (payload.passwordEncryptionEnabled) {
+      clearPasswordEncryptionCache()
+    }
+    throw error
+  }
 }
 
 // Two-factor authentication login
@@ -147,17 +169,9 @@ export async function createOAuthFlow(
   intent: 'login' | 'bind'
 ): Promise<string> {
   const aff = intent === 'login' ? getAffiliateCode() : ''
-  const promotionCode = intent === 'login' ? getPromotionCode() : ''
-  const registrationSource = intent === 'login' ? getRegistrationSource() : ''
   const res = await api.post(
     '/api/oauth/state',
-    {
-      provider,
-      intent,
-      aff: aff || undefined,
-      promotion_code: promotionCode || undefined,
-      registration_source: registrationSource || undefined,
-    },
+    { provider, intent, aff: aff || undefined },
     { skipAuthRefresh: intent === 'login' }
   )
   if (res.data?.success) {
@@ -194,14 +208,7 @@ export async function telegramLogin(
 
 // User registration
 export async function register(payload: RegisterPayload): Promise<ApiResponse> {
-  const requestBody = {
-    ...payload,
-    promotion_code: payload.promotion_code ?? payload.promo,
-    aff_code: payload.aff_code ?? payload.aff,
-    promo: payload.promo ?? payload.promotion_code,
-    aff: payload.aff ?? payload.aff_code,
-  }
-  const res = await api.post(`/api/user/register`, requestBody, {
+  const res = await api.post(`/api/user/register`, payload, {
     params: { turnstile: payload.turnstile ?? '' },
   })
   return res.data
