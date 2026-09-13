@@ -47,6 +47,7 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { handleServerError } from '@/lib/handle-server-error'
 import { cn } from '@/lib/utils'
 
 import { confirmPaymentCompliance } from '../api'
@@ -358,11 +359,11 @@ export function PaymentSettingsSection({
         setShowComplianceDialog(false)
         queryClient.invalidateQueries({ queryKey: ['system-options'] })
       } else {
-        toast.error(data.message || t('Failed to confirm compliance'))
+        handleServerError(data, t('Failed to confirm compliance'))
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('Failed to confirm compliance'))
+      handleServerError(error, t('Failed to confirm compliance'))
     },
   })
 
@@ -777,13 +778,14 @@ export function PaymentSettingsSection({
       }
 
       const reason = typeof body?.data === 'string' ? body.data : undefined
-      toast.error(
-        reason
+      handleServerError(body, undefined, {
+        title: reason
           ? `${t('Waffo Pancake save failed')}: ${reason}`
-          : t('Waffo Pancake save failed')
-      )
+          : t('Waffo Pancake save failed'),
+      })
     } catch (error) {
-      toast.error(
+      handleServerError(
+        error,
         `${t('Waffo Pancake save failed')}: ${
           error instanceof Error ? error.message : String(error)
         }`
