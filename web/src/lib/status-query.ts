@@ -18,6 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 
+import {
+  normalizeOfficialSocialLinksForDisplay,
+  type OfficialSocialLink,
+} from '@/features/official-social-links'
+import { parseSplashAdConfig } from '@/features/splash-ad/types'
 import { getStatus } from '@/lib/api'
 import { DEFAULT_SYSTEM_NAME, DEFAULT_LOGO } from '@/lib/constants'
 import {
@@ -99,7 +104,13 @@ export function mapStatusDataToConfig(
     displayTokenStatEnabled: data.display_token_stat_enabled as
       | boolean
       | undefined,
+    officialSocialLinks: normalizeOfficialSocialLinksForDisplay(
+      (data.official_social_links ?? data.OfficialSocialLinks) as
+        | OfficialSocialLink[]
+        | undefined
+    ),
     currency,
+    splashAd: parseSplashAdConfig(data.SplashAdConfig as string | undefined),
   }
 }
 

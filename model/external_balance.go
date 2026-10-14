@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -243,10 +242,7 @@ func DeductUserQuotaAtomically(params DeductParams) (*ExternalBalanceTransaction
 
 	if resultRecord != nil && resultRecord.Status == ExternalBalanceStatusSuccess {
 		_ = RefreshUserQuotaCache(resultRecord.UserID)
-		RecordLog(resultRecord.UserID, LogTypeSystem, fmt.Sprintf(
-			"External balance deduction %s, request_id=%s, reason=%s",
-			logger.LogQuota(resultRecord.Quota), resultRecord.RequestID, resultRecord.Reason,
-		))
+		RecordLog(resultRecord.UserID, LogTypeSystem, common.NewMessage("External balance deduction {{quota}}, request ID: {{request_id}}, reason: {{reason}}", map[string]any{"quota": logger.FormatQuota(resultRecord.Quota), "request_id": resultRecord.RequestID, "reason": resultRecord.Reason}))
 	}
 	return resultRecord, nil
 }

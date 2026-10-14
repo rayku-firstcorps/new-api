@@ -20,6 +20,8 @@ import i18next from 'i18next'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
+import { handleServerError } from '@/lib/handle-server-error'
+
 import {
   calculateAmount,
   calculateStripeAmount,
@@ -289,7 +291,7 @@ export function usePayment() {
 
         if (!isApiSuccess(response)) {
           antomPaymentWindow?.close()
-          toast.error(response.message || i18next.t('Payment request failed'))
+          handleServerError(response, i18next.t('Payment request failed'))
           return false
         }
 
@@ -372,9 +374,9 @@ export function usePayment() {
         }
 
         return false
-      } catch {
+      } catch (error) {
         antomPaymentWindow?.close()
-        toast.error(i18next.t('Payment request failed'))
+        handleServerError(error, i18next.t('Payment request failed'))
         return false
       } finally {
         setProcessing(false)

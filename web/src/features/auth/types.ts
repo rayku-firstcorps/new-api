@@ -191,6 +191,8 @@ export interface SystemStatus {
   custom_oauth_providers?: CustomOAuthProviderInfo[]
   official_social_links?: OfficialSocialLink[]
   OfficialSocialLinks?: OfficialSocialLink[]
+  log_export_enabled?: boolean
+  log_max_range_days?: number
   [key: string]: unknown
 }
 

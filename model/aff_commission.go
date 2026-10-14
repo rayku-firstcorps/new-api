@@ -60,6 +60,5 @@ func TryGrantAffCommission(userId int, topUpQuota int, topUpAmount int64) {
 		return
 	}
 
-	RecordLog(user.InviterId, LogTypeSystem, fmt.Sprintf("邀请用户充值返佣 %s（被邀请人ID: %d，充值金额: %d）",
-		logger.LogQuota(commission), userId, topUpAmount))
+	RecordLog(user.InviterId, LogTypeSystem, common.NewMessage("Referral commission {{quota}} (invitee ID: {{user_id}}, top-up amount: {{amount}})", map[string]any{"quota": logger.FormatQuota(commission), "user_id": userId, "amount": topUpAmount}))
 }

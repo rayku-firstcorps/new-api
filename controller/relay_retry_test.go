@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/QuantumNous/new-api/relaykit/types"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestShouldRetryRetryableGatewayTimeout(t *testing.T) {
 		types.ErrOptionWithRetryable(),
 	)
 
-	require.True(t, shouldRetry(c, err, 1))
+	require.True(t, service.ShouldRetryRelayError(c, err, 1))
 }
 
 func TestShouldRetryPlainGatewayTimeoutKeepsLegacySkip(t *testing.T) {
@@ -34,5 +35,5 @@ func TestShouldRetryPlainGatewayTimeoutKeepsLegacySkip(t *testing.T) {
 		http.StatusGatewayTimeout,
 	)
 
-	require.False(t, shouldRetry(c, err, 1))
+	require.False(t, service.ShouldRetryRelayError(c, err, 1))
 }

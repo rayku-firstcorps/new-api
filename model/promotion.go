@@ -1149,7 +1149,7 @@ func ClaimPromotionReward(userId int) (*PromotionRegistration, error) {
 	if err != nil {
 		return nil, err
 	}
-	RecordLog(userId, LogTypeSystem, fmt.Sprintf("绑定邮箱后领取推广体验券 %s", logger.LogQuota(claimed.GrantedQuota)))
+	RecordLog(userId, LogTypeSystem, common.NewMessage("Claimed promotion trial voucher {{quota}} after binding email", map[string]any{"quota": logger.FormatQuota(claimed.GrantedQuota)}))
 	return claimed, nil
 }
 
@@ -1239,6 +1239,6 @@ func TryGrantFirstTopUpReward(userId int, topUpAmount int64) {
 	}
 
 	if rewardQuota > 0 {
-		RecordLog(userId, LogTypeSystem, fmt.Sprintf("通过推广链接首充赠送 %s（推广码: %s，充值金额: %d）", logger.LogQuota(rewardQuota), linkCode, topUpAmount))
+		RecordLog(userId, LogTypeSystem, common.NewMessage("First top-up bonus {{quota}} via promotion link (code: {{code}}, top-up amount: {{amount}})", map[string]any{"quota": logger.FormatQuota(rewardQuota), "code": linkCode, "amount": topUpAmount}))
 	}
 }

@@ -18,7 +18,7 @@ type emailBindRequest struct {
 }
 
 func EmailBindStart(c *gin.Context) {
-	identity, ok := middleware.GetSessionAuthIdentity(c)
+	identity, ok := middleware.GetStepUpIdentity(c)
 	if !ok {
 		writeSecurityOperationError(c, service.ErrAuthTokenInvalid)
 		return
@@ -56,7 +56,7 @@ func EmailBindStart(c *gin.Context) {
 }
 
 func EmailBindResend(c *gin.Context) {
-	identity, ok := middleware.GetSessionAuthIdentity(c)
+	identity, ok := middleware.GetStepUpIdentity(c)
 	if !ok {
 		writeSecurityOperationError(c, service.ErrAuthTokenInvalid)
 		return
@@ -80,7 +80,7 @@ func EmailBindResend(c *gin.Context) {
 }
 
 func EmailBind(c *gin.Context) {
-	identity, ok := middleware.GetSessionAuthIdentity(c)
+	identity, ok := middleware.GetStepUpIdentity(c)
 	if !ok {
 		writeSecurityOperationError(c, service.ErrAuthTokenInvalid)
 		return
@@ -104,6 +104,9 @@ func EmailBind(c *gin.Context) {
 	if err := service.NotifyAccountSecurityChange(state.Email, "Email address confirmed"); err != nil {
 		notificationFailed = true
 	}
+	model.TryAutoClaimPromotionReward(identity.UserID)
+	// 补绑邮箱（含 OAuth 注册用户）后发放新用户免费额度
+	model.TryGrantNewUserQuota(identity.UserID)
 	if err := model.PublishUserAuthCache(identity.UserID); err != nil {
 		writeSecurityOperationError(c, err)
 		return
