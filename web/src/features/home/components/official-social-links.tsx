@@ -31,9 +31,11 @@ import {
   type OfficialSocialLink,
   type OfficialSocialPlatform,
 } from '@/features/official-social-links'
+import { cn } from '@/lib/utils'
 
 type OfficialSocialLinksProps = {
   links: OfficialSocialLink[]
+  variant?: 'compact' | 'hero'
 }
 
 const socialButtonBaseClass =
@@ -62,7 +64,11 @@ export function OfficialSocialLinks(props: OfficialSocialLinksProps) {
   return (
     <TooltipProvider>
       <div
-        className='flex max-w-full flex-wrap items-center justify-center gap-2'
+        className={cn(
+          'flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2',
+          props.variant === 'hero' &&
+            'flex-col items-stretch justify-start gap-3 sm:flex-row sm:flex-wrap'
+        )}
         aria-label={t('Official Communities')}
       >
         {props.links.map((link, index) => {
@@ -71,7 +77,14 @@ export function OfficialSocialLinks(props: OfficialSocialLinksProps) {
           const key = link.id || `${link.platform}-${link.url}-${index}`
           const button = (
             <Button
-              className={`${socialButtonBaseClass} ${socialButtonToneByPlatform[link.platform]}`}
+              role='link'
+              variant={props.variant === 'hero' ? 'outline' : 'default'}
+              className={cn(
+                socialButtonBaseClass,
+                props.variant === 'hero'
+                  ? 'h-auto min-h-12 rounded-xl px-5 py-3 text-sm whitespace-normal'
+                  : socialButtonToneByPlatform[link.platform]
+              )}
               aria-label={label}
               title={label}
               render={
@@ -79,13 +92,21 @@ export function OfficialSocialLinks(props: OfficialSocialLinksProps) {
               }
             >
               <Icon className='size-4' aria-hidden='true' />
-              <span className='max-w-28 truncate sm:max-w-36'>{label}</span>
+              <span
+                className={
+                  props.variant === 'hero'
+                    ? 'min-w-0 wrap-anywhere whitespace-normal'
+                    : 'max-w-28 truncate sm:max-w-36'
+                }
+              >
+                {label}
+              </span>
             </Button>
           )
 
           return (
             <Tooltip key={key}>
-              <TooltipTrigger render={button}></TooltipTrigger>
+              <TooltipTrigger render={button} />
               <TooltipContent>{label}</TooltipContent>
             </Tooltip>
           )

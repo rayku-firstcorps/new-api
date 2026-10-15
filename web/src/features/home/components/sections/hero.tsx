@@ -17,12 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, BookOpen } from 'lucide-react'
+import { ArrowDown, ArrowRight, Braces } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { cn } from '@/lib/utils'
 
 import {
   getLandingPrimaryAction,
@@ -36,8 +38,6 @@ interface HeroProps {
   isAuthenticated?: boolean
 }
 
-const INTERNAL_DOCS_ROUTE = '/docs'
-
 export function Hero(props: HeroProps) {
   const { t } = useTranslation()
   const { status } = useStatus()
@@ -48,102 +48,100 @@ export function Hero(props: HeroProps) {
     Boolean(props.isAuthenticated)
   )
   const showPricing = isLandingPricingEnabled(statusRecord)
-  const hasOfficialSocialLinks = officialSocialLinks.length > 0
+  const communityLinks = officialSocialLinks.filter(
+    (link) => link.platform === 'telegram' || link.platform === 'whatsapp'
+  )
+  const otherSocialLinks = officialSocialLinks.filter(
+    (link) => link.platform !== 'telegram' && link.platform !== 'whatsapp'
+  )
 
   return (
     <section
       id='home-hero'
-      className='border-border/60 relative z-10 overflow-hidden border-b px-4 pt-20 pb-10 sm:px-6 md:pt-28 md:pb-14'
+      aria-labelledby='home-title'
+      className={cn(
+        'home-hero relative isolate overflow-hidden px-5 sm:px-8',
+        props.className
+      )}
     >
       <div
-        aria-hidden
-        className='pointer-events-none absolute inset-0 -z-10 opacity-75 dark:opacity-25'
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, color-mix(in oklch, var(--border) 42%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--border) 42%, transparent) 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
-        }}
+        className='home-hero-grid pointer-events-none absolute inset-0 -z-10'
+        aria-hidden='true'
       />
-
-      <div className='mx-auto max-w-6xl'>
-        <div className='mx-auto flex w-full max-w-[calc(100vw-2rem)] min-w-0 flex-col items-center text-center sm:max-w-3xl'>
-          <p
-            className='landing-animate-fade-up mb-5 text-xs font-semibold tracking-[0.18em] text-[#f05a53] uppercase opacity-0'
-            style={{ animationDelay: '0ms' }}
-          >
-            {t('Fast model gateway for daily AI tools')}
-          </p>
-
-          <h1
-            className='landing-animate-fade-up w-full max-w-[calc(100vw-2rem)] min-w-0 text-4xl leading-[1.05] font-bold tracking-normal text-balance opacity-0 sm:max-w-4xl sm:text-5xl md:text-6xl'
-            style={{ animationDelay: '60ms' }}
-          >
-            {t('Use frontier models inside the tools you already know')}
-          </h1>
-
-          <p
-            className='landing-animate-fade-up text-muted-foreground/85 mt-5 w-full max-w-[20rem] min-w-0 text-sm leading-7 text-wrap break-words opacity-0 sm:max-w-2xl md:text-base md:text-balance'
-            style={{ animationDelay: '120ms' }}
-          >
-            <span className='sm:hidden'>
-              {t(
-                'Connect once through new-api, then use leading models from your favorite AI tools.'
-              ).replace('new-api', systemName)}
-            </span>
-            <span className='hidden sm:inline'>
+      <div className='mx-auto max-w-7xl'>
+        <div className='grid min-w-0 items-center gap-12 pt-16 pb-12 sm:pt-20 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pt-28 lg:pb-20'>
+          <div className='min-w-0'>
+            <div className='home-enter'>
+              <Badge
+                variant='outline'
+                className='home-eyebrow mb-7 max-w-full gap-2 rounded-full px-3 py-2 text-[11px] whitespace-normal'
+              >
+                <Braces className='size-3.5 shrink-0' aria-hidden='true' />
+                {t('Fast model gateway for daily AI tools')}
+              </Badge>
+            </div>
+            <h1
+              id='home-title'
+              className='home-enter home-title text-4xl leading-[1.12] font-semibold tracking-tight text-balance sm:text-5xl xl:text-6xl'
+            >
+              {t('Use frontier models inside the tools you already know')}
+            </h1>
+            <p className='home-enter home-description text-muted-foreground mt-6 max-w-xl text-base leading-8 text-pretty'>
               {t(
                 'Connect once through new-api, route Codex, Claude Code, Cherry Studio, and Open WebUI to GPT, Claude, Gemini, and more.'
               ).replace('new-api', systemName)}
-            </span>
-          </p>
-
-          <div
-            className='landing-animate-fade-up mt-7 flex w-full max-w-[18rem] min-w-0 flex-col items-stretch justify-center gap-3 opacity-0 sm:max-w-xl sm:flex-row'
-            style={{ animationDelay: '180ms' }}
-          >
-            <Button
-              className='group h-10 w-full min-w-0 justify-center rounded-full bg-neutral-950 px-5 text-sm font-semibold text-white hover:bg-neutral-800 sm:w-auto dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200'
-              render={<Link to={primaryAction.to} />}
-            >
-              {t(primaryAction.label)}
-              <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
-            </Button>
-
-            <Button
-              variant='outline'
-              className='h-10 w-full min-w-0 justify-center rounded-full px-5 text-sm font-semibold sm:w-auto'
-              render={<Link to={INTERNAL_DOCS_ROUTE} />}
-            >
-              <BookOpen className='size-3.5' />
-              {t('Developer Docs')}
-            </Button>
-
-            {showPricing ? (
+            </p>
+            <div className='home-enter home-actions mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap'>
               <Button
-                variant='outline'
-                className='h-10 w-full min-w-0 justify-center rounded-full px-5 text-sm font-semibold sm:w-auto'
-                render={<Link to='/pricing' />}
+                role='link'
+                className='group h-auto min-h-12 rounded-xl px-6 py-3 whitespace-normal'
+                render={<Link to={primaryAction.to} />}
               >
-                {t('View Pricing')}
+                {t(primaryAction.label)}
+                <ArrowRight
+                  className='size-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1'
+                  aria-hidden='true'
+                />
               </Button>
+              <OfficialSocialLinks links={communityLinks} variant='hero' />
+              {showPricing ? (
+                <Button
+                  role='link'
+                  variant='ghost'
+                  className='h-auto min-h-12 rounded-xl px-4 py-3 whitespace-normal'
+                  render={<Link to='/pricing' />}
+                >
+                  {t('View Pricing')}
+                </Button>
+              ) : null}
+            </div>
+            {otherSocialLinks.length > 0 ? (
+              <div className='home-enter mt-6'>
+                <OfficialSocialLinks links={otherSocialLinks} />
+              </div>
             ) : null}
           </div>
-
-          {hasOfficialSocialLinks ? (
-            <div
-              className='landing-animate-fade-up mt-5 flex w-full max-w-[calc(100vw-2rem)] justify-center opacity-0 sm:max-w-full'
-              style={{ animationDelay: '240ms' }}
-            >
-              <OfficialSocialLinks links={officialSocialLinks} />
-            </div>
-          ) : null}
+          <div className='home-enter home-preview min-w-0'>
+            <HomeIntegrationPreview />
+          </div>
         </div>
-
-        <div
-          className='landing-animate-fade-up mt-12 opacity-0 md:mt-14'
-          style={{ animationDelay: '300ms' }}
-        >
-          <HomeIntegrationPreview />
+        <div className='border-border flex flex-wrap items-center justify-between gap-4 border-t py-5'>
+          <p className='text-muted-foreground flex items-center gap-2 text-xs'>
+            <Braces className='text-primary size-4' aria-hidden='true' />
+            {t('OpenAI-compatible endpoints')}
+          </p>
+          <Button
+            role='link'
+            variant='ghost'
+            className='group min-h-11 gap-3 px-0 text-xs'
+            render={<a href='#home-tools' />}
+          >
+            {t('Unified setup')}
+            <ArrowDown
+              className='size-3.5 motion-safe:transition-transform motion-safe:group-hover:translate-y-1'
+              aria-hidden='true'
+            />
+          </Button>
         </div>
       </div>
     </section>

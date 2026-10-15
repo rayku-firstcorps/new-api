@@ -28,7 +28,11 @@ import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { Hero, IntegrationToolGrid } from './components'
+import { CTA } from './components/sections/cta'
+import { HowItWorks } from './components/sections/how-it-works'
 import { useHomePageContent } from './hooks'
+
+import '@/styles/home.css'
 
 export function Home() {
   const { i18n, t } = useTranslation()
@@ -129,9 +133,13 @@ export function Home() {
   return (
     <PublicLayout showMainContainer={false}>
       <PromotionLandingDialog />
-      <main className='w-full max-w-[100vw] overflow-x-hidden'>
-        <Hero isAuthenticated={isAuthenticated} />
-        <IntegrationToolGrid />
+      <main className='w-full max-w-[100vw] overflow-x-hidden pt-16'>
+        <div className='home-landing'>
+          <Hero isAuthenticated={isAuthenticated} />
+          <IntegrationToolGrid />
+          <HowItWorks />
+          <CTA isAuthenticated={isAuthenticated} />
+        </div>
         <Footer />
       </main>
     </PublicLayout>

@@ -1,0 +1,285 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+/* Default homepage only: custom home content and the shared shell stay unchanged. */
+.home-landing {
+  --primary: #08775a;
+  --primary-foreground: #ffffff;
+  --ring: #08775a;
+  --home-soft: #edf7f2;
+  --home-line: #c6e1d5;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.dark .home-landing {
+  --primary: #6ae1b7;
+  --primary-foreground: #081c18;
+  --ring: #6ae1b7;
+  --home-soft: #101e1b;
+  --home-line: #28483c;
+}
+
+.home-hero {
+  --background: #f6faf8;
+  --foreground: #132b26;
+  --muted: #e4efea;
+  --muted-foreground: #4f6860;
+  --border: #c9ddd4;
+  --input: #c9ddd4;
+  --home-panel: #ffffff;
+  --home-panel-border: #c0d8cd;
+  --home-node: #f1f7f4;
+  --home-endpoint: #edf5f1;
+  --home-hub: #e0f0e7;
+  --home-eyebrow: #e5f2eb;
+  --home-shadow: #14372b0d;
+  color-scheme: light;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.dark .home-hero {
+  --background: #0b1418;
+  --foreground: #f2f7f5;
+  --muted: #1b302f;
+  --muted-foreground: #a4b9b4;
+  --primary: #6ae1b7;
+  --primary-foreground: #081c18;
+  --ring: #6ae1b7;
+  --border: #29403e;
+  --input: #29403e;
+  --home-panel: #101e22;
+  --home-panel-border: #35534b;
+  --home-node: #14272a;
+  --home-endpoint: #0b171b;
+  --home-hub: #193e34;
+  --home-eyebrow: #16312b;
+  --home-shadow: #00000030;
+  color-scheme: dark;
+}
+
+.home-hero-grid {
+  background-image:
+    linear-gradient(to right, #709a8c0a 1px, transparent 1px),
+    linear-gradient(to bottom, #709a8c0a 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 25%,
+    #000 75%,
+    transparent
+  );
+}
+
+.home-eyebrow {
+  color: var(--primary);
+  border-color: var(--border);
+  background: var(--home-eyebrow);
+}
+
+.home-title {
+  max-width: 12em;
+}
+
+.home-network {
+  border-color: var(--home-panel-border);
+  background: var(--home-panel);
+  box-shadow: 0 24px 70px var(--home-shadow);
+}
+
+.home-network-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(64px, 0.65fr) minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 24px);
+}
+
+.home-network-node {
+  position: relative;
+  z-index: 1;
+  border-color: var(--border);
+  background: var(--home-node);
+}
+
+.home-hub-icon {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  background: var(--home-hub);
+  box-shadow:
+    0 0 0 7px color-mix(in srgb, var(--primary) 3%, transparent),
+    0 0 0 15px color-mix(in srgb, var(--primary) 2%, transparent);
+}
+
+.home-connection {
+  position: absolute;
+  top: 28px;
+  width: 42%;
+  height: 1px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--primary) 27%, transparent);
+}
+
+.home-connection-in {
+  right: 100%;
+}
+.home-connection-out {
+  left: 100%;
+}
+
+.home-connection::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  transform: translateX(-100%);
+}
+
+.home-endpoint {
+  border-color: var(--border);
+  background: var(--home-endpoint);
+}
+
+.home-section {
+  padding-block: clamp(64px, 7vw, 104px);
+}
+
+.home-section-number,
+.home-step-number {
+  color: var(--muted-foreground);
+}
+
+.home-tool-tile {
+  border-color: var(--border);
+  background: var(--background);
+}
+
+.home-tool-icon {
+  color: var(--primary);
+  background: var(--home-soft);
+}
+
+.home-step {
+  border-color: var(--home-line);
+}
+
+.home-cta {
+  border-color: var(--home-line);
+  background: var(--home-soft);
+}
+
+.home-model-price {
+  border-color: var(--home-line);
+  background: var(--home-soft);
+}
+
+@keyframes home-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-data-flow {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-enter {
+    animation: home-enter 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .home-title {
+    animation-delay: 80ms;
+  }
+  .home-description {
+    animation-delay: 160ms;
+  }
+  .home-actions {
+    animation-delay: 240ms;
+  }
+  .home-preview {
+    animation-delay: 320ms;
+  }
+  .home-connection::after {
+    animation: home-data-flow 1.8s 600ms ease-in-out 2;
+  }
+  .home-tool-tile,
+  .home-network-node {
+    transition:
+      transform 220ms ease,
+      border-color 220ms ease,
+      background-color 220ms ease;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-tool-tile:hover {
+    border-color: var(--primary);
+    background: var(--home-soft);
+  }
+  .home-network-node:hover {
+    border-color: var(--primary);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .home-tool-tile:hover,
+  .home-network-node:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/* Keyboard focus must never land inside a still-hidden scroll reveal. */
+.home-landing .opacity-0:focus-within {
+  opacity: 1;
+  animation: none;
+  transform: none;
+}
+
+@media (max-width: 379px) {
+  .home-network-grid {
+    grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .home-network-node {
+    flex-direction: column;
+    text-align: center;
+    padding-inline: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-landing *,
+  .home-landing *::before,
+  .home-landing *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .home-landing .opacity-0 {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

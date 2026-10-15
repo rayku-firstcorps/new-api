@@ -16,63 +16,81 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import {
-  Bot,
-  BrainCircuit,
-  Code2,
-  Gem,
-  MonitorUp,
-  Sparkles,
-  TerminalSquare,
-} from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
 
+import { HomeBrandIcon } from './home-brand-icon'
+
 const tiles = [
-  { name: 'OpenAI', meta: 'GPT 5.2', icon: BrainCircuit },
-  { name: 'Claude', meta: 'Opus 4.7', icon: Sparkles },
-  { name: 'Gemini', meta: '3.1 Pro', icon: Gem },
-  { name: 'DeepSeek', meta: 'R2', icon: Bot },
-  { name: 'Codex CLI', meta: 'Terminal', icon: TerminalSquare },
-  { name: 'Claude Code', meta: 'IDE', icon: Code2 },
-  { name: 'Cherry Studio', meta: 'Desktop', icon: MonitorUp },
-  { name: 'Open WebUI', meta: 'Web UI', icon: Bot },
-]
+  { name: 'OpenAI', brand: 'OpenAI' },
+  { name: 'Claude', brand: 'Claude' },
+  { name: 'Gemini', brand: 'Gemini' },
+  { name: 'DeepSeek', brand: 'DeepSeek' },
+  { name: 'Codex CLI', brand: 'Codex' },
+  { name: 'Claude Code', brand: 'Claude Code' },
+  { name: 'Cherry Studio', brand: 'Cherry Studio' },
+  { name: 'Open WebUI', icon: Bot },
+] as const
 
 export function IntegrationToolGrid() {
   const { t } = useTranslation()
 
   return (
-    <section id='home-tools' className='relative z-10 px-4 py-14 sm:px-6'>
-      <div className='mx-auto max-w-6xl'>
-        <AnimateInView className='mx-auto mb-8 max-w-2xl text-center'>
-          <p className='mb-3 text-xs font-semibold tracking-[0.16em] text-[#f05a53] uppercase'>
+    <section
+      id='home-tools'
+      aria-labelledby='home-tools-title'
+      className='home-section scroll-mt-24 px-5 sm:px-8'
+    >
+      <div className='mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-16'>
+        <AnimateInView>
+          <p className='text-primary mb-4 flex items-center gap-3 text-xs font-semibold tracking-widest uppercase'>
+            <span className='home-section-number' aria-hidden='true'>
+              01 /
+            </span>
             {t('Unified setup')}
           </p>
-          <h2 className='text-2xl leading-tight font-bold md:text-3xl'>
+          <h2
+            id='home-tools-title'
+            className='text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl'
+          >
             {t('One endpoint for the AI tools you already use')}
           </h2>
+          <p className='text-muted-foreground mt-5 max-w-md text-sm leading-7 text-pretty'>
+            {t(
+              'Connect once through new-api, then use leading models from your favorite AI tools.'
+            )}
+          </p>
         </AnimateInView>
-
-        <AnimateInView className='bg-border/70 border-border/70 grid gap-px overflow-hidden rounded-[18px] border sm:grid-cols-2 lg:grid-cols-4'>
-          {tiles.map((tile) => {
-            const Icon = tile.icon
-            return (
-              <div
-                key={tile.name}
-                className='bg-background flex min-h-32 flex-col items-center justify-center p-5 text-center dark:bg-neutral-950'
-              >
-                <span className='border-border/60 bg-background mb-3 flex size-9 items-center justify-center rounded-xl border dark:bg-neutral-950'>
-                  <Icon className='size-4 text-[#f05a53]' />
-                </span>
-                <p className='text-sm font-semibold'>{tile.name}</p>
-                <p className='text-muted-foreground mt-1 text-xs'>
-                  {tile.meta}
-                </p>
-              </div>
-            )
-          })}
+        <AnimateInView delay={100}>
+          <ul className='home-tools-grid grid grid-cols-2 gap-3 sm:grid-cols-4'>
+            {tiles.map((tile) => {
+              const Icon = 'icon' in tile ? tile.icon : null
+              return (
+                <li
+                  key={tile.name}
+                  className='home-tool-tile flex min-w-0 flex-col items-center justify-center gap-4 rounded-xl border px-3 py-7 text-center'
+                >
+                  <span className='home-tool-icon flex size-11 items-center justify-center rounded-xl'>
+                    {'brand' in tile ? (
+                      <HomeBrandIcon brand={tile.brand} />
+                    ) : null}
+                    {Icon ? (
+                      <Icon
+                        className='size-6'
+                        strokeWidth={1.5}
+                        aria-hidden='true'
+                      />
+                    ) : null}
+                  </span>
+                  <p className='text-xs font-medium wrap-break-word'>
+                    {tile.name}
+                  </p>
+                </li>
+              )
+            })}
+          </ul>
         </AnimateInView>
       </div>
     </section>

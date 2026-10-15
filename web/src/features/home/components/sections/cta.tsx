@@ -17,17 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
+import { cn } from '@/lib/utils'
 
+import { usePopularModels } from '../../hooks/use-popular-models'
 import {
   getLandingPrimaryAction,
   isLandingPricingEnabled,
 } from '../../lib/landing-actions'
+import { PopularModelCard } from './popular-model-card'
 
 interface CTAProps {
   className?: string
@@ -36,60 +40,98 @@ interface CTAProps {
 
 export function CTA(props: CTAProps) {
   const { t } = useTranslation()
-  const { status } = useStatus()
+  const { status, loading, error } = useStatus()
   const statusRecord = status as Record<string, unknown> | null
   const primaryAction = getLandingPrimaryAction(
     statusRecord,
     Boolean(props.isAuthenticated)
   )
   const showPricing = isLandingPricingEnabled(statusRecord)
+  const popularModels = usePopularModels(
+    Boolean(status) &&
+      !loading &&
+      !error &&
+      showPricing &&
+      !props.isAuthenticated
+  )
+  const modelCount = popularModels.length
 
   if (props.isAuthenticated) {
     return null
   }
 
   return (
-    <section className='relative z-10 overflow-hidden px-4 py-20 sm:px-6 md:py-28'>
-      <div
-        aria-hidden
-        className='pointer-events-none absolute inset-0 -z-10 opacity-70 dark:opacity-25'
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, color-mix(in oklch, var(--border) 40%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklch, var(--border) 40%, transparent) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-
-      <AnimateInView
-        className='border-border/70 bg-background/95 mx-auto max-w-3xl rounded-[18px] border px-6 py-10 text-center backdrop-blur md:px-10 md:py-12 dark:bg-neutral-950/85'
-        animation='scale-in'
-      >
-        <h2 className='text-2xl leading-tight font-bold md:text-4xl'>
-          {t('Start with the AI tool you already use')}
-        </h2>
-        <p className='text-muted-foreground/80 mx-auto mt-5 max-w-xl text-sm leading-relaxed md:text-base'>
-          {t(
-            'Create one account, copy the right setup, and keep keys, models, balance, usage, and cost records visible from the console.'
-          )}
-        </p>
-        <div className='mt-8 flex flex-wrap items-center justify-center gap-3'>
-          <Button
-            className='group min-h-10 rounded-lg px-5'
-            render={<Link to={primaryAction.to} />}
-          >
-            {t(primaryAction.label)}
-            <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
-          </Button>
-          {showPricing ? (
-            <Button
-              variant='outline'
-              className='border-border/50 hover:border-border hover:bg-muted/50 min-h-10 rounded-lg px-5'
-              render={<Link to='/pricing' />}
+    <section
+      aria-labelledby='home-cta-title'
+      className={cn('px-5 pb-16 sm:px-8 md:pb-24', props.className)}
+    >
+      <AnimateInView className='home-cta mx-auto max-w-7xl rounded-2xl border px-6 py-10 sm:px-10 lg:px-14 lg:py-14'>
+        <div className='grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-16'>
+          <div className='min-w-0'>
+            {modelCount > 0 ? (
+              <Badge
+                variant='outline'
+                className='mb-4 h-auto max-w-full gap-2 px-3 py-1.5 whitespace-normal'
+              >
+                <TrendingUp aria-hidden='true' className='shrink-0' />
+                {t('Most called models · Last 24 hours')}
+              </Badge>
+            ) : null}
+            <h2
+              id='home-cta-title'
+              className='text-2xl leading-tight font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl'
             >
-              {t('View Pricing')}
+              {t('Start with the AI tool you already use')}
+            </h2>
+            <p className='text-muted-foreground mt-4 max-w-xl text-sm leading-7 text-pretty wrap-anywhere'>
+              {t(
+                'Create one account, copy the right setup, and keep keys, models, balance, usage, and cost records visible from the console.'
+              )}
+            </p>
+          </div>
+          <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:max-w-64 lg:flex-col'>
+            <Button
+              role='link'
+              className='group h-auto min-h-12 rounded-xl px-6 py-3 whitespace-normal'
+              render={<Link to={primaryAction.to} />}
+            >
+              {t(primaryAction.label)}
+              <ArrowRight
+                aria-hidden='true'
+                className='ml-1 size-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1'
+              />
             </Button>
-          ) : null}
+            {showPricing ? (
+              <Button
+                role='link'
+                variant='outline'
+                className='h-auto min-h-12 rounded-xl px-6 py-3 whitespace-normal'
+                render={<Link to='/pricing' />}
+              >
+                {t('View Pricing')}
+              </Button>
+            ) : null}
+          </div>
         </div>
+        {modelCount > 0 ? (
+          <ul
+            aria-label={t('Most called models · Last 24 hours')}
+            className={cn(
+              'mt-10 grid gap-4',
+              modelCount === 1 && 'max-w-md',
+              modelCount === 2 && 'sm:grid-cols-2',
+              modelCount >= 3 && 'lg:grid-cols-3'
+            )}
+          >
+            {popularModels.map((model, index) => (
+              <PopularModelCard
+                key={model.model_name}
+                model={model}
+                rank={index + 1}
+              />
+            ))}
+          </ul>
+        ) : null}
       </AnimateInView>
     </section>
   )

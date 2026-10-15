@@ -4,6 +4,100 @@
   "current_stage": "stage1",
   "features": [
     {
+      "id": "homepage-cta-model-cards",
+      "title": "首页 CTA 参考模型卡片样式展示热门模型三卡",
+      "status": "done",
+      "scope": [
+        "web/src/features/home/components/sections/cta.tsx",
+        "web/src/features/home/hooks/use-popular-model.ts",
+        "web/src/styles/home.css",
+        "web/src/i18n/locales/",
+        "web/src/features/home/__tests__/"
+      ],
+      "acceptance": [
+        "CTA 展示近 24 小时调用量靠前、且仍在模型广场展示的至多三个模型卡片，沿用服务端排序，不公开具体调用次数",
+        "卡片展示供应商、模型名称、标签、输入/输出价格与上下文长度；后端未提供的字段不展示、不编造",
+        "卡片使用主题变量，深浅色主题均可读；注册与查看定价入口保留，卡片整体可键盘访问并跳转模型详情",
+        "加载、失败、空数据、仅一或两个匹配模型及公开定价关闭时回退原 CTA 或自适应列数，320px 长模型名无溢出",
+        "七语言文案齐全，类型检查、定向 lint、浏览器回归、构建与 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "homepage-light-theme-fix",
+      "title": "修复浅色主题首页 CTA 区域仍为深色",
+      "status": "done",
+      "scope": ["web/src/styles/home.css", "web/src/features/home/"],
+      "acceptance": [
+        "先通过浏览器失败用例复现浅色主题首屏及接入面板仍使用黑色背景",
+        "首屏 CTA、接入面板及相关卡片随主题切换，浅色背景配深色文字，深色模式保留现有效果",
+        "OpenAI 图标在首屏与工具展示区跟随实际主题，其他品牌原色不变",
+        "主题切换、文字对比度、响应式回归、类型检查、定向 lint、构建及 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "homepage-client-brand-icons",
+      "title": "首页客户端图标替换为新增品牌素材",
+      "status": "done",
+      "scope": ["web/src/features/home/", "web/src/assets/brand-icons/clients/"],
+      "acceptance": [
+        "首页接入示意与工具展示区的 Codex/Codex CLI、Claude Code、Cherry Studio 使用指定目录新增素材",
+        "复用现有品牌图标组件，保留原色、比例、固定尺寸及深浅色可见性",
+        "素材随项目打包，不依赖用户本机路径；现有模型图标、OpenCode、Open WebUI 和站点 Logo 不变",
+        "浏览器回归、类型检查、定向 lint、构建与 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "homepage-model-brand-icons",
+      "title": "首页模型图标替换为用户提供的品牌素材",
+      "status": "done",
+      "scope": ["web/src/features/home/", "web/src/assets/brand-icons/models/"],
+      "acceptance": [
+        "首页接入示意与工具展示区的 OpenAI、Claude、Gemini、DeepSeek 使用指定目录中的品牌图标",
+        "素材随项目打包，不依赖用户本机绝对路径；保留原始图形、配色与比例",
+        "OpenAI 适配深浅背景，图标有固定尺寸且不造成布局溢出或重复朗读",
+        "不修改客户端图标、站点 Logo、文案、模型数据或业务行为",
+        "浏览器回归、类型检查、定向 lint、构建和 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "homepage-community-actions",
+      "title": "首页社群按钮替换开发者文档入口",
+      "status": "done",
+      "scope": ["web/src/features/home/"],
+      "acceptance": [
+        "首页主按钮区域以已配置的 Telegram、WhatsApp 社群入口替换开发者文档按钮",
+        "复用现有社群组件及安全 URL 过滤，未配置或停用的链接不展示，不编造社群地址",
+        "Telegram、WhatsApp 不在下方重复显示，其他社交入口及全站文档导航保持不变",
+        "窄屏和键盘操作回归、类型检查、定向 lint、构建与 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "homepage-popular-model-cta",
+      "title": "首页 CTA 展示模型广场调用量最高的模型",
+      "status": "done",
+      "scope": ["web/src/features/home/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "从真实公开统计中选取模型广场可展示且调用量最高的模型，并明确统计时间范围",
+        "沿用近 24 小时统计接口的调用量降序，展示模型名称与详情入口；保留后端不公开具体次数的约束",
+        "遵循公开模块可见性配置；加载、失败、空数据和无匹配模型时保留原 CTA",
+        "支持七语言、移动端与键盘操作，保留现有品牌及其他首页区域",
+        "相关回归测试、类型检查、定向 lint、构建与 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "homepage-layout-motion",
+      "title": "参考 Weimeta 优化默认首页布局与动效",
+      "status": "done",
+      "scope": ["web/src/features/home/", "web/src/styles/home.css", "web/src/i18n/locales/"],
+      "acceptance": [
+        "默认首页建立清晰的首屏、接入展示与工具生态层级，保留现有品牌和入口逻辑",
+        "增加入场、滚动和悬停动效，支持 prefers-reduced-motion",
+        "移动端和桌面端无横向溢出，键盘可访问且复制配置可用",
+        "保留自定义首页、全站导航、页脚及所有后端业务行为",
+        "相关回归测试、类型检查、定向 lint、生产构建和 Harness 验证通过"
+      ]
+    },
+    {
       "id": "utf8-file-reading",
       "title": "文件读取统一使用 UTF-8 编码",
       "status": "done",
@@ -58,6 +152,27 @@
       ]
     },
     {
+      "id": "seo-technical-optimization",
+      "title": "站点技术 SEO 优化",
+      "status": "done",
+      "scope": [
+        "controller/seo.go",
+        "controller/seo_test.go",
+        "router/web-router.go",
+        "web/index.html",
+        "web/src/lib/seo.ts",
+        "web/src/lib/__tests__/seo.test.ts",
+        "web/src/routes/__root.tsx"
+      ],
+      "acceptance": [
+        "保留 new-api 与 QuantumNous 的受保护名称、品牌和归属信息",
+        "首页基础元数据包含 canonical、Open Graph 和 Twitter Card",
+        "公开页面可被索引，认证、后台、OAuth、错误和安装页面标记 noindex",
+        "robots.txt 和 sitemap.xml 使用站点配置地址生成且不暴露私有路径",
+        "前后端相关测试、类型检查、构建和 Harness 验证通过"
+      ]
+    },
+    {
       "id": "promotion-backend-model",
       "title": "推广链接后端模型与迁移",
       "status": "pending",
@@ -66,6 +181,19 @@
         "PromotionLink 和 PromotionRegistration GORM 结构体存在",
         "AutoMigrate 在 SQLite/MySQL/PostgreSQL 三库通过",
         "users 表增加 promotion_code、promotion_channel_tag 字段"
+      ]
+    },
+    {
+      "id": "antom-payment-security-hardening-plan",
+      "title": "Antom 支付安全加固实施计划",
+      "status": "done",
+      "scope": ["docs/prd/antom-payment-security-hardening-plan.md", "docs/prd/INDEX.md"],
+      "acceptance": [
+        "记录 Antom 下单、Webhook、Inquiry 和入账链路的现状审计结果",
+        "定义金额、币种、订单归属、签名、幂等和额度上限的加固步骤",
+        "明确正常支付行为不变、异常订单拒绝和回滚方案",
+        "给出自动化测试、沙箱测试和上线验收标准",
+        "本 feature 只产出计划文档，不修改支付业务代码"
       ]
     },
     {

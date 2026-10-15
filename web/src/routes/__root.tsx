@@ -22,6 +22,7 @@ import {
   createRootRouteWithContext,
   Outlet,
   redirect,
+  useLocation,
   useNavigate,
 } from '@tanstack/react-router'
 import { useEffect } from 'react'
@@ -46,14 +47,33 @@ import {
 } from '@/lib/auth-session'
 import { subscribeAuthSessionEvents } from '@/lib/auth-session-sync'
 import { resolveLegacyRoute } from '@/lib/legacy-route'
+import { getRouteSeo } from '@/lib/seo'
 import { useAuthStore } from '@/stores/auth-store'
 
 function RootComponent() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
 
   // Load system configuration (logo, system name, etc.) from backend
   useSystemConfig({ autoLoad: true })
+
+  useEffect(() => {
+    const routeSeo = getRouteSeo(location.pathname, window.location.origin)
+    const canonical = document.querySelector<HTMLLinkElement>(
+      'link[rel="canonical"]'
+    )
+    const robots = document.querySelector<HTMLMetaElement>(
+      'meta[name="robots"]'
+    )
+    const openGraphURL = document.querySelector<HTMLMetaElement>(
+      'meta[property="og:url"]'
+    )
+
+    canonical?.setAttribute('href', routeSeo.canonicalUrl)
+    robots?.setAttribute('content', routeSeo.robots)
+    openGraphURL?.setAttribute('content', routeSeo.canonicalUrl)
+  }, [location.pathname])
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
