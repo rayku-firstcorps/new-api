@@ -13,6 +13,7 @@
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
+| homepage-regional-base-url | done | 站点系统信息新增大陆直连优化地址；首页额外展示并独立复制，支持裸域名补 HTTPS、空配置隐藏、七语言与窄屏 |
 | homepage-light-theme-fix | done | 首屏 CTA 与接入面板改为跟随全站主题；修复浅色模式的固定深色背景和白色 OpenAI 图标 |
 | homepage-cta-model-cards | done | 首页 CTA 参考 sample 截图，展示近 24 小时调用量前三的模型卡片（供应商、排名、标签、输入/输出价格、上下文/最大输出）；字段缺失不展示，不公开调用次数 |
 | homepage-client-brand-icons | done | 首页两处 Codex/Codex CLI、Claude Code、Cherry Studio 改用新增原色 SVG，复用统一品牌图标组件 |
@@ -32,6 +33,14 @@
 | promotion-frontend-admin | pending | 依赖 capture + api |
 
 ## 上次停在哪里
+
+2026-10-20 提交授权：用户要求「提交到origin」，本轮将 `homepage-regional-base-url` 的实现、翻译、测试与 Harness 记录提交并推送到 `origin/main`；保留原有 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。提交前 `git diff --check` 通过，功能验证沿用下方已通过结果。下一步为部署前后端并在后台填写域名。
+
+2026-10-20 大陆直连优化：新增 `general_setting.mainland_base_url`，复用配置注册、Option 持久化与公开 `/api/status`，后台入口为「系统设置 → 站点设置 → 系统信息 → 大陆直连优化」。支持裸域名或 HTTPS URL，去除首尾空白和末尾斜杠；前后端拒绝凭据、查询参数、片段、不合法域名与端口。首页保留原 Base URL 和配置复制，新增地址独立复制完整 HTTPS Base URL，自动补 `/v1` 且不重复追加；空值或无效状态值隐藏。默认留空，示例 `cn.kucodeapi.com` 仅作为输入提示，不会自动启用。保存后刷新 status 缓存。
+
+复用现有 CopyButton、Input、Form、SettingsForm、SettingsPageFormActions 和 useSettingsForm，无新通用 UI 实现或依赖。失败回归发现系统信息保存异常会成为未处理 Promise，已在该表单的提交事件边界处理，错误提示仍由现有 mutation 负责，保留输入供重试。未修改转发、认证、支付、数据库 schema/SQL/驱动、自定义首页或用户原有 docs/sample 改动；未提交或部署。
+
+**本功能下一步：** 部署前后端后，在后台填写 `cn.kucodeapi.com` 并保存，首页将展示「大陆直连优化」及 `https://cn.kucodeapi.com/v1`；清空即可隐藏。域名实际 DNS、TLS 和网关路由未由本次代码配置。本地前端 `http://localhost:5173/` 保留运行；浏览器验证采用 API fixture，不代表线上配置已修改。
 
 2026-10-15 CTA 模型卡片：新增 `use-popular-models`（取前 3，沿用服务端顺序，并与定价页一致地合并供应商和分组倍率）与 `popular-model-card`，CTA 标题与说明沿用原文案，仅新增复数徽标一个七语言键，并移除两个不再使用的单数键。动态/插件计费模型不展示价格，仅给出详情入口。`parseTags` 按空白拆分标签，因此 "Coding Expert" 会显示为两个标签，属既有行为未改。浏览器回归 35/35、vitest 2260/2260、typecheck/lint/format/build:check/i18n:sync 通过。
 
@@ -82,6 +91,17 @@
 - 新增 `docs/prd/antom-payment-security-hardening-plan.md`，记录 Antom 支付回调验签、金额/币种/订单归属校验、统一额度结算、上限保护及测试验收计划；本次未修改支付业务代码。
 
 ## 本次验证
+
+### 2026-10-20 大陆直连优化
+
+- `go test ./controller -run TestMainlandBaseURL -count=1 -v`：通过。覆盖服务端校验及无效输入 API 拒绝、配置新增/更新/清空、数据库读取重载、公开 status；SQLite **3.50.4**。
+- MySQL **8.0.46**：独立临时容器 `mysql:8.0`，命令 `docker run -d --name newapi-mainland-mysql --label codex.task=homepage-regional-base-url -p 127.0.0.1:33316:3306 -e MYSQL_ROOT_PASSWORD=mainland-test-only -e MYSQL_DATABASE=mainland_test mysql:8.0`。PowerShell 设置 `$env:TEST_MAINLAND_DB='mysql'` 与 `$env:TEST_MYSQL_DSN='root:mainland-test-only@tcp(127.0.0.1:33316)/mainland_test?charset=utf8mb4&parseTime=True&loc=Local'`，执行 `go test ./controller -run TestMainlandBaseURLPersistenceAndStatus -count=1 -v`：通过。
+- PostgreSQL **16.14**：独立临时容器 `pgvector/pgvector:pg16`，命令 `docker run -d --name newapi-mainland-postgres --label codex.task=homepage-regional-base-url -p 127.0.0.1:35442:5432 -e POSTGRES_PASSWORD=mainland-test-only -e POSTGRES_DB=mainland_test pgvector/pgvector:pg16`。PowerShell 设置 `$env:TEST_MAINLAND_DB='postgres'` 与 `$env:TEST_POSTGRES_DSN='host=127.0.0.1 port=35442 user=postgres password=mainland-test-only dbname=mainland_test sslmode=disable'`，执行同一持久化测试命令：通过。两个本次创建的测试容器及临时卷已停止并删除；未使用或修改既有业务数据库。
+- `cd web; bun run test src/features/system-settings/__tests__/mainland-base-url.test.tsx`：24/24 通过，覆盖保存、清空、错误提示、失败保留输入、状态刷新及地址规范化。
+- `node --test src/features/home/__tests__/layout.browser.mjs`：38/38 通过，使用既有 Playwright 路径环境变量及 5173 开发服务。新增覆盖独立键盘复制、原地址保留、空/无效配置隐藏、已有 `/v1` 不重复、七语言 320px 长地址无溢出。已目视检查临时目录 `home-mainland-desktop.png` 和 `home-mainland-mobile.png`。
+- `bun run typecheck`、`bun run build:check`、9 个涉及 JS/TS 文件的 `bunx --no-install oxlint -c .oxlintrc.json ...` 与 `bunx --no-install oxfmt --check ...`、`git diff --check` 均通过；Go 文件已 gofmt。
+- 新增 4 个文案键通过 `scripts/add-missing-keys.mjs` 写入全部七语言，临时脚本已移除；`bun run i18n:sync` 通过，missing/extras 均为 0，保留原有术语 untranslated 提示（zh=3、ja=4、ru=4）。
+- `C:/Program Files/Git/bin/bash.exe .harness/verify.sh homepage-regional-base-url`：2 项通过（全项目 Go 编译、JSON 使用规则）。feature 验收逐项通过后标记 done。
 
 ### 2026-10-15 浅色主题修复
 
@@ -189,4 +209,4 @@
 
 ---
 
-*最后更新：完成首页布局与动效优化（2026-10-15）；待用户确认视觉后决定提交或部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*
+*最后更新：完成后台可配置的首页大陆直连优化 Base URL（2026-10-20），未提交或部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*

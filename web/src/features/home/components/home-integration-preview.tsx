@@ -21,7 +21,9 @@ import { useTranslation } from 'react-i18next'
 
 import { CopyButton } from '@/components/copy-button'
 import { useGatewayBaseUrl } from '@/hooks/use-gateway-base-url'
+import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { normalizeMainlandBaseUrl } from '@/lib/mainland-base-url'
 import { cn } from '@/lib/utils'
 
 import { HomeBrandIcon } from './home-brand-icon'
@@ -44,6 +46,14 @@ export function HomeIntegrationPreview(props: HomeIntegrationPreviewProps) {
   const { systemName } = useSystemConfig()
   const gatewayBaseUrl = useGatewayBaseUrl()
   const gatewayV1Url = `${gatewayBaseUrl}/v1`
+  const { status } = useStatus()
+  const mainlandBaseUrl = normalizeMainlandBaseUrl(
+    status?.mainland_base_url ?? status?.data?.mainland_base_url
+  )
+  let mainlandV1Url = mainlandBaseUrl || ''
+  if (mainlandV1Url && !mainlandV1Url.endsWith('/v1')) {
+    mainlandV1Url += '/v1'
+  }
   const configText = `base_url: ${gatewayV1Url}
 api_key: sk-********************************
 model: claude-sonnet-4-5`
@@ -153,6 +163,23 @@ model: claude-sonnet-4-5`
             iconClassName='size-4'
           />
         </div>
+        {mainlandV1Url ? (
+          <div className='home-endpoint mt-3 flex min-w-0 items-center gap-3 rounded-xl border p-3'>
+            <div className='min-w-0 flex-1 text-xs leading-6'>
+              <p className='text-muted-foreground'>
+                {t('Mainland China direct connection')}
+              </p>
+              <p className='font-mono wrap-anywhere'>{mainlandV1Url}</p>
+            </div>
+            <CopyButton
+              value={mainlandV1Url}
+              aria-label={t('Copy mainland China Base URL')}
+              tooltip={t('Copy mainland China Base URL')}
+              className='size-11 rounded-lg'
+              iconClassName='size-4'
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   )

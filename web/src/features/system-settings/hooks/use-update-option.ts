@@ -46,6 +46,7 @@ const STATUS_RELATED_KEYS = new Set([
   'general_setting.custom_currency_exchange_rate',
   'oidc.display_name',
   'ServerAddress',
+  'general_setting.mainland_base_url',
   'passkey.enabled',
   'passkey.rp_id',
   'passkey.legacy_rp_ids',

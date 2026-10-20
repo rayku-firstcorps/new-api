@@ -211,6 +211,13 @@ func UpdateOption(c *gin.Context) {
 		}
 	}
 	switch option.Key {
+	case "general_setting.mainland_base_url":
+		normalized, err := operation_setting.NormalizeMainlandBaseURL(option.Value.(string))
+		if err != nil {
+			common.ApiErrorT(c, "Enter a domain or HTTPS URL without credentials, query parameters, or fragments")
+			return
+		}
+		option.Value = normalized
 	case model.OptionKeyOfficialSocialLinks:
 		normalized, err := model.NormalizeOfficialSocialLinksJSONString(option.Value.(string))
 		if err != nil {

@@ -4,6 +4,18 @@
   "current_stage": "stage1",
   "features": [
     {
+      "id": "homepage-regional-base-url",
+      "title": "首页增加后台可配置的大陆直连优化 Base URL",
+      "status": "done",
+      "scope": ["setting/operation_setting/", "controller/misc.go", "controller/option.go", "controller/option_mainland_test.go", "web/src/lib/mainland-base-url.ts", "web/src/features/home/", "web/src/features/system-settings/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "后台站点设置可保存和清空大陆直连优化地址，复用已有配置持久化机制",
+        "首页原 Base URL 保留，配置有效时额外展示大陆直连优化地址并支持复制，空配置时隐藏",
+        "输入支持域名并规范化为 HTTPS 地址，拒绝无效地址；七语言、移动端及键盘操作可用",
+        "相关测试、类型检查、定向 lint、构建和 Harness 验证通过"
+      ]
+    },
+    {
       "id": "homepage-cta-model-cards",
       "title": "首页 CTA 参考模型卡片样式展示热门模型三卡",
       "status": "done",

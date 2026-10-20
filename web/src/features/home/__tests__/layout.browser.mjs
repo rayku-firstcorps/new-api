@@ -23,6 +23,69 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 
+test('configured mainland endpoint keeps the default and copies its own URL with the keyboard', async (t) => {
+  const page = await openHome(t, {
+    status: { mainland_base_url: 'https://cn.kucodeapi.com' },
+  })
+  assert.equal(await page.locator('.home-endpoint').count(), 2)
+  await page
+    .getByText('https://gateway.example.test/v1', { exact: true })
+    .waitFor()
+  await page.getByText('https://cn.kucodeapi.com/v1', { exact: true }).waitFor()
+  const copy = page.getByRole('button', {
+    name: 'Copy mainland China Base URL',
+    exact: true,
+  })
+  await copy.focus()
+  await page.keyboard.press('Enter')
+  await copy.waitFor({ state: 'hidden' })
+  assert.equal(
+    await page.evaluate(() => navigator.clipboard.readText()),
+    'https://cn.kucodeapi.com/v1'
+  )
+  await page
+    .locator('#home-hero')
+    .screenshot({ path: join(tmpdir(), 'home-mainland-desktop.png') })
+})
+
+test('empty or invalid mainland endpoint stays hidden', async (t) => {
+  for (const value of [
+    undefined,
+    '',
+    'javascript:alert(1)',
+    'https://user:secret@cn.example.com',
+  ]) {
+    const page = await openHome(t, { status: { mainland_base_url: value } })
+    assert.equal(await page.locator('.home-endpoint').count(), 1)
+    assert.equal(
+      await page
+        .getByRole('button', { name: 'Copy mainland China Base URL' })
+        .count(),
+      0
+    )
+  }
+})
+
+test('mainland endpoint translates and wraps at 320px without duplicating v1', async (t) => {
+  const url = `https://${'regional-'.repeat(6)}gateway.example.com/v1`
+  for (const language of ['en', 'zh', 'zh-TW', 'fr', 'ja', 'ru', 'vi']) {
+    const page = await openHome(t, {
+      width: 320,
+      language,
+      status: { mainland_base_url: url },
+    })
+    await page.getByText(url, { exact: true }).waitFor()
+    assert.equal(await page.locator('.home-endpoint').count(), 2)
+    await assertNoOverflow(page)
+    if (language === 'zh') {
+      await page.getByText('大陆直连优化', { exact: true }).waitFor()
+      await page
+        .locator('#home-hero')
+        .screenshot({ path: join(tmpdir(), 'home-mainland-mobile.png') })
+    }
+  }
+})
+
 test('homepage CTA surfaces follow light, dark, then light theme without dark islands', async (t) => {
   const page = await openHome(t, { theme: 'light' })
   for (const theme of ['light', 'dark', 'light']) {

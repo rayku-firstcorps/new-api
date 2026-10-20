@@ -46,6 +46,7 @@ func GetStatus(c *gin.Context) {
 
 	legalSetting := system_setting.GetLegalSettings()
 	officialSocialLinks := model.PublicOfficialSocialLinksFromJSON(common.OptionMap[model.OptionKeyOfficialSocialLinks])
+	mainlandBaseURL, _ := operation_setting.NormalizeMainlandBaseURL(operation_setting.GetGeneralSetting().MainlandBaseURL)
 
 	data := gin.H{
 		"version":                     common.Version,
@@ -68,6 +69,7 @@ func GetStatus(c *gin.Context) {
 		"wechat_qrcode":               common.WeChatAccountQRCodeImageURL,
 		"wechat_login":                common.WeChatAuthEnabled,
 		"server_address":              system_setting.ServerAddress,
+		"mainland_base_url":           mainlandBaseURL,
 		"turnstile_check":             common.TurnstileCheckEnabled,
 		"turnstile_site_key":          common.TurnstileSiteKey,
 		"docs_link":                   operation_setting.GetGeneralSetting().DocsLink,

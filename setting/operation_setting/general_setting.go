@@ -11,6 +11,7 @@ const (
 )
 
 type GeneralSetting struct {
+	MainlandBaseURL     string `json:"mainland_base_url"`
 	DocsLink            string `json:"docs_link"`
 	PingIntervalEnabled bool   `json:"ping_interval_enabled"`
 	PingIntervalSeconds int    `json:"ping_interval_seconds"`

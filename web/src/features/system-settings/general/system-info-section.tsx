@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { BaseSyntheticEvent } from 'react'
 import type { Resolver } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
@@ -32,6 +33,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { normalizeMainlandBaseUrl } from '@/lib/mainland-base-url'
 
 import { FormDirtyIndicator } from '../components/form-dirty-indicator'
 import { FormNavigationGuard } from '../components/form-navigation-guard'
@@ -56,6 +58,7 @@ const _systemInfoSchema = z.object({
   HomePageContent: z.string().optional(),
   general_setting: z.object({
     docs_link: z.string(),
+    mainland_base_url: z.string(),
   }),
   legal: z.object({
     user_agreement: z.string().optional(),
@@ -88,6 +91,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
     HomePageContent: normalizeValue(defaultValues.HomePageContent),
     general_setting: {
       docs_link: normalizeValue(defaultValues.general_setting?.docs_link),
+      mainland_base_url: normalizeValue(
+        defaultValues.general_setting?.mainland_base_url
+      ),
     },
     legal: {
       user_agreement: normalizeValue(defaultValues.legal?.user_agreement),
@@ -112,6 +118,14 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
     HomePageContent: z.string().optional(),
     general_setting: z.object({
       docs_link: z.string(),
+      mainland_base_url: z
+        .string()
+        .refine((value) => normalizeMainlandBaseUrl(value) !== null, {
+          error: () =>
+            t(
+              'Enter a domain or HTTPS URL without credentials, query parameters, or fragments'
+            ),
+        }),
     }),
     legal: z.object({
       user_agreement: z.string().optional(),
@@ -130,6 +144,9 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
       onSubmit: async (_data, changedFields) => {
         for (const [key, value] of Object.entries(changedFields)) {
           let v = normalizeValue(value)
+          if (key === 'general_setting.mainland_base_url') {
+            v = normalizeMainlandBaseUrl(v) ?? ''
+          }
           if (key === 'ServerAddress' || key === 'TaskPublicAddress') {
             v = v.replace(/\/+$/, '')
           }
@@ -141,15 +158,21 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
       },
     })
 
+  const submitSettings = (event?: BaseSyntheticEvent) => {
+    void handleSubmit(event).catch(() => {
+      // useUpdateOption displays the error; keep dirty values available for retry.
+    })
+  }
+
   return (
     <>
       <FormNavigationGuard when={isDirty} />
 
       <SettingsSection title={t('System Information')}>
         <Form {...form}>
-          <SettingsForm onSubmit={handleSubmit}>
+          <SettingsForm onSubmit={submitSettings}>
             <SettingsPageFormActions
-              onSave={handleSubmit}
+              onSave={submitSettings}
               onReset={handleReset}
               isSaving={isSubmitting || updateOption.isPending}
               isResetDisabled={!isDirty}
@@ -207,6 +230,27 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                     <FormDescription>
                       {t(
                         'Public base URL for async task media. Supports a dedicated media domain, port, or Nginx path prefix; falls back to Server Address when empty.'
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='general_setting.mainland_base_url'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t('Mainland China direct connection')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder='cn.kucodeapi.com' {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'Additional Base URL shown on the homepage. Enter a domain or HTTPS URL; leave empty to hide. The /v1 suffix is added automatically.'
                       )}
                     </FormDescription>
                     <FormMessage />
