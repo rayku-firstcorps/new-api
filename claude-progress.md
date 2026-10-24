@@ -34,11 +34,13 @@
 
 ## 上次停在哪里
 
+2026-10-24 推送授权：用户要求「submit to origin」。本轮将已验证的合并提交 `485269d4f`（upstream/main `33c61a242`）及本条进度记录推送到 `origin/main`；沿用上轮已通过的完整验证，未修改产品代码。保留 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。feature `upstream-merge-preserve-custom-ui` 保持 done；Stage 1 其他功能与部署不在本轮范围。
+
 2026-10-24：按用户「merge latest version」合并最新 `upstream/main`（`33c61a24234aa20cb10e8a644304322c476361de`，最后重新查询远端确认未变化）。创建本地合并提交；本轮未推送或部署。合并前备份分支为 `backup/pre-upstream-merge-20261024`（`12cd4cc6c`）。解决 12 个文件的冲突：合并双方配置、保留 fork 的 300 秒流式超时、保留 xlsx 依赖，并按三方语义合并七语言（每语言 101 项上游变化，fork 翻译保留）。自动合并遗漏 AWS `json.RawMessage` 类型导入，已补齐；编码仍使用 `common.*`。
 
 首页、生图、文档页、顶栏导航和 footer 与合并前逐文件比较无变化；大陆直连设置、支付和其他 fork 定制保留。原有 `docs/prd/INDEX.md`、未跟踪支付安全计划与 `sample/` 未纳入提交。没有实现任何新的 Stage 1 推广功能。为完成实际回归，修复既有 SQLite 测试连接未关闭导致 Windows 清理失败的问题，并将上游代理失败测试改用已关闭的 loopback 监听端口，避免本机 DNS 对 `.invalid` 的解析造成不确定失败；不改变生产认证行为。另修正两个受影响前端文件的 lint 和一个上游测试文件的格式。
 
-**下一步：** 如需同步远端，推送本轮本地 merge commit 到 `origin/main`；部署前后端后确认线上配置。全仓 lint/format 仍有原有问题，涉及文件 lint 与本轮修正文件格式检查已通过。Stage 1 待办仍从 `promotion-backend-model` 开始。
+**下一步：** 部署前后端后确认线上配置。全仓 lint/format 仍有原有问题，涉及文件 lint 与本轮修正文件格式检查已通过。Stage 1 待办仍从 `promotion-backend-model` 开始。
 
 2026-10-20 提交授权：用户要求「提交到origin」，本轮将 `homepage-regional-base-url` 的实现、翻译、测试与 Harness 记录提交并推送到 `origin/main`；保留原有 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。提交前 `git diff --check` 通过，功能验证沿用下方已通过结果。下一步为部署前后端并在后台填写域名。
 
@@ -231,4 +233,4 @@
 
 ---
 
-*最后更新：2026-10-24 合并最新 upstream/main（33c61a242）并完成验证，创建本地合并提交；未推送或部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*
+*最后更新：2026-10-24 按用户授权将已验证的上游合并提交推送到 origin/main；未部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*
