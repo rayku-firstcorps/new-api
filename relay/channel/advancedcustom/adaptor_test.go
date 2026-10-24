@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -52,6 +53,53 @@ func TestAdaptorUsesExactRouteAndQueryAuth(t *testing.T) {
 	assert.Equal(t, "/v1/chat/completions", parsedURL.Path)
 	assert.Equal(t, "1", parsedURL.Query().Get("existing"))
 	assert.Equal(t, "sk-test", parsedURL.Query().Get("api_key"))
+}
+
+// An absolute route sends the request to a host other than the channel base
+// URL, and a channel proxy is dialed before the upstream; a failed handshake
+// must hide both.
+func TestAdaptorMasksDialedHostsInDialFailure(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer upstream.Close()
+	upstreamURL, err := url.Parse(upstream.URL)
+	require.NoError(t, err)
+	// A closed loopback listener produces a dial failure without depending on
+	// external DNS, which some development proxies resolve even for .invalid.
+	proxyListener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	proxyURL := "http://" + proxyListener.Addr().String()
+	require.NoError(t, proxyListener.Close())
+	for _, tc := range []struct {
+		name   string
+		proxy  string
+		hidden string
+	}{
+		{name: "absolute route host", hidden: "localhost"},
+		{name: "channel proxy host", proxy: proxyURL, hidden: "127.0.0.1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			info := advancedCustomRelayInfo(&dto.AdvancedCustomConfig{
+				Routes: []dto.AdvancedCustomRoute{{IncomingPath: "/v1/realtime", UpstreamPath: "http://localhost:" + upstreamURL.Port() + "/v1/realtime", Converter: relayconvert.ConverterNone}},
+			})
+			info.RelayMode = relayconstant.RelayModeRealtime
+			info.RequestURLPath = "/v1/realtime"
+			info.ChannelSetting.Proxy = tc.proxy
+			c := advancedCustomGinContext("/v1/realtime")
+			common.SetContextKey(c, constant.ContextKeyChannelBaseUrl, info.ChannelBaseUrl)
+			common.SetContextKey(c, constant.ContextKeyChannelSetting, info.ChannelSetting)
+
+			_, err := (&Adaptor{}).DoRequest(c, info, nil)
+
+			var apiErr *types.NewAPIError
+			require.ErrorAs(t, err, &apiErr)
+			require.Contains(t, apiErr.Error(), tc.hidden)
+			message := apiErr.ToOpenAIError(common.UpstreamAddresses(c)...).Message
+			assert.Contains(t, message, "dial failed to ws://***:"+upstreamURL.Port()+"/***/***")
+			assert.NotContains(t, message, tc.hidden)
+		})
+	}
 }
 
 func TestAdaptorJoinsUpstreamPathWithChannelBaseURL(t *testing.T) {

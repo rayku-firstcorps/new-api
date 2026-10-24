@@ -22,7 +22,7 @@
 | homepage-popular-model-cta | done | 底部 CTA 展示近 24 小时调用量最高且仍在模型广场展示的模型；保持具体次数不公开，无数据时使用原 CTA |
 | homepage-layout-motion | done | 默认首页改为深色双栏首屏、接入示意、工具生态、步骤与 CTA；增加入场、连接流光和悬停动效，完成响应式与减少动态效果验证 |
 | utf8-file-reading | done | 项目文本文件读取统一显式使用 UTF-8 编码 |
-| upstream-merge-preserve-custom-ui | done | 已合并 upstream/main（e2c7aa7b1），生成合并提交 78e676e42；前端迁移至 web/，首页、导航栏-生图、导航栏-文档、footer 及 fork 定制功能均保留 |
+| upstream-merge-preserve-custom-ui | done | 2026-10-24 合并 upstream/main（33c61a242，60 个提交）；保留首页、生图、文档导航、footer 与 fork 配置；Go、前端、浏览器及三库验证通过 |
 | antom-safari-popup-plan | done | 已输出 Safari 下 Antom 支付弹窗优化实施计划，未修改支付业务代码 |
 | antom-safari-popup-fix | done | 已实现 Antom 支付窗口同步预开、失败清理和同页降级；待部署环境 Safari 真机验收 |
 | seo-technical-optimization | done | 已补齐站点分享元数据、路由级 canonical/noindex、robots.txt 与 sitemap.xml；保留受保护项目标识 |
@@ -33,6 +33,12 @@
 | promotion-frontend-admin | pending | 依赖 capture + api |
 
 ## 上次停在哪里
+
+2026-10-24：按用户「merge latest version」合并最新 `upstream/main`（`33c61a24234aa20cb10e8a644304322c476361de`，最后重新查询远端确认未变化）。创建本地合并提交；本轮未推送或部署。合并前备份分支为 `backup/pre-upstream-merge-20261024`（`12cd4cc6c`）。解决 12 个文件的冲突：合并双方配置、保留 fork 的 300 秒流式超时、保留 xlsx 依赖，并按三方语义合并七语言（每语言 101 项上游变化，fork 翻译保留）。自动合并遗漏 AWS `json.RawMessage` 类型导入，已补齐；编码仍使用 `common.*`。
+
+首页、生图、文档页、顶栏导航和 footer 与合并前逐文件比较无变化；大陆直连设置、支付和其他 fork 定制保留。原有 `docs/prd/INDEX.md`、未跟踪支付安全计划与 `sample/` 未纳入提交。没有实现任何新的 Stage 1 推广功能。为完成实际回归，修复既有 SQLite 测试连接未关闭导致 Windows 清理失败的问题，并将上游代理失败测试改用已关闭的 loopback 监听端口，避免本机 DNS 对 `.invalid` 的解析造成不确定失败；不改变生产认证行为。另修正两个受影响前端文件的 lint 和一个上游测试文件的格式。
+
+**下一步：** 如需同步远端，推送本轮本地 merge commit 到 `origin/main`；部署前后端后确认线上配置。全仓 lint/format 仍有原有问题，涉及文件 lint 与本轮修正文件格式检查已通过。Stage 1 待办仍从 `promotion-backend-model` 开始。
 
 2026-10-20 提交授权：用户要求「提交到origin」，本轮将 `homepage-regional-base-url` 的实现、翻译、测试与 Harness 记录提交并推送到 `origin/main`；保留原有 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。提交前 `git diff --check` 通过，功能验证沿用下方已通过结果。下一步为部署前后端并在后台填写域名。
 
@@ -91,6 +97,22 @@
 - 新增 `docs/prd/antom-payment-security-hardening-plan.md`，记录 Antom 支付回调验签、金额/币种/订单归属校验、统一额度结算、上限保护及测试验收计划；本次未修改支付业务代码。
 
 ## 本次验证
+
+### 2026-10-24 最新上游合并
+
+- `go test ./...` 最终通过（Go **1.26.10**）。最初模块下载超时通过本次进程 `GOPROXY=https://goproxy.cn,direct go mod download github.com/klauspost/compress github.com/Calcium-Ion/moejs` 解决，没有修改全局 Go 配置。测试初次发现 AWS 缺失类型导入、SQLite 测试连接泄漏和依赖外部 DNS 的代理用例；修复后定向回归及完整测试均通过。日志：`%TEMP%/newapi-merge-20261024-go-test-final.log`。
+- `cd relaykit; GOWORK=off go build ./...` 与 `GOWORK=off go test ./...` 通过；`tokenkit/` 无变更。
+- `cd web; bun install --frozen-lockfile`、`bun run i18n:sync`、`bun run typecheck`、`bun run build:check` 通过；七语言 missing/extras 为 0（保留术语 untranslated 提示 zh=3、ja=4、ru=5）。`bun run test`：203 files / **2455 tests** 全部通过；两处无行为变化的 lint 修正后 pricing 子集 161 tests 通过，格式修正后 pricing-sync 21 tests 通过。
+- `node --test src/features/home/__tests__/layout.browser.mjs`：**38/38** 通过。使用生产预览 `HOME_TEST_URL=http://localhost:5175` 和上文记录的 Playwright 路径；覆盖七语言、四种视口、深浅主题、社群与复制、CTA 模型数据边界、大陆直连地址。API 使用确定性 fixture。
+- 所有合并涉及 JS/TS 文件执行 `bunx --no-install oxlint -c .oxlintrc.json <changed paths>` 通过，仅有三个非阻断 warning；手工修正文件 `oxfmt --check` 通过。全仓 `bun run lint` 和 `bun run format:check` 仍被其他已有文件阻断，未扩大合并范围清理。`git diff --check` 与 `git diff --cached --check` 通过，没有未解决冲突。
+- `C:/Program Files/Git/bin/bash.exe .harness/verify.sh upstream-merge-preserve-custom-ui`：Go 编译、JSON 使用规则 **2/2 通过**。
+- 数据库真实版本：SQLite **3.50.4**、MySQL **8.0.46**、PostgreSQL **16.14**。使用独立临时容器，未接触已有业务数据库：`docker run -d --name newapi-merge-20261024-mysql --label codex.task=upstream-merge-20261024 -p 127.0.0.1:33326:3306 -e MYSQL_ROOT_PASSWORD=merge-test-only -e MYSQL_DATABASE=merge_test mysql:8.0`；`docker run -d --name newapi-merge-20261024-postgres --label codex.task=upstream-merge-20261024 -p 127.0.0.1:35452:5432 -e POSTGRES_PASSWORD=merge-test-only -e POSTGRES_DB=merge_test pgvector/pgvector:pg16`。
+- 设置 `TEST_MYSQL_DSN=root:merge-test-only@tcp(127.0.0.1:33326)/merge_test?charset=utf8mb4&parseTime=True&loc=Local`、`TEST_POSTGRES_DSN=host=127.0.0.1 port=35452 user=postgres password=merge-test-only dbname=merge_test sslmode=disable`，运行 `go test ./model -run 'Test(AuditLogSortIndexDatabaseMatrix|ChannelPriorityDatabaseMatrix)$' -count=1 -v`：三个数据库全部通过，含审计索引新建/升级/幂等、排序和渠道并发重排/回滚。
+- `AUDIT_MYSQL_DSN` 同上 MySQL；`AUDIT_POSTGRES_DSN=postgres://postgres:merge-test-only@127.0.0.1:35452/merge_test?sslmode=disable`。`go test ./controller -run 'TestAuditDatabaseMatrix/(mysql|postgres)' -count=1 -v` 与 `go test ./controller -run 'TestIndependentAuditLogStores/(mysql|postgres)' -count=1 -v` 均通过，覆盖 fresh/upgrade、共享与独立日志库、历史审计数据、权限及唯一性。SQLite 对应矩阵在完整测试与定向回归中通过。
+- 新增缓存用量列另使用临时验证程序 `.git/merge-20261024/dbcheck.go`：`go build -o <tmp>/newapi-merge-20261024-dbcheck.exe ./.git/merge-20261024/dbcheck.go`；分别从最新发布版 **v1.0.0-rc.46（7d8b91268）**、合并前 fork **12cd4cc6c** 编译 seed 程序，以 `seed <snapshot.json>` 建库并写入代表性 user/token/option/audit/usage 数据，再运行新版本 `verify <snapshot.json>`。对 SQLite/MySQL/PostgreSQL 各覆盖全新、发布版升级、fork 升级，合计 **9/9 通过**。每次验证重复启动迁移三次，确认原有数据、索引和唯一约束保留，旧 usage 的缓存列为 0，内存合并及 SQL 累加后新缓存计数准确，MySQL/PG 使用独立 log 数据库。命令和输出保留在 `%TEMP%/newapi-merge-{sqlite,mysql,postgres}-{fresh,upgrade,fork}.log`；临时程序不纳入产品提交。
+- 大陆直连配置持久化：分别设置 `TEST_MAINLAND_DB=mysql` / `postgres` 与上述 DSN，运行 `go test ./controller -run TestMainlandBaseURLPersistenceAndStatus -count=1 -v`，两库通过；SQLite 随完整测试通过。
+- 认证参考：OWASP [ASVS 5.0.0](https://github.com/OWASP/ASVS/tree/v5.0.0)、[Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)、[Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)、[Forgot Password](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)。合并保持服务端重认证、挑战单次/过期、会话失效与非秘密审计约束；上游邮件语言/投递改动及相关成功、失败、重放、过期和绕过回归随 controller/service 全量测试通过。此次为合并回归，不宣称完整 ASVS 认证审计。
+- 已人工核对受影响任务插件的数值字段说明采用计费主体 + 单价，单位独立；API v1 文档、声明与 schema 的兼容性随插件测试验证。
 
 ### 2026-10-20 大陆直连优化
 
@@ -209,4 +231,4 @@
 
 ---
 
-*最后更新：完成后台可配置的首页大陆直连优化 Base URL（2026-10-20），未提交或部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*
+*最后更新：2026-10-24 合并最新 upstream/main（33c61a242）并完成验证，创建本地合并提交；未推送或部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*
