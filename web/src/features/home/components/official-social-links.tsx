@@ -46,6 +46,8 @@ const socialButtonToneByPlatform: Record<OfficialSocialPlatform, string> = {
     'border-sky-200 bg-sky-100 text-sky-800 hover:border-sky-300 hover:bg-sky-200 dark:border-sky-200 dark:bg-sky-100 dark:text-sky-900 dark:hover:bg-sky-200',
   whatsapp:
     'border-emerald-200 bg-emerald-100 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-200 dark:border-emerald-200 dark:bg-emerald-100 dark:text-emerald-900 dark:hover:bg-emerald-200',
+  linuxdo:
+    'border-amber-200 bg-amber-100 text-amber-800 hover:border-amber-300 hover:bg-amber-200 dark:border-amber-200 dark:bg-amber-100 dark:text-amber-900 dark:hover:bg-amber-200',
   facebook:
     'border-blue-200 bg-blue-100 text-blue-800 hover:border-blue-300 hover:bg-blue-200 dark:border-blue-200 dark:bg-blue-100 dark:text-blue-900 dark:hover:bg-blue-200',
   instagram:
@@ -72,7 +74,7 @@ export function OfficialSocialLinks(props: OfficialSocialLinksProps) {
         aria-label={t('Official Communities')}
       >
         {props.links.map((link, index) => {
-          const label = getOfficialSocialLabel(link)
+          const label = getOfficialSocialLabel(link, t)
           const { Icon } = getOfficialSocialPlatformMeta(link.platform)
           const key = link.id || `${link.platform}-${link.url}-${index}`
           const button = (

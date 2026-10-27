@@ -3815,6 +3815,7 @@
     "LinuxDO": "LinuxDO",
     "LinuxDO Client ID": "LinuxDO Mã khách hàng",
     "LinuxDO Client Secret": "LinuxDO Bí mật máy khách",
+    "LinuxDo Offers": "Ưu đãi LinuxDo",
     "List of models supported by this channel. Use comma to separate multiple models.": "Danh sách các mô hình được hỗ trợ bởi kênh này. Sử dụng dấu phẩy để phân tách nhiều mô hình.",
     "List of origins (one per line) allowed for Passkey registration and authentication.": "Danh sách các nguồn gốc (mỗi dòng một mục) được phép đăng ký và xác thực Passkey.",
     "List registered task plugins and bind them when creating or editing task plugin channels.": "Liệt kê plugin tác vụ đã đăng ký và gắn chúng khi tạo hoặc sửa kênh.",

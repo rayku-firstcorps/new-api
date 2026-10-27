@@ -3815,6 +3815,7 @@
     "LinuxDO": "LinuxDO",
     "LinuxDO Client ID": "LinuxDO 用戶端 ID",
     "LinuxDO Client Secret": "LinuxDO 用戶端密鑰",
+    "LinuxDo Offers": "LinuxDo 優惠入口",
     "List of models supported by this channel. Use comma to separate multiple models.": "此渠道支援的模型清單。使用逗號分隔多個模型。",
     "List of origins (one per line) allowed for Passkey registration and authentication.": "允許用於 Passkey 註冊和身份驗證的來源清單（每行一個）。",
     "List registered task plugins and bind them when creating or editing task plugin channels.": "列出已註冊的任務外掛，並在建立或編輯任務外掛渠道時綁定它們。",

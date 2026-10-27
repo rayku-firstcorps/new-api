@@ -1,6 +1,75 @@
 package model
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestLinuxDoOfficialSocialLinks(t *testing.T) {
+	const offerURL = "https://linux.do/t/topic/123456?source=home#offer"
+	tests := []struct {
+		name      string
+		raw       string
+		wantLabel string
+		wantError bool
+	}{
+		{
+			name:      "enabled entry keeps destination and receives default label",
+			raw:       `[{"id":"offer","platform":" LinuxDo ","url":" https://linux.do/t/topic/123456?source=home#offer ","enabled":true,"sort":30}]`,
+			wantLabel: "LinuxDo Offers",
+		},
+		{
+			name:      "custom display name is preserved",
+			raw:       `[{"id":"offer","platform":"linuxdo","label":"Community special","url":"https://linux.do/t/topic/123456?source=home#offer","enabled":true,"sort":30}]`,
+			wantLabel: "Community special",
+		},
+		{
+			name: "disabled entry may have no destination and remains private",
+			raw:  `[{"id":"offer","platform":"linuxdo","url":"","enabled":false}]`,
+		},
+		{
+			name:      "enabled entry requires a destination",
+			raw:       `[{"id":"offer","platform":"linuxdo","url":"","enabled":true}]`,
+			wantError: true,
+		},
+		{
+			name:      "script URL is rejected and never published",
+			raw:       `[{"id":"offer","platform":"linuxdo","url":"javascript:alert(1)","enabled":true}]`,
+			wantError: true,
+		},
+		{
+			name:      "HTTP URL is rejected and never published",
+			raw:       `[{"id":"offer","platform":"linuxdo","url":"http://linux.do/t/topic/123456","enabled":true}]`,
+			wantError: true,
+		},
+		{
+			name:      "URL with credentials is rejected and never published",
+			raw:       `[{"id":"offer","platform":"linuxdo","url":"https://user:secret@linux.do/t/topic/123456","enabled":true}]`,
+			wantError: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			normalized, err := NormalizeOfficialSocialLinksJSONString(tc.raw)
+			if tc.wantError {
+				require.Error(t, err)
+				assert.Empty(t, PublicOfficialSocialLinksFromJSON(tc.raw))
+				return
+			}
+			require.NoError(t, err)
+			public := PublicOfficialSocialLinksFromJSON(normalized)
+			if tc.wantLabel == "" {
+				assert.Empty(t, public)
+				return
+			}
+			assert.Equal(t, []PublicOfficialSocialLink{{
+				Platform: "linuxdo", Label: tc.wantLabel, URL: offerURL, Enabled: true, Sort: 30,
+			}}, public)
+		})
+	}
+}
 
 func TestNormalizeOfficialSocialLinksJSONString(t *testing.T) {
 	raw := `[

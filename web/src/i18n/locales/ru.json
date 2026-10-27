@@ -3815,6 +3815,7 @@
     "LinuxDO": "LinuxDO",
     "LinuxDO Client ID": "ID клиента LinuxDO",
     "LinuxDO Client Secret": "Секрет клиента LinuxDO",
+    "LinuxDo Offers": "Скидки LinuxDo",
     "List of models supported by this channel. Use comma to separate multiple models.": "Список моделей, поддерживаемых этим каналом. Используйте запятую для разделения нескольких моделей.",
     "List of origins (one per line) allowed for Passkey registration and authentication.": "Список источников (один на строку), разрешенных для регистрации и аутентификации Passkey.",
     "List registered task plugins and bind them when creating or editing task plugin channels.": "Просматривать зарегистрированные плагины задач и привязывать их при создании или изменении каналов.",

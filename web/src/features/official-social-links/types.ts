@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 export type OfficialSocialPlatform =
   | 'telegram'
   | 'whatsapp'
+  | 'linuxdo'
   | 'facebook'
   | 'instagram'
   | 'x'

@@ -3815,6 +3815,7 @@
     "LinuxDO": "LinuxDO",
     "LinuxDO Client ID": "LinuxDO Client ID",
     "LinuxDO Client Secret": "LinuxDO Client Secret",
+    "LinuxDo Offers": "LinuxDo Offers",
     "List of models supported by this channel. Use comma to separate multiple models.": "List of models supported by this channel. Use comma to separate multiple models.",
     "List of origins (one per line) allowed for Passkey registration and authentication.": "List of origins (one per line) allowed for Passkey registration and authentication.",
     "List registered task plugins and bind them when creating or editing task plugin channels.": "List registered task plugins and bind them when creating or editing task plugin channels.",

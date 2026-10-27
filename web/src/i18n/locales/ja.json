@@ -3815,6 +3815,7 @@
     "LinuxDO": "LinuxDO",
     "LinuxDO Client ID": "LinuxDO クライアントID",
     "LinuxDO Client Secret": "LinuxDO クライアントシークレット",
+    "LinuxDo Offers": "LinuxDo 特典",
     "List of models supported by this channel. Use comma to separate multiple models.": "このチャネルがサポートするモデルのリストです。複数のモデルはカンマで区切ってください。",
     "List of origins (one per line) allowed for Passkey registration and authentication.": "Passkeyの登録と認証が許可されているオリジン（1行に1つ）のリスト。",
     "List registered task plugins and bind them when creating or editing task plugin channels.": "登録済みのタスクプラグインを一覧し、チャネル作成・編集時に紐付けます。",

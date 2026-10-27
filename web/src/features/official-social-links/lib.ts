@@ -27,13 +27,22 @@ import {
   FaXTwitter,
 } from 'react-icons/fa6'
 
+import { IconLinuxDo } from '@/assets/brand-icons/icon-linuxdo'
+
 import type { OfficialSocialLink, OfficialSocialPlatform } from './types'
 
 type PlatformMeta = {
   value: OfficialSocialPlatform
   label: string
   placeholder: string
-  Icon: IconType | typeof Link2
+  Icon: IconType | typeof Link2 | typeof IconLinuxDo
+}
+
+const CUSTOM_SOCIAL_PLATFORM_META: PlatformMeta = {
+  value: 'custom',
+  label: 'Custom',
+  placeholder: 'https://example.com/community',
+  Icon: Link2,
 }
 
 export const OFFICIAL_SOCIAL_PLATFORM_META: PlatformMeta[] = [
@@ -48,6 +57,12 @@ export const OFFICIAL_SOCIAL_PLATFORM_META: PlatformMeta[] = [
     label: 'WhatsApp',
     placeholder: 'https://chat.whatsapp.com/example',
     Icon: FaWhatsapp,
+  },
+  {
+    value: 'linuxdo',
+    label: 'LinuxDo Offers',
+    placeholder: 'https://linux.do/t/topic/123456',
+    Icon: IconLinuxDo,
   },
   {
     value: 'facebook',
@@ -73,12 +88,7 @@ export const OFFICIAL_SOCIAL_PLATFORM_META: PlatformMeta[] = [
     placeholder: 'https://vk.com/example',
     Icon: FaVk,
   },
-  {
-    value: 'custom',
-    label: 'Custom',
-    placeholder: 'https://example.com/community',
-    Icon: Link2,
-  },
+  CUSTOM_SOCIAL_PLATFORM_META,
 ]
 
 const PLATFORM_META_BY_VALUE = new Map(
@@ -100,16 +110,20 @@ export function getOfficialSocialPlatformMeta(platform: string) {
   return (
     PLATFORM_META_BY_VALUE.get(
       platform.trim().toLowerCase() as OfficialSocialPlatform
-    ) ?? PLATFORM_META_BY_VALUE.get('custom')!
+    ) ?? CUSTOM_SOCIAL_PLATFORM_META
   )
 }
 
 export function getOfficialSocialLabel(
-  link: Pick<OfficialSocialLink, 'label' | 'platform'>
+  link: Pick<OfficialSocialLink, 'label' | 'platform'>,
+  t: (key: string) => string
 ) {
-  return (
+  const label =
     link.label?.trim() || getOfficialSocialPlatformMeta(link.platform).label
-  )
+  if (link.platform === 'linuxdo' && label === 'LinuxDo Offers') {
+    return t('LinuxDo Offers')
+  }
+  return label
 }
 
 export function isSafeOfficialSocialUrl(value: string): boolean {

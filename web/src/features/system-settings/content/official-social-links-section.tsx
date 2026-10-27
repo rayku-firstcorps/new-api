@@ -319,7 +319,11 @@ export function OfficialSocialLinksSection({
                   sortedLinks.map((link, index) => {
                     const meta = getOfficialSocialPlatformMeta(link.platform)
                     const Icon = meta.Icon
-                    const label = getOfficialSocialLabel(link)
+                    const label = getOfficialSocialLabel(link, t)
+                    const defaultLabel = getOfficialSocialLabel(
+                      { platform: link.platform, label: '' },
+                      t
+                    )
 
                     return (
                       <TableRow key={link.id}>
@@ -332,7 +336,10 @@ export function OfficialSocialLinksSection({
                               })
                             }
                           >
-                            <SelectTrigger className='w-full'>
+                            <SelectTrigger
+                              className='w-full'
+                              aria-label={t('Social Platform')}
+                            >
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent alignItemWithTrigger={false}>
@@ -344,8 +351,14 @@ export function OfficialSocialLinksSection({
                                       key={option.value}
                                       value={option.value}
                                     >
-                                      <OptionIcon className='size-4' />
-                                      {option.label}
+                                      <OptionIcon
+                                        className='size-4'
+                                        aria-hidden='true'
+                                      />
+                                      {getOfficialSocialLabel(
+                                        { platform: option.value, label: '' },
+                                        t
+                                      )}
                                     </SelectItem>
                                   )
                                 })}
@@ -355,8 +368,13 @@ export function OfficialSocialLinksSection({
                         </TableCell>
                         <TableCell>
                           <Input
-                            value={link.label}
-                            placeholder={meta.label}
+                            aria-label={t('Display Name')}
+                            value={
+                              link.label === meta.label
+                                ? defaultLabel
+                                : link.label
+                            }
+                            placeholder={defaultLabel}
                             onChange={(event) =>
                               updateLink(link.id, {
                                 label: event.target.value,
@@ -368,6 +386,7 @@ export function OfficialSocialLinksSection({
                           <div className='flex items-center gap-2'>
                             <Icon className='text-muted-foreground size-4 shrink-0' />
                             <Input
+                              aria-label={t('Community Link')}
                               value={link.url}
                               placeholder={meta.placeholder}
                               onChange={(event) =>
@@ -395,7 +414,7 @@ export function OfficialSocialLinksSection({
                                       <ExternalLink className='h-4 w-4' />
                                     </Button>
                                   }
-                                ></TooltipTrigger>
+                                />
                                 <TooltipContent>
                                   {t('Open in new tab')}
                                 </TooltipContent>
@@ -405,6 +424,7 @@ export function OfficialSocialLinksSection({
                         </TableCell>
                         <TableCell>
                           <Input
+                            aria-label={t('Sort')}
                             type='number'
                             value={link.sort}
                             onChange={(event) =>
@@ -417,6 +437,7 @@ export function OfficialSocialLinksSection({
                         <TableCell>
                           <div className='flex items-center gap-2'>
                             <Switch
+                              aria-label={t('Enable This Link')}
                               checked={link.enabled}
                               onCheckedChange={(checked) =>
                                 updateLink(link.id, { enabled: checked })
@@ -442,7 +463,7 @@ export function OfficialSocialLinksSection({
                                     <ArrowUp className='h-4 w-4' />
                                   </Button>
                                 }
-                              ></TooltipTrigger>
+                              />
                               <TooltipContent>{t('Move up')}</TooltipContent>
                             </Tooltip>
                             <Tooltip>
@@ -458,7 +479,7 @@ export function OfficialSocialLinksSection({
                                     <ArrowDown className='h-4 w-4' />
                                   </Button>
                                 }
-                              ></TooltipTrigger>
+                              />
                               <TooltipContent>{t('Move down')}</TooltipContent>
                             </Tooltip>
                             <Tooltip>
@@ -473,7 +494,7 @@ export function OfficialSocialLinksSection({
                                     <Trash2 className='h-4 w-4' />
                                   </Button>
                                 }
-                              ></TooltipTrigger>
+                              />
                               <TooltipContent>{t('Delete')}</TooltipContent>
                             </Tooltip>
                           </div>

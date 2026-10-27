@@ -13,6 +13,7 @@
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
+| homepage-linuxdo-offers | done | 首页 Telegram、WhatsApp 旁增加 LinuxDo 优惠入口；通过后台官方社区配置 HTTPS 链接、排序和启停，支持七语言 |
 | homepage-regional-base-url | done | 站点系统信息新增大陆直连优化地址；首页额外展示并独立复制，支持裸域名补 HTTPS、空配置隐藏、七语言与窄屏 |
 | homepage-light-theme-fix | done | 首屏 CTA 与接入面板改为跟随全站主题；修复浅色模式的固定深色背景和白色 OpenAI 图标 |
 | homepage-cta-model-cards | done | 首页 CTA 参考 sample 截图，展示近 24 小时调用量前三的模型卡片（供应商、排名、标签、输入/输出价格、上下文/最大输出）；字段缺失不展示，不公开调用次数 |
@@ -33,6 +34,14 @@
 | promotion-frontend-admin | pending | 依赖 capture + api |
 
 ## 上次停在哪里
+
+2026-10-27 提交授权：用户要求「提交到origin」。本轮将 `homepage-linuxdo-offers` 的实现、翻译、测试和 Harness 进度记录提交并推送到 `origin/main`；沿用下方已通过的验证，提交前再次检查差异及 `git diff --check`。保留原有 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。下一步为部署前后端并在官方社区中填写实际优惠链接；本轮未部署。
+
+2026-10-27：首页 LinuxDo 优惠入口已完成。复用 `OfficialSocialLinks` 配置，在「系统设置 → 内容设置 → 官方社区 → 添加社区链接」中新增 LinuxDo 优惠入口平台；管理员填写 HTTPS 地址、启用并保存后，默认首页在 Telegram、WhatsApp 按钮旁展示。未配置、停用或不安全的链接不展示，保留新标签页 `noopener noreferrer`、原有排序和自定义名称能力。默认名称随界面语言切换，后台保存英文默认标识，避免配置被管理员当前语言固定；七语言已补齐。
+
+复用现有 OfficialSocialLinks、OfficialSocialLinksSection、Button、Select、Input、Switch、Tooltip 和 IconLinuxDo，没有新增生产组件或依赖。后端仅扩展社媒平台校验及默认文案映射，不修改配置存储、数据库 schema/SQL/驱动、认证、计费或推广奖励。修复所改文件既有的非空断言 lint 错误，补充表单可访问名称。保留原有 docs/sample 改动，未提交或部署；本地 `http://localhost:5173/` 前端保留运行，浏览器使用 API fixture 验证，未写入真实站点配置。
+
+**本功能下一步：** 部署前后端，在官方社区中添加 LinuxDo 优惠入口、填写实际优惠链接并保存。用户尚未提供实际目标地址，不预填示例链接；停用或删除可隐藏入口。Stage 1 推广相关待办仍从 `promotion-backend-model` 开始。
 
 2026-10-24 推送授权：用户要求「submit to origin」。本轮将已验证的合并提交 `485269d4f`（upstream/main `33c61a242`）及本条进度记录推送到 `origin/main`；沿用上轮已通过的完整验证，未修改产品代码。保留 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。feature `upstream-merge-preserve-custom-ui` 保持 done；Stage 1 其他功能与部署不在本轮范围。
 
@@ -99,6 +108,15 @@
 - 新增 `docs/prd/antom-payment-security-hardening-plan.md`，记录 Antom 支付回调验签、金额/币种/订单归属校验、统一额度结算、上限保护及测试验收计划；本次未修改支付业务代码。
 
 ## 本次验证
+
+### 2026-10-27 LinuxDo 优惠入口
+
+- `go test ./model -run 'Test(LinuxDoOfficialSocialLinks|NormalizeOfficialSocialLinks|PublicOfficialSocialLinks)' -count=1` 通过。扩展现有测试文件，覆盖新平台配置规范化及公开输出、默认/自定义名称、查询参数和片段保留、停用空地址，以及空地址、HTTP、脚本和带凭据地址拒绝；修改 Go 文件已 gofmt。
+- `cd web; bun run test src/features/official-social-links/lib.test.ts src/features/system-settings/content/__tests__/official-social-links.test.tsx`：10/10 通过。验证后台新建/选择、修改、停用清空、七语言默认名称机制中的中文切换、输入校验、保存失败重试及首页 status 缓存刷新。
+- 使用既有 `PLAYWRIGHT_MODULE` / `PLAYWRIGHT_EXECUTABLE` 路径和 5173 开发服务，运行 `node --test src/features/home/__tests__/layout.browser.mjs`：41/41 通过。新增 LinuxDo 按钮位置与去重、键盘新标签跳转及 opener 隔离、无效配置隐藏、七语言 320px 深浅主题无溢出；原有首页回归全部保留。已目视检查 `%TEMP%/home-linuxdo-desktop.png`、`home-linuxdo-mobile-light.png` 和 `home-linuxdo-mobile-dark.png`。
+- `bun run typecheck`、`bun run build:check`、七个涉及 JS/TS 文件的 `bunx --no-install oxlint -c .oxlintrc.json <paths>` 与 `bunx --no-install oxfmt --check <paths>` 通过；最终构建日志 `%TEMP%/newapi-linuxdo-build.log`。`git diff --check` 通过。
+- 新文案通过 `scripts/add-missing-keys.mjs` 写入七语言后删除临时脚本，`bun run i18n:sync` 通过；各语言仅新增 `LinuxDo Offers` 一项，missing/extras 为 0，保留既有术语 untranslated 提示（zh=3、ja=4、ru=5）。shadcn CLI 查询 registry 超时，使用本地 components.json 及组件源码完成复用，无依赖变更。
+- `C:/Program Files/Git/bin/bash.exe .harness/verify.sh homepage-linuxdo-offers`：Go 编译、JSON 使用规则 2/2 通过；验收项确认后标记 done。后端变更为纯配置值校验，持久化机制与数据库行为未变更。
 
 ### 2026-10-24 最新上游合并
 
@@ -233,4 +251,4 @@
 
 ---
 
-*最后更新：2026-10-24 按用户授权将已验证的上游合并提交推送到 origin/main；未部署。Stage 1 后续仍从 `promotion-backend-model` 开始。*
+*最后更新：2026-10-27 按用户授权提交并推送首页 LinuxDo 优惠入口到 origin/main；待部署前后端并填写实际链接。Stage 1 后续仍从 `promotion-backend-model` 开始。*

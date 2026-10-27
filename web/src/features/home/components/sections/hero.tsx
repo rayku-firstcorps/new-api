@@ -49,10 +49,16 @@ export function Hero(props: HeroProps) {
   )
   const showPricing = isLandingPricingEnabled(statusRecord)
   const communityLinks = officialSocialLinks.filter(
-    (link) => link.platform === 'telegram' || link.platform === 'whatsapp'
+    (link) =>
+      link.platform === 'telegram' ||
+      link.platform === 'whatsapp' ||
+      link.platform === 'linuxdo'
   )
   const otherSocialLinks = officialSocialLinks.filter(
-    (link) => link.platform !== 'telegram' && link.platform !== 'whatsapp'
+    (link) =>
+      link.platform !== 'telegram' &&
+      link.platform !== 'whatsapp' &&
+      link.platform !== 'linuxdo'
   )
 
   return (

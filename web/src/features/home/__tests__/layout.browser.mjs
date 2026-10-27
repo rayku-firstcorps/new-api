@@ -421,6 +421,121 @@ test('one configured community and long labels fit narrow and desktop layouts', 
   }
 })
 
+const linuxDoOffer = {
+  platform: 'linuxdo',
+  label: 'LinuxDo Offers',
+  url: 'https://linux.do/t/topic/123456?source=home#offer',
+  enabled: true,
+  sort: 25,
+}
+
+test('LinuxDo offers appears beside the community buttons and opens safely with the keyboard', async (t) => {
+  const page = await openHome(t, {
+    language: 'zh',
+    status: { official_social_links: [...communityLinks, linuxDoOffer] },
+  })
+  const offer = page.locator('.home-actions').getByRole('link', {
+    name: 'LinuxDo 优惠入口',
+    exact: true,
+  })
+  assert.equal(await offer.getAttribute('href'), linuxDoOffer.url)
+  assert.equal(await offer.getAttribute('target'), '_blank')
+  assert.equal(await offer.getAttribute('rel'), 'noopener noreferrer')
+  assert.equal(await page.locator(`a[href="${linuxDoOffer.url}"]`).count(), 1)
+  assert.equal(await offer.locator('svg').getAttribute('aria-hidden'), 'true')
+  await page.context().route('https://linux.do/**', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<title>LinuxDo offer fixture</title>',
+    })
+  )
+  await page.getByRole('link', { name: 'WhatsApp', exact: true }).focus()
+  await page.keyboard.press('Tab')
+  assert.equal(
+    await page.evaluate(() => document.activeElement.getAttribute('href')),
+    linuxDoOffer.url
+  )
+  const opened = page.waitForEvent('popup')
+  await page.keyboard.press('Enter')
+  const popup = await opened
+  await popup.waitForLoadState('domcontentloaded')
+  assert.equal(popup.url(), linuxDoOffer.url)
+  assert.equal(await popup.evaluate(() => window.opener === null), true)
+  await popup.close()
+  await assertNoOverflow(page)
+  await page.locator('#home-hero').screenshot({
+    path: join(tmpdir(), 'home-linuxdo-desktop.png'),
+  })
+})
+
+test('disabled, empty, and unsafe LinuxDo offers stay hidden while other communities remain', async (t) => {
+  const page = await openHome(t, {
+    status: {
+      official_social_links: [
+        communityLinks[0],
+        { ...linuxDoOffer, enabled: false },
+        ...[
+          '',
+          'javascript:alert(1)',
+          'http://linux.do/offer',
+          'https://user:secret@linux.do/offer',
+        ].map((url) => ({ ...linuxDoOffer, url })),
+      ],
+    },
+  })
+  assert.equal(
+    await page.getByRole('link', { name: 'LinuxDo Offers' }).count(),
+    0
+  )
+  assert.equal(
+    await page.locator('.home-actions a[target="_blank"]').count(),
+    1
+  )
+  assert.equal(
+    await page
+      .getByRole('link', { name: 'Telegram', exact: true })
+      .getAttribute('href'),
+    communityLinks[0].url
+  )
+})
+
+test('LinuxDo default offer labels translate in seven languages and fit both themes at 320px', async (t) => {
+  for (const language of ['en', 'zh', 'zh-TW', 'fr', 'ja', 'ru', 'vi']) {
+    const locale = JSON.parse(
+      await readFile(
+        new URL(`../../../i18n/locales/${language}.json`, import.meta.url),
+        'utf8'
+      )
+    )
+    const label = locale.translation['LinuxDo Offers']
+    assert.ok(label)
+    for (const theme of ['light', 'dark']) {
+      const page = await openHome(t, {
+        width: 320,
+        language,
+        theme,
+        status: {
+          official_social_links: [
+            ...communityLinks,
+            { ...linuxDoOffer, label: '' },
+          ],
+        },
+      })
+      const offer = page
+        .locator('.home-actions')
+        .getByRole('link', { name: label, exact: true })
+      assert.equal(await offer.count(), 1)
+      assert.ok((await offer.boundingBox()).height >= 44)
+      await assertNoOverflow(page)
+      if (language === 'zh') {
+        await page.locator('#home-hero').screenshot({
+          path: join(tmpdir(), `home-linuxdo-mobile-${theme}.png`),
+        })
+      }
+    }
+  }
+})
+
 // Run against bun run dev (or a production preview) with Playwright installed.
 // PLAYWRIGHT_MODULE and PLAYWRIGHT_EXECUTABLE allow reusing a local browser cache.
 const { chromium } = createRequire(import.meta.url)(

@@ -32,6 +32,7 @@ type PublicOfficialSocialLink struct {
 var officialSocialPlatformLabels = map[string]string{
 	"telegram":  "Telegram",
 	"whatsapp":  "WhatsApp",
+	"linuxdo":   "LinuxDo Offers",
 	"facebook":  "Facebook",
 	"instagram": "Instagram",
 	"x":         "X",

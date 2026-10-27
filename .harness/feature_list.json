@@ -4,6 +4,18 @@
   "current_stage": "stage1",
   "features": [
     {
+      "id": "homepage-linuxdo-offers",
+      "title": "首页社媒按钮旁增加后台可配置的 LinuxDo 优惠入口",
+      "status": "done",
+      "scope": ["model/official_social_links.go", "model/official_social_links_test.go", "web/src/features/official-social-links/", "web/src/features/home/", "web/src/features/system-settings/content/", "web/src/features/system-settings/__tests__/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "后台内容设置的官方社区支持选择 LinuxDo 优惠入口并配置 HTTPS 链接、保存、修改和停用，复用现有配置接口",
+        "有效且启用的 LinuxDo 优惠入口显示在首页 Telegram、WhatsApp 按钮旁，未配置、停用或无效链接时隐藏",
+        "默认按钮文案支持七语言，新标签页安全打开，键盘可访问，移动端和深浅色主题正常",
+        "相关回归测试、类型检查、定向 lint、构建与 Harness 验证通过"
+      ]
+    },
+    {
       "id": "homepage-regional-base-url",
       "title": "首页增加后台可配置的大陆直连优化 Base URL",
       "status": "done",
