@@ -35,6 +35,8 @@
 
 ## 上次停在哪里
 
+2026-11-09 推送授权：用户要求「推送到origin」。本轮将已验证的合并提交 `0c8d176cb`（upstream/main `bd6bb5301`）及本条进度记录推送到 `origin/main`；沿用下方完整验证结果，未修改产品代码。`upstream-merge-preserve-custom-ui` 保持 done，原有 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 未提交改动保留。下一步为部署前后端，构建使用 Bun 1.4.4；本轮不部署。
+
 2026-11-09：按用户「merge latest version」合并 upstream/main `bd6bb53019fb7e21804b31ab7365c9b2097f4b6c`（74 个提交，完成前再次查询远端一致）。备份分支 `backup/pre-upstream-merge-20261109` 指向 `34093820f`。本轮创建本地合并提交，未推送或部署。首页、生图、文档、公共 footer、社群配置及大陆直连功能保留；原有 `docs/prd/INDEX.md`、支付安全计划与 `sample/` 未提交改动未纳入合并。未实现推广待办或扩大 Stage 范围。
 
 解决七语言与三个 Go 文件冲突：翻译按 merge base/ours/theirs 逐键合并，保留 fork 文案；Vertex 保留 common JSON wrapper 和上游 token lifetime；Volcengine 保留 common wrapper 并采用上游 base64 包；affinity 测试采用上游唯一键方案。编译回归移除 AWS 不再使用的 JSON 类型导入，并将新增 OAuth 测试适配 fork 的 oauthFlowPayload。定价测试显式清空 fixture 的旧倍率默认值，保留生产环境 fork 的 gpt-image-2 旧价格；日志轮转测试通过子进程保证 Windows 文件句柄在临时目录删除前关闭，不改生产日志行为。
