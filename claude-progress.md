@@ -35,6 +35,20 @@
 
 ## 上次停在哪里
 
+2026-11-09：按用户「merge latest version」合并 upstream/main `bd6bb53019fb7e21804b31ab7365c9b2097f4b6c`（74 个提交，完成前再次查询远端一致）。备份分支 `backup/pre-upstream-merge-20261109` 指向 `34093820f`。本轮创建本地合并提交，未推送或部署。首页、生图、文档、公共 footer、社群配置及大陆直连功能保留；原有 `docs/prd/INDEX.md`、支付安全计划与 `sample/` 未提交改动未纳入合并。未实现推广待办或扩大 Stage 范围。
+
+解决七语言与三个 Go 文件冲突：翻译按 merge base/ours/theirs 逐键合并，保留 fork 文案；Vertex 保留 common JSON wrapper 和上游 token lifetime；Volcengine 保留 common wrapper 并采用上游 base64 包；affinity 测试采用上游唯一键方案。编译回归移除 AWS 不再使用的 JSON 类型导入，并将新增 OAuth 测试适配 fork 的 oauthFlowPayload。定价测试显式清空 fixture 的旧倍率默认值，保留生产环境 fork 的 gpt-image-2 旧价格；日志轮转测试通过子进程保证 Windows 文件句柄在临时目录删除前关闭，不改生产日志行为。
+
+验证：Go 1.26.10 `go test ./...` 全部通过（日志 `%TEMP%/newapi-merge-20261109-go-verified.log`）；relaykit 中 `GOWORK=off go build ./...`、`go test ./...` 通过；tokenkit 无变化。`bash .harness/verify.sh upstream-merge-preserve-custom-ui` 2/2 通过；`git diff --check` 与 staged 检查通过。Bun 1.3.14 不支持上游新增的 `bun check`，改用 `%TEMP%/newapi-bun-1.4.4/bun-windows-x64/bun.exe`，未替换全局安装。`bun install --frozen-lockfile`、`bun run i18n:sync`、`bun run typecheck`、`bun run build:check` 完成；`bun run test --maxWorkers=4` 208 files / 2532 tests 全通过，64 个涉及 JS/TS 文件定向 oxlint 退出 0。`HOME_TEST_URL=http://localhost:5175 node --test web/src/features/home/__tests__/layout.browser.mjs` 41/41 通过，沿用既有 PLAYWRIGHT_MODULE/EXECUTABLE 路径和 API fixture。日志 `%TEMP%/newapi-merge-20261109-{web-test-final,web-build-final,browser}.log`。
+
+数据库版本：SQLite 3.50.4、MySQL 8.0.46、PostgreSQL 16.14。隔离容器命令：`docker run -d --name newapi-merge-20261109-mysql --label codex.task=merge-20261109 -p 127.0.0.1:33326:3306 -e MYSQL_ROOT_PASSWORD=merge-test-only -e MYSQL_DATABASE=merge_test mysql:8.0`；Postgres 对应名称 `newapi-merge-20261109-postgres`、端口 `35452:5432`、`POSTGRES_PASSWORD=merge-test-only`、`POSTGRES_DB=merge_test`、镜像 `pgvector/pgvector:pg16`。设置 `TEST_MYSQL_DSN=root:merge-test-only@tcp(127.0.0.1:33326)/merge_test?charset=utf8mb4&parseTime=True&loc=Local`、`TEST_POSTGRES_DSN=postgres://postgres:merge-test-only@127.0.0.1:35452/merge_test?sslmode=disable`，运行 `go test ./model ./controller -run 'Test(AuthCacheIntegrityDatabaseMatrix|ChannelAffinityRetryPriorities|RequestPolicyRoutingDatabaseMatrix|SharedModelPluginPricingDatabaseMatrix|ModelManagementDatabaseMatrix|ChannelPriorityDatabaseMatrix)$' -count=1 -v`，三库全部通过。首次 PostgreSQL 使用 key/value DSN 被测试的 loopback guard 拒绝，改为上述 URI 后通过。
+
+复用 `.git/merge-20261024/dbcheck.go`，在当前树与独立 release worktree（v1.0.0-rc.49 / 48a6c87f9）分别 `go build -o <temp>/newapi-merge-20261109-{dbcheck,seed}.exe <dbcheck.go>`。对每库分别以新版本或发布版执行 `seed <snapshot.json>`，然后新版本执行 `verify <snapshot.json>`，fresh/upgrade 共 6/6 通过；每次 verify 重启迁移三次，验证数据、索引、唯一约束、配额统计保留，MySQL/PG 使用独立 log 数据库。日志 `%TEMP%/newapi-20261109-{sqlite,mysql,postgres}-{fresh,upgrade}-{seed,verify}.log`。无 schema 或 ORM 驱动版本变化。
+
+认证回归参考 OWASP [ASVS 5.0.0 V7](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x16-V7-Session-Management.md)（7.2.1 服务端验证、7.3.1 过期、7.4.1/7.4.2 失效）及 [Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)、[Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)、[MFA](https://cheatsheetseries.owasp.org/cheatsheets/Multifactor_Authentication_Cheat_Sheet.html)。上游缓存完整性/过期/伪造防护、MFA 锁定及 OAuth 归因测试随全量测试与三库矩阵通过；不是全面 ASVS 合规审计。插件新增数值字段说明已核对为计费主体 + 单价，单位独立。远端旧 tag v1.0.0-rc.15 与本地不同，保留本地 tag；使用 `git fetch upstream main --no-tags` 完成分支更新。
+
+**下一步：** 如需发布，推送本地 main 并部署；开发/CI 使用 Bun 1.4.4。Stage 1 后续仍从既有 promotion-backend-model 待办开始。
+
 2026-10-27 提交授权：用户要求「提交到origin」。本轮将 `homepage-linuxdo-offers` 的实现、翻译、测试和 Harness 进度记录提交并推送到 `origin/main`；沿用下方已通过的验证，提交前再次检查差异及 `git diff --check`。保留原有 `docs/prd/INDEX.md`、支付安全计划和 `sample/` 的未提交改动。下一步为部署前后端并在官方社区中填写实际优惠链接；本轮未部署。
 
 2026-10-27：首页 LinuxDo 优惠入口已完成。复用 `OfficialSocialLinks` 配置，在「系统设置 → 内容设置 → 官方社区 → 添加社区链接」中新增 LinuxDo 优惠入口平台；管理员填写 HTTPS 地址、启用并保存后，默认首页在 Telegram、WhatsApp 按钮旁展示。未配置、停用或不安全的链接不展示，保留新标签页 `noopener noreferrer`、原有排序和自定义名称能力。默认名称随界面语言切换，后台保存英文默认标识，避免配置被管理员当前语言固定；七语言已补齐。
