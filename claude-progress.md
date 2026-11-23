@@ -23,7 +23,7 @@
 | homepage-popular-model-cta | done | 底部 CTA 展示近 24 小时调用量最高且仍在模型广场展示的模型；保持具体次数不公开，无数据时使用原 CTA |
 | homepage-layout-motion | done | 默认首页改为深色双栏首屏、接入示意、工具生态、步骤与 CTA；增加入场、连接流光和悬停动效，完成响应式与减少动态效果验证 |
 | utf8-file-reading | done | 项目文本文件读取统一显式使用 UTF-8 编码 |
-| upstream-merge-preserve-custom-ui | done | 2026-10-24 合并 upstream/main（33c61a242，60 个提交）；保留首页、生图、文档导航、footer 与 fork 配置；Go、前端、浏览器及三库验证通过 |
+| upstream-merge-preserve-custom-ui | done | 2026-11-23 合并 upstream/main（51a1ceeae，40 个提交），版本 rc.51；Go、前端、浏览器及三库验证通过 |
 | antom-safari-popup-plan | done | 已输出 Safari 下 Antom 支付弹窗优化实施计划，未修改支付业务代码 |
 | antom-safari-popup-fix | done | 已实现 Antom 支付窗口同步预开、失败清理和同页降级；待部署环境 Safari 真机验收 |
 | seo-technical-optimization | done | 已补齐站点分享元数据、路由级 canonical/noindex、robots.txt 与 sitemap.xml；保留受保护项目标识 |
@@ -34,6 +34,12 @@
 | promotion-frontend-admin | pending | 依赖 capture + api |
 
 ## 上次停在哪里
+
+2026-11-23：本地 main 合并 upstream/main `51a1ceeae`（40 个提交），VERSION 同步至最新发布标签 `v1.0.0-rc.51`（标签后另有 27 个提交）。保留首页、文档、生图、footer 和自定义支付。支付设置同时支持上游 Epay RSA 和 fork 原有渠道，定期更新继续清理过期订单。上游测试发现插件路由遗漏 fork 页面，已保留 /promotions、/docs、/image-generation 和 /sso。保留本地旧 rc.15 标签及原有未提交改动。Git 未配置提交者，单次提交使用 Codex <codex@localhost>。
+
+验证：`go test -p 6 ./...`、relaykit 内 `GOWORK=off go build ./...` 和 `GOWORK=off go test ./...`、`bash .harness/verify.sh upstream-merge-preserve-custom-ui`（2/2）通过；构建后 --version 输出 v1.0.0-rc.51。Bun 1.4.4 冻结锁安装、i18n:sync、typecheck、build:check、改动文件 oxlint（0 error、1 warning）、`bun run test --maxWorkers=4`（2927/2927）、生产构建首页浏览器回归（41/41）通过。七语言 missing/extras 为 0。账户验证包含已删除用户的 API key、密码反馈和现有账户安全测试；参考 OWASP Authentication、Session Management、Password Storage Cheat Sheets。
+
+实库验证：SQLite 3.50.4、MySQL 8.0.46、PostgreSQL 16.16 全部通过。设置 TEST_MYSQL_DSN / TEST_POSTGRES_DSN 后运行 `go test -p 1 ./model ./controller -run 'Test(.*DatabaseMatrix|JSONColumnDatabaseRoundTrip|ChannelAffinityRetryPriorities)$' -count=1 -v`，逐库设置 TEST_TASK_DB_DIALECT 运行 `go test ./model -run '^TestScheduledChannel' -count=1 -v`，配置 AUDIT_MYSQL_DSN / AUDIT_POSTGRES_DSN 后运行 `go test ./controller -run 'Test(AuditDatabaseMatrix|APITokenAuditDatabaseMatrix|IndependentAuditLogStores|LogExportDatabaseMatrix)/(mysql|postgres)' -count=1 -v`。ClickHouse 未运行。运行 `python %TEMP%/newapi-merge-1123-tools/checkmatrix.py`，三库各覆盖新建和从最新发布版 c9c6da278 升级（6/6）；三次启动确认敏感词转换幂等，用户、token、配额、审计、索引及唯一约束保留，MySQL/PG 使用独立日志库。临时容器已清理。下一步：审阅并按需推送本地 main。
 
 2026-11-09 版本标识同步：用户指出上游发布版为 v1.0.0-rc.49 并要求「同步」。本轮将 VERSION 从 `v1.0.0-rc.10-debug-01` 更新为 `v1.0.0-rc.49`，作为 upstream-merge-preserve-custom-ui 的补充，提交并推送 origin/main。Dockerfile 已从 VERSION 注入前端构建变量及后端 ldflags，无需修改业务代码。`go build -ldflags "-X github.com/QuantumNous/new-api/common.Version=v1.0.0-rc.49" -o <temp>/newapi-version-rc49.exe .` 成功，运行 `--version` 输出 `v1.0.0-rc.49`；Harness 2/2 通过。原有 docs/sample 未提交改动保留。本轮未部署，线上需重新构建并重启应用后显示新版本；若部署环境设置 VERSION，需同步其覆盖值。下一步：部署 origin/main 并检查 `/api/status` 的 version。
 
