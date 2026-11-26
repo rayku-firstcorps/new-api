@@ -18,12 +18,35 @@ For commercial licensing, please contact support@quantumnous.com
 */
 export const THEME_STORAGE_KEYS = {
   mode: 'newapi:theme:v1:mode',
-  preset: 'newapi:theme:v1:preset',
-  font: 'newapi:theme:v1:font',
-  radius: 'newapi:theme:v1:radius',
-  scale: 'newapi:theme:v1:scale',
-  contentLayout: 'newapi:theme:v1:content-layout',
 } as const
+
+/**
+ * Preferences from the removed theme customization (presets, font, radius,
+ * density and content layout) plus the cookies the old layout and direction
+ * pickers wrote. They are ignored and cleared on load.
+ */
+const LEGACY_THEME_STORAGE_KEYS = [
+  'newapi:theme:v1:preset',
+  'newapi:theme:v1:font',
+  'newapi:theme:v1:radius',
+  'newapi:theme:v1:scale',
+  'newapi:theme:v1:content-layout',
+] as const
+
+const LEGACY_THEME_COOKIES = [
+  'font',
+  'dir',
+  'layout_collapsible',
+  'layout_variant',
+] as const
+
+const LEGACY_THEME_BODY_ATTRIBUTES = [
+  'data-theme-preset',
+  'data-theme-font',
+  'data-theme-radius',
+  'data-theme-scale',
+  'data-theme-content-layout',
+] as const
 
 export function readThemePreference<T extends string>(
   key: string,
@@ -53,5 +76,20 @@ export function writeThemePreference(key: string, value: string | null): void {
     }
   } catch {
     // Keep theme controls usable when storage is blocked or full.
+  }
+}
+
+/** Drop every stored value left over from the removed theme customization. */
+export function clearLegacyThemeCustomization(): void {
+  if (typeof window === 'undefined') return
+
+  for (const key of LEGACY_THEME_STORAGE_KEYS) {
+    writeThemePreference(key, null)
+  }
+  for (const name of LEGACY_THEME_COOKIES) {
+    document.cookie = `${name}=; path=/; max-age=0`
+  }
+  for (const name of LEGACY_THEME_BODY_ATTRIBUTES) {
+    document.body?.removeAttribute(name)
   }
 }

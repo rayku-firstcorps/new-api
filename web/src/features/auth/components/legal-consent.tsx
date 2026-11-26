@@ -50,12 +50,7 @@ export function LegalConsent({
   }
 
   return (
-    <div
-      className={cn(
-        'border-border/60 bg-muted/40 flex items-start gap-3 rounded-md border p-3',
-        className
-      )}
-    >
+    <div className={cn('flex items-start gap-2.5', className)}>
       <Checkbox
         id='legal-consent'
         checked={checked}
@@ -64,7 +59,7 @@ export function LegalConsent({
       />
       <Label
         htmlFor='legal-consent'
-        className='text-muted-foreground items-start gap-1 text-left text-xs leading-5 font-normal'
+        className='text-muted-foreground items-start gap-1 text-left text-[13px] leading-5 font-normal'
       >
         <span>
           {t('I have read and agree to the')}{' '}
@@ -73,7 +68,7 @@ export function LegalConsent({
               href='/user-agreement'
               target='_blank'
               rel='noopener noreferrer'
-              className='text-primary hover:underline'
+              className='text-foreground decoration-muted-foreground/60 hover:decoration-foreground underline underline-offset-4'
             >
               {t('User Agreement')}
             </a>
@@ -84,7 +79,7 @@ export function LegalConsent({
               href='/privacy-policy'
               target='_blank'
               rel='noopener noreferrer'
-              className='text-primary hover:underline'
+              className='text-foreground decoration-muted-foreground/60 hover:decoration-foreground underline underline-offset-4'
             >
               {t('Privacy Policy')}
             </a>

@@ -21,7 +21,7 @@ For commercial licensing, please contact support@quantumnous.com
  * Dynamically load and render icons from @lobehub/icons
  *
  * Supports:
- * - Basic: "OpenAI", "OpenAI.Color"
+ * - Basic: "OpenAI" ("OpenAI.Color" renders the monochrome variant)
  * - Chained properties: "OpenAI.Avatar.type={'platform'}"
  * - Size parameter: getLobeIcon("OpenAI", 20)
  */
@@ -39,14 +39,23 @@ import { IconSub2api } from '@/assets/custom/icon-sub2api'
 import { IconWan } from '@/assets/custom/icon-wan'
 
 const CUSTOM_ICONS: Record<string, ComponentType<{ size?: number }>> = {
+  // Monochrome: the raster-like logo is used as an alpha mask over currentColor.
   SGLang: (props) => (
-    <img
-      src={sglangLogo}
-      alt=''
+    <span
       aria-hidden='true'
-      width={props.size ?? 20}
-      height={props.size ?? 20}
-      className='object-contain'
+      className='inline-block bg-current'
+      style={{
+        width: props.size ?? 20,
+        height: props.size ?? 20,
+        maskImage: `url(${sglangLogo})`,
+        WebkitMaskImage: `url(${sglangLogo})`,
+        maskRepeat: 'no-repeat',
+        WebkitMaskRepeat: 'no-repeat',
+        maskPosition: 'center',
+        WebkitMaskPosition: 'center',
+        maskSize: 'contain',
+        WebkitMaskSize: 'contain',
+      }}
     />
   ),
   Sub2API: IconSub2api,
@@ -64,6 +73,13 @@ const ICON_VARIANTS = {
   TextCn: 'hasTextCn',
   TextColor: 'hasTextColor',
 } as const
+// Provider icons are monochrome everywhere: colored variants fall back to
+// their single-color counterpart (Color -> Mono, BrandColor -> Brand, ...).
+const MONO_VARIANT_ALIASES: Record<string, string | undefined> = {
+  Color: undefined,
+  BrandColor: 'Brand',
+  TextColor: 'Text',
+}
 const LAZY_ICONS = new Map<
   string,
   LazyExoticComponent<ComponentType<Record<string, unknown>>>
@@ -144,7 +160,12 @@ export function getLobeIcon(
   const metadata = ICON_METADATA.get(baseKey)
   if (!metadata) return fallback
 
-  const variantKey = segments[1] as keyof typeof ICON_VARIANTS
+  const requestedVariant = segments[1]
+  const variantKey = (
+    requestedVariant && Object.hasOwn(MONO_VARIANT_ALIASES, requestedVariant)
+      ? MONO_VARIANT_ALIASES[requestedVariant]
+      : requestedVariant
+  ) as keyof typeof ICON_VARIANTS
   const variantFlag = ICON_VARIANTS[variantKey]
   let variant: string =
     variantFlag && metadata.param[variantFlag] ? variantKey : 'Mono'
@@ -218,8 +239,6 @@ export function getLobeIcon(
 
 // The selector uses the same installed icon registry as the renderer.
 export function getLobeIconNames(): string[] {
-  const names = toc.flatMap((icon) =>
-    icon.param.hasColor ? [icon.id, `${icon.id}.Color`] : [icon.id]
-  )
+  const names = toc.map((icon) => icon.id)
   return [...new Set([...names, ...Object.keys(CUSTOM_ICONS)])].sort()
 }

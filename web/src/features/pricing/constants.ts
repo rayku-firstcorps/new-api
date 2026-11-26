@@ -125,6 +125,14 @@ export const MAX_FILTER_ITEMS = 5
 /** Sidebar width */
 export const SIDEBAR_WIDTH = 'w-64'
 
+/** Public page container below the fixed 72px header (list and detail pages). */
+export const PAGE_CONTAINER_CLASS =
+  'mx-auto w-full px-4 pt-[72px] pb-16 sm:px-6'
+
+/** Fallback sticky toolbar height until it is measured (sidebar offset). */
+export const TOOLBAR_HEIGHT_FALLBACK_CLASS =
+  '[--toolbar-h:108px] lg:[--toolbar-h:64px]'
+
 /** Excluded groups */
 export const EXCLUDED_GROUPS = ['', 'auto']
 

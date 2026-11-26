@@ -243,13 +243,13 @@ describe('model cards', () => {
     expect(within(active).getByText('1.20s')).toBeVisible()
     expect(
       within(active).getByRole('img', { name: 'Success rate' }).children[0]
-    ).toHaveClass('bg-emerald-500')
+    ).toHaveClass('bg-success')
     const samples = within(idle).getByRole('img', {
       name: 'Success rate',
     }).children
     expect(samples).toHaveLength(2)
-    expect(samples[0]).toHaveClass('bg-red-500')
-    expect(samples[1]).toHaveClass('bg-emerald-500')
+    expect(samples[0]).toHaveClass('bg-destructive')
+    expect(samples[1]).toHaveClass('bg-success')
     expect(within(idle).getByText('—')).toBeVisible()
     expect(within(idle).getByText('—s')).toBeVisible()
     expect(within(idle).getByText('—t/s')).toBeVisible()
@@ -292,10 +292,16 @@ describe('model cards', () => {
       within(endpointField).getByText('openai-response, openai')
     ).toHaveAttribute('title', endpoints.join(', '))
     expect(within(endpointField).getByText('+3')).toBeVisible()
-    expect(
-      within(tagField).getByText('video-generation, high-resolution')
-    ).toHaveAttribute('title', tags.join(', '))
-    expect(within(tagField).getByText('+4')).toBeVisible()
+    expect(within(tagField).getByText(tags[0])).toHaveAttribute(
+      'title',
+      tags[0]
+    )
+    expect(within(tagField).getByText(tags[1])).toBeVisible()
+    expect(within(tagField).queryByText(tags[2])).not.toBeInTheDocument()
+    expect(within(tagField).getByText('+4')).toHaveAttribute(
+      'title',
+      tags.slice(2).join(', ')
+    )
     expect(
       within(screen.getByRole('group', { name: 'Pricing' })).getByText(
         'Token-based'
@@ -708,9 +714,9 @@ describe('model cards', () => {
       }).children,
     ]
     expect(spans).toHaveLength(3)
-    expect(spans[0]).toHaveClass('bg-amber-500')
-    expect(spans[1]).toHaveClass('bg-red-500')
-    expect(spans[2]).toHaveClass('bg-emerald-500')
+    expect(spans[0]).toHaveClass('bg-warning')
+    expect(spans[1]).toHaveClass('bg-destructive')
+    expect(spans[2]).toHaveClass('bg-success')
     vi.useRealTimers()
   })
 
@@ -747,8 +753,8 @@ describe('model cards', () => {
       }).children,
     ]
     expect(spans).toHaveLength(2)
-    expect(spans[0]).toHaveClass('bg-emerald-500')
-    expect(spans[1]).toHaveClass('bg-red-500')
+    expect(spans[0]).toHaveClass('bg-success')
+    expect(spans[1]).toHaveClass('bg-destructive')
   })
 
   it('shows the latest 24 valid samples without requiring hourly window metadata or mutating the series', () => {
@@ -781,7 +787,7 @@ describe('model cards', () => {
     ]
     expect(spans).toHaveLength(24)
     spans.forEach((sample) => {
-      expect(sample).toHaveClass('bg-emerald-500')
+      expect(sample).toHaveClass('bg-success')
     })
     expect(recentSeries).toEqual(originalSeries)
   })
@@ -837,7 +843,7 @@ describe('model cards', () => {
       }).children,
     ]
     expect(spans).toHaveLength(1)
-    expect(spans[0]).toHaveClass('bg-amber-500')
+    expect(spans[0]).toHaveClass('bg-warning')
     vi.useRealTimers()
   })
 })

@@ -41,7 +41,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { login, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
-import { OAuthProviders } from '@/features/auth/components/oauth-providers'
+import {
+  AuthDivider,
+  OAuthProviders,
+} from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
 import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
@@ -308,7 +311,7 @@ export function UserAuthForm({
             variant='outline'
             disabled={passkeyButtonDisabled}
             onClick={handlePasskeyLogin}
-            className='h-11 w-full justify-center gap-2 rounded-lg'
+            className='border-input hover:bg-foreground/5 active:bg-foreground/10 h-11 w-full justify-center gap-2 rounded-lg bg-transparent text-sm'
           >
             {isPasskeyLoading ? (
               <Loader2 className='h-4 w-4 animate-spin' />
@@ -338,7 +341,10 @@ export function UserAuthForm({
         disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
         onWeChatLogin={hasWeChatLogin ? handleOpenWeChatDialog : undefined}
         isWeChatLoading={isWeChatSubmitting}
+        divider={false}
       />
+
+      {hasAlternativeLogin && passwordLoginEnabled && <AuthDivider />}
     </>
   )
 
@@ -387,7 +393,7 @@ export function UserAuthForm({
                   <FormMessage />
                   <Link
                     to='/forgot-password'
-                    className='text-muted-foreground absolute end-0 -top-0.5 z-10 text-sm font-medium hover:opacity-75'
+                    className='text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute end-0 -top-0.5 z-10 rounded-sm text-[13px] transition-colors outline-none focus-visible:ring-2'
                   >
                     {t('Forgot password?')}
                   </Link>
@@ -398,7 +404,7 @@ export function UserAuthForm({
             {/* Submit Button */}
             <Button
               type='submit'
-              className='mt-2 w-full justify-center gap-2'
+              className='auth-primary mt-1 justify-center gap-2'
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}

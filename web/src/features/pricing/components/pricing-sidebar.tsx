@@ -92,11 +92,14 @@ function FilterChip(props: {
   return (
     <Button
       type='button'
-      variant={props.active ? 'secondary' : 'outline'}
+      variant='outline'
       size='sm'
       onClick={props.onClick}
       aria-pressed={props.active}
-      className='h-auto max-w-full gap-1.5 px-2 py-1 text-xs'
+      className={cn(
+        'h-auto max-w-full gap-1.5 rounded-full px-2.5 py-1 text-xs',
+        props.active && 'border-primary/60 bg-primary/10 text-foreground'
+      )}
       title={props.option.label}
     >
       {props.option.icon && (
@@ -106,9 +109,9 @@ function FilterChip(props: {
       {(props.option.suffix || props.option.count != null) && (
         <span
           className={cn(
-            'rounded-md px-1.5 py-0.5 text-[12px]',
+            'rounded-full px-1.5 py-0.5 text-[11px] tabular-nums',
             props.active
-              ? 'bg-background text-foreground'
+              ? 'bg-primary/20 text-foreground'
               : 'bg-muted text-muted-foreground'
           )}
         >
@@ -126,7 +129,7 @@ function FilterSection(props: FilterSectionProps) {
       className='border-border/70 border-b pb-3 last:border-b-0'
     >
       <CollapsibleTrigger className='group flex w-full items-center justify-between py-2.5 text-left'>
-        <span className='text-foreground text-sm font-semibold'>
+        <span className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
           {props.title}
         </span>
         <ChevronDown className='text-muted-foreground size-4 transition-transform group-data-[panel-open]:rotate-180' />
@@ -259,7 +262,7 @@ export const PricingSidebar = memo(function PricingSidebar(
   ]
 
   return (
-    <aside className={cn('bg-card rounded-xl border p-3', props.className)}>
+    <aside className={cn('bg-card rounded-xl border p-4', props.className)}>
       <div className='mb-2.5 flex items-center justify-between gap-2'>
         <div>
           <h2 className='text-foreground text-sm font-bold'>{t('Filter')}</h2>

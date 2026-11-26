@@ -39,6 +39,8 @@ type OAuthProvidersProps = {
   onWeChatLogin?: () => void
   isWeChatLoading?: boolean
   redirectTo?: string
+  /** Show the "Or continue with" divider below the buttons (they sit above the form). Default true. */
+  divider?: boolean
 }
 
 type ProviderButton = {
@@ -49,6 +51,20 @@ type ProviderButton = {
   disabled?: boolean
 }
 
+/** KuCode's hairline divider between the alternative sign-in methods and the form. */
+export function AuthDivider() {
+  const { t } = useTranslation()
+  return (
+    <div className='flex items-center gap-3'>
+      <span aria-hidden='true' className='bg-border h-px flex-1' />
+      <span className='text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase'>
+        {t('Or continue with')}
+      </span>
+      <span aria-hidden='true' className='bg-border h-px flex-1' />
+    </div>
+  )
+}
+
 export function OAuthProviders({
   status,
   disabled = false,
@@ -56,6 +72,7 @@ export function OAuthProviders({
   onWeChatLogin,
   isWeChatLoading = false,
   redirectTo,
+  divider = true,
 }: OAuthProvidersProps) {
   const { t } = useTranslation()
   const {
@@ -145,19 +162,8 @@ export function OAuthProviders({
   if (providerButtons.length === 0) return null
 
   return (
-    <div className={cn('space-y-3', className)}>
-      <div className='relative'>
-        <div className='absolute inset-0 flex items-center'>
-          <span className='w-full border-t' />
-        </div>
-        <div className='relative flex justify-center text-xs uppercase'>
-          <span className='bg-background text-muted-foreground px-2'>
-            {t('Or continue with')}
-          </span>
-        </div>
-      </div>
-
-      <div className='flex flex-col gap-2'>
+    <div className={cn('space-y-6', className)}>
+      <div className='flex flex-col gap-3'>
         {providerButtons.map(
           ({ key, label, onClick, icon, disabled: extraDisabled }) => (
             <Button
@@ -166,7 +172,7 @@ export function OAuthProviders({
               type='button'
               disabled={disabled || isLoading || extraDisabled}
               onClick={onClick}
-              className='h-11 w-full justify-center gap-2 rounded-lg'
+              className='border-input hover:bg-foreground/5 active:bg-foreground/10 h-11 w-full justify-center gap-2 rounded-lg bg-transparent text-sm'
             >
               {icon}
               {label}
@@ -174,6 +180,8 @@ export function OAuthProviders({
           )
         )}
       </div>
+
+      {divider && <AuthDivider />}
     </div>
   )
 }

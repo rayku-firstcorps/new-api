@@ -120,7 +120,7 @@ export function ForgotPasswordForm({
 
         <Button
           type='submit'
-          className='mt-2'
+          className='auth-primary mt-2'
           disabled={isLoading || isActive || !turnstileReady}
         >
           {isActive

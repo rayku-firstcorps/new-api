@@ -20,12 +20,24 @@ For commercial licensing, please contact support@quantumnous.com
 import wanIcon from './wan.png'
 
 export function IconWan(props: { size?: number }) {
+  const size = props.size ?? 20
+  // Monochrome: the favicon's alpha channel masks a currentColor fill.
   return (
-    <img
-      src={wanIcon}
-      alt=''
-      width={props.size ?? 20}
-      height={props.size ?? 20}
+    <span
+      aria-hidden='true'
+      className='inline-block bg-current'
+      style={{
+        width: size,
+        height: size,
+        maskImage: `url(${wanIcon})`,
+        WebkitMaskImage: `url(${wanIcon})`,
+        maskRepeat: 'no-repeat',
+        WebkitMaskRepeat: 'no-repeat',
+        maskSize: 'contain',
+        WebkitMaskSize: 'contain',
+        maskPosition: 'center',
+        WebkitMaskPosition: 'center',
+      }}
     />
   )
 }

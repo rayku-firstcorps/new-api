@@ -56,12 +56,13 @@ import {
   getSuccessRateTextClass,
 } from '@/features/performance-metrics/lib/format'
 import { PluginIcon } from '@/features/task-plugins/components/plugin-icon'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { cn } from '@/lib/utils'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
-import { DEFAULT_TOKEN_UNIT } from '../constants'
+import { DEFAULT_TOKEN_UNIT, PAGE_CONTAINER_CLASS } from '../constants'
 import { useBillingTime } from '../hooks/use-billing-time'
 import { usePricingData } from '../hooks/use-pricing-data'
 import type { ParsedTaskTier, ParsedTier } from '../lib/billing-expr'
@@ -599,7 +600,10 @@ function ModelBackendDetailsSection(props: { model: PricingModel }) {
 // Model header (always visible above the detail sections)
 // ----------------------------------------------------------------------------
 
-function ModelHeader(props: { model: PricingModel }) {
+function ModelHeader(props: {
+  model: PricingModel
+  variant: ModelDetailsVariant
+}) {
   const { t } = useTranslation()
   const model = props.model
   const modelIconKey = model.icon || model.vendor_icon
@@ -607,12 +611,23 @@ function ModelHeader(props: { model: PricingModel }) {
   const description = model.description || model.vendor_description || null
 
   return (
-    <header className='pb-4'>
+    <header className='border-b pb-5'>
       <div className='flex items-center gap-2.5'>
-        {modelIcon}
-        <h1 className='font-mono text-xl font-bold tracking-tight sm:text-2xl'>
-          {model.model_name}
-        </h1>
+        {modelIcon && (
+          <span
+            aria-hidden
+            className='bg-muted/50 text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border'
+          >
+            {modelIcon}
+          </span>
+        )}
+        {props.variant === 'drawer' ? (
+          <SheetTitle className={MODEL_TITLE_CLASS}>
+            {model.model_name}
+          </SheetTitle>
+        ) : (
+          <h1 className={MODEL_TITLE_CLASS}>{model.model_name}</h1>
+        )}
         <CopyButton
           value={model.model_name || ''}
           className='size-6'
@@ -722,8 +737,8 @@ function PriceSection(props: {
       return (
         <section>
           <SectionTitle>{t('Base Price')}</SectionTitle>
-          <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
-            <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
+          <div className='border-warning/30 bg-warning/10 dark:border-warning/20 dark:bg-warning/10 rounded-lg border p-3'>
+            <div className='text-warning text-sm font-medium'>
               {t('Special billing expression')}
             </div>
             <p className='text-muted-foreground mt-1 text-xs'>
@@ -1162,8 +1177,8 @@ function ProviderGroupPricingSection(
             <SectionTitle>{t('Pricing by Group')}</SectionTitle>
           )}
           <AutoGroupChain model={props.model} autoGroups={props.autoGroups} />
-          <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
-            <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
+          <div className='border-warning/30 bg-warning/10 dark:border-warning/20 dark:bg-warning/10 rounded-lg border p-3'>
+            <div className='text-warning text-sm font-medium'>
               {t('Special billing expression')}
             </div>
             <p className='text-muted-foreground mt-1 text-xs'>
@@ -1481,6 +1496,15 @@ function ProviderGroupPricingSection(
   )
 }
 
+/**
+ * `page` renders the model name as the page h1; `drawer` renders it as the
+ * sheet's visible title (h2), which also labels the dialog.
+ */
+type ModelDetailsVariant = 'page' | 'drawer'
+
+const MODEL_TITLE_CLASS =
+  'text-foreground font-mono text-xl font-bold tracking-tight [overflow-wrap:anywhere] sm:text-2xl'
+
 const TAB_VALUES = ['overview', 'performance', 'api'] as const
 type TabValue = (typeof TAB_VALUES)[number]
 
@@ -1503,6 +1527,7 @@ export interface ModelDetailsContentProps {
   usdExchangeRate: number
   tokenUnit: TokenUnit
   showRechargePrice?: boolean
+  variant?: ModelDetailsVariant
 }
 
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
@@ -1527,17 +1552,20 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
 
   return (
     <div className='@container/details space-y-4'>
-      <ModelHeader model={props.model} />
+      <ModelHeader model={props.model} variant={props.variant ?? 'page'} />
 
       <Tabs defaultValue='overview' className='gap-4'>
-        <TabsList className='bg-muted/60 grid w-full grid-cols-3 gap-1 rounded-lg p-1 group-data-horizontal/tabs:h-auto'>
+        <TabsList
+          variant='line'
+          className='grid w-full grid-cols-3 gap-1 rounded-none border-b p-0 group-data-horizontal/tabs:h-auto'
+        >
           {TAB_VALUES.map((value) => {
             const Icon = TAB_META[value].icon
             return (
               <TabsTrigger
                 key={value}
                 value={value}
-                className='h-8 min-w-0 gap-1.5 rounded-md px-3 text-xs sm:text-sm'
+                className='h-10 min-w-0 gap-1.5 rounded-none px-3 text-xs group-data-horizontal/tabs:after:-bottom-px sm:text-sm'
               >
                 <Icon className='size-3.5' />
                 <span className='truncate'>{t(TAB_META[value].labelKey)}</span>
@@ -1549,7 +1577,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
         <TabsContent value='overview' className='space-y-6 outline-none'>
           <OverviewSummaryGrid model={props.model} />
 
-          <section className='bg-card/60 space-y-5 rounded-xl border p-4 shadow-sm'>
+          <section className='bg-card space-y-5 rounded-xl border p-4'>
             <SectionTitle>{t('Pricing')}</SectionTitle>
             {showBasePrices && (
               <PriceSection
@@ -1614,26 +1642,34 @@ export interface ModelDetailsDrawerProps extends ModelDetailsContentProps {
 export function ModelDetailsDrawer(props: ModelDetailsDrawerProps) {
   const { t } = useTranslation()
   const { open, onOpenChange, ...contentProps } = props
+  // Phones get a bottom sheet (90% height); larger screens a right drawer.
+  const isMobile = useIsMobile()
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        side='right'
+        side={isMobile ? 'bottom' : 'right'}
         className={sideDrawerContentClassName(
-          'sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
+          isMobile
+            ? 'h-[90dvh] rounded-t-2xl'
+            : 'sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl'
         )}
       >
         <SheetHeader className='sr-only'>
-          <SheetTitle>{props.model.model_name}</SheetTitle>
           <SheetDescription>{t('Model details')}</SheetDescription>
         </SheetHeader>
-        <div className='flex-1 overflow-y-auto px-4 pt-11 pb-5 sm:px-6 sm:pt-12 sm:pb-6'>
-          <ModelDetailsContent {...contentProps} />
+        <div className='flex-1 overflow-y-auto overscroll-contain px-4 pt-11 pb-5 sm:px-6 sm:pt-12 sm:pb-6'>
+          <ModelDetailsContent {...contentProps} variant='drawer' />
         </div>
       </SheetContent>
     </Sheet>
   )
 }
+
+const DETAIL_CONTAINER_CLASS = cn(
+  PAGE_CONTAINER_CLASS,
+  'max-w-5xl pt-[calc(72px+1.5rem)] sm:pt-[calc(72px+2.5rem)]'
+)
 
 export function ModelDetails() {
   const { t } = useTranslation()
@@ -1666,9 +1702,9 @@ export function ModelDetails() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
-        <div className='mx-auto max-w-5xl px-4 sm:px-6'>
-          <Skeleton className='mb-4 h-5 w-16' />
+      <PublicLayout showMainContainer={false}>
+        <main className={DETAIL_CONTAINER_CLASS}>
+          <Skeleton className='mb-6 h-5 w-28' />
           <div className='space-y-2'>
             <Skeleton className='h-7 w-64' />
             <Skeleton className='h-4 w-40' />
@@ -1684,40 +1720,40 @@ export function ModelDetails() {
               <Skeleton key={`section-${key}`} className='h-24 w-full' />
             ))}
           </div>
-        </div>
+        </main>
       </PublicLayout>
     )
   }
 
   if (!model) {
     return (
-      <PublicLayout>
-        <div className='mx-auto max-w-2xl px-4 text-center sm:px-6'>
-          <h2 className='mb-1 text-base font-semibold'>
+      <PublicLayout showMainContainer={false}>
+        <main className={cn(DETAIL_CONTAINER_CLASS, 'max-w-2xl text-center')}>
+          <h1 className='mb-1 text-base font-semibold'>
             {t('Model not found')}
-          </h2>
+          </h1>
           <p className='text-muted-foreground mb-4 text-sm'>
             {t("The model you're looking for doesn't exist.")}
           </p>
           <Button onClick={handleBack} variant='outline' size='sm'>
             {t('Back to Models')}
           </Button>
-        </div>
+        </main>
       </PublicLayout>
     )
   }
 
   return (
-    <PublicLayout>
-      <div className='mx-auto max-w-5xl px-4 sm:px-6'>
+    <PublicLayout showMainContainer={false}>
+      <main className={DETAIL_CONTAINER_CLASS}>
         <Button
           variant='ghost'
           size='sm'
           onClick={handleBack}
-          className='text-muted-foreground hover:text-foreground mb-4 h-auto gap-1 px-0 py-1 text-xs'
+          className='text-muted-foreground hover:text-foreground mb-6 h-auto gap-1.5 px-0 py-1 text-sm'
         >
-          <ArrowLeft className='size-3.5' />
-          {t('Back')}
+          <ArrowLeft aria-hidden className='size-4' />
+          {t('Model Square')}
         </Button>
 
         <ModelDetailsContent
@@ -1736,7 +1772,7 @@ export function ModelDetails() {
             >) || {}
           }
         />
-      </div>
+      </main>
     </PublicLayout>
   )
 }

@@ -34,6 +34,7 @@ import { AuthOperationError } from '@/lib/secure-verification'
 import { createServerError } from '@/lib/server-error-message'
 
 import { AuthLayout } from '../auth-layout'
+import { AuthPageHeading } from '../components/auth-page-heading'
 
 export type ResetPasswordSearchParams = {
   email?: string
@@ -111,18 +112,15 @@ export function ResetPasswordConfirm({
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout mode='forgot-password'>
       <div className='w-full space-y-8'>
-        <div className='space-y-2'>
-          <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Reset password')}
-          </h2>
-          <p className='text-muted-foreground text-left text-sm sm:text-base'>
+        <AuthPageHeading lead={t('Reset password')}>
+          <p>
             {newPassword
               ? t('auth.resetPasswordConfirm.success')
               : t('auth.resetPasswordConfirm.description')}
           </p>
-        </div>
+        </AuthPageHeading>
 
         <div className='space-y-4'>
           {!isValidResetLink && (
@@ -159,6 +157,7 @@ export function ResetPasswordConfirm({
                   size='icon'
                   variant='outline'
                   onClick={handleCopy}
+                  className='size-11'
                 >
                   {copied ? (
                     <CheckIcon className='h-4 w-4' />
@@ -174,7 +173,7 @@ export function ResetPasswordConfirm({
           )}
 
           <Button
-            className='w-full'
+            className='auth-primary'
             onClick={
               newPassword
                 ? () => navigate({ to: '/sign-in', replace: true })

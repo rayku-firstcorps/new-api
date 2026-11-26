@@ -22,7 +22,13 @@ import { useTranslation } from 'react-i18next'
 
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { useTopNavLinks } from '@/hooks/use-top-nav-links'
 import { cn } from '@/lib/utils'
+
+import { buildFooterColumns, type FooterHealth } from '../lib/footer-columns'
+import { FOCUS_RING } from '../lib/public-chrome'
+import { useFooterHealth } from '../lib/use-footer-health'
+import { BrandLogoImage } from './brand-mark'
 
 interface FooterLink {
   text: string
@@ -42,31 +48,112 @@ interface FooterProps {
   className?: string
 }
 
-function FooterLinkItem(props: { link: FooterLink }) {
-  const { t } = useTranslation()
-  const isExternal = props.link.href.startsWith('http')
-  const label = t(props.link.text)
+/** A column ready to render: labels already translated. */
+interface RenderColumn {
+  key: string
+  title: string
+  links: {
+    key: string
+    label: string
+    href: string
+    requiresAuth?: boolean
+  }[]
+}
 
-  if (isExternal) {
+const FOOTER_LINK_CLASS = cn(
+  'text-muted-foreground hover:text-foreground rounded-sm text-sm transition-colors duration-150',
+  FOCUS_RING
+)
+
+function FooterLinkItem(props: {
+  href: string
+  label: string
+  requiresAuth?: boolean
+}) {
+  if (props.href.startsWith('http')) {
     return (
       <a
-        href={props.link.href}
+        href={props.href}
         target='_blank'
         rel='noopener noreferrer'
-        className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
+        className={FOOTER_LINK_CLASS}
       >
-        {label}
+        {props.label}
       </a>
     )
   }
 
+  if (props.requiresAuth) {
+    return (
+      <Link
+        to='/sign-in'
+        search={{ redirect: props.href }}
+        className={FOOTER_LINK_CLASS}
+      >
+        {props.label}
+      </Link>
+    )
+  }
+
   return (
-    <Link
-      to={props.link.href}
-      className='text-muted-foreground hover:text-foreground text-sm transition-colors duration-200'
-    >
-      {label}
+    <Link to={props.href} className={FOOTER_LINK_CLASS}>
+      {props.label}
     </Link>
+  )
+}
+
+function FooterColumnView(props: { column: RenderColumn }) {
+  const headingId = `footer-${props.column.key}`
+  return (
+    <div>
+      <h2
+        id={headingId}
+        className='text-foreground text-xs font-medium tracking-wide uppercase'
+      >
+        {props.column.title}
+      </h2>
+      <ul aria-labelledby={headingId} className='mt-4 flex flex-col gap-3'>
+        {props.column.links.map((link) => (
+          <li key={link.key}>
+            <FooterLinkItem
+              href={link.href}
+              label={link.label}
+              requiresAuth={link.requiresAuth}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+// Status line backed by the real Uptime Kuma monitors (`/api/uptime/status`).
+// Renders nothing when there is no monitor data, so it never claims a state.
+function FooterStatus() {
+  const { t } = useTranslation()
+  const health: FooterHealth | null = useFooterHealth()
+  if (!health) return null
+
+  const operational = health === 'operational'
+  const label = operational
+    ? t('All systems operational')
+    : t('Some services are experiencing issues')
+
+  return (
+    <p className='text-muted-foreground inline-flex shrink-0 items-center gap-2.5 text-xs'>
+      <span aria-hidden='true' className='relative flex size-2'>
+        {operational && (
+          <span className='bg-success absolute inset-0 rounded-full opacity-60 motion-safe:animate-ping' />
+        )}
+        <span
+          className={cn(
+            'relative size-2 rounded-full',
+            operational ? 'bg-success' : 'bg-warning'
+          )}
+        />
+      </span>
+      {label}
+    </p>
   )
 }
 
@@ -105,7 +192,10 @@ function LegalLinks(props: { leadingSeparator?: boolean }) {
           )}
           <Link
             to={item.href}
-            className='hover:text-foreground transition-colors duration-200'
+            className={cn(
+              'hover:text-foreground rounded-sm transition-colors duration-150',
+              FOCUS_RING
+            )}
           >
             {item.label}
           </Link>
@@ -131,6 +221,8 @@ function ProjectAttribution(props: { currentYear: number; inline?: boolean }) {
 
 export function Footer(props: FooterProps) {
   const { t } = useTranslation()
+  const { status } = useStatus()
+  const navLinks = useTopNavLinks()
   const {
     systemName,
     logo: systemLogo,
@@ -202,21 +294,56 @@ export function Footer(props: FooterProps) {
 
   const displayColumns = props.columns ?? fallbackColumns
 
+  // Link columns come from the same gated links as the top bar. In demo-site
+  // mode the project columns (docs, related projects) replace the product
+  // ones; the Legal column stays in both.
+  const renderColumns = useMemo<RenderColumn[]>(() => {
+    const columns = buildFooterColumns(navLinks, {
+      userAgreement: Boolean(status?.user_agreement_enabled),
+      privacyPolicy: Boolean(status?.privacy_policy_enabled),
+    })
+    const siteColumns: RenderColumn[] = columns.map((column) => ({
+      key: column.key,
+      title: t(column.title),
+      links: column.items.map((item) => ({
+        key: item.key,
+        label: t(item.label),
+        href: item.href,
+        requiresAuth: item.requiresAuth,
+      })),
+    }))
+    if (!isDemoSiteMode) return siteColumns
+
+    const demoColumns: RenderColumn[] = displayColumns.map((column, index) => ({
+      key: `demo-${index}`,
+      title: t(column.title),
+      links: column.links.map((link, linkIndex) => ({
+        key: `${index}-${linkIndex}`,
+        label: t(link.text),
+        href: link.href,
+      })),
+    }))
+    return [
+      ...demoColumns,
+      ...siteColumns.filter((column) => column.key === 'legal'),
+    ]
+  }, [displayColumns, isDemoSiteMode, navLinks, status, t])
+
   if (footerHtml) {
     return (
       <footer
         className={cn(
-          'border-border/40 relative z-10 border-t',
+          'border-border bg-background relative z-10 border-t',
           props.className
         )}
       >
-        <div className='mx-auto w-full max-w-6xl px-6 py-5'>
-          <div className='bg-muted/20 border-border/50 flex flex-col items-center justify-between gap-4 rounded-2xl border px-4 py-4 backdrop-blur-sm sm:flex-row sm:px-5'>
+        <div className='mx-auto w-full max-w-7xl px-4 pt-12 pb-10 md:px-6'>
+          <div className='flex flex-col gap-6 md:flex-row md:items-start md:justify-between md:gap-8'>
             <div
-              className='custom-footer text-muted-foreground min-w-0 text-center text-sm sm:text-left'
+              className='custom-footer text-muted-foreground min-w-0 text-sm leading-relaxed'
               dangerouslySetInnerHTML={{ __html: footerHtml }}
             />
-            <div className='border-border/60 text-muted-foreground/45 flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t pt-4 text-xs sm:w-auto sm:justify-end sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5'>
+            <div className='text-muted-foreground/45 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:shrink-0 md:justify-end'>
               <LegalLinks />
               <ProjectAttribution currentYear={currentYear} inline />
             </div>
@@ -228,59 +355,66 @@ export function Footer(props: FooterProps) {
 
   return (
     <footer
-      className={cn('border-border/40 relative z-10 border-t', props.className)}
+      className={cn(
+        'border-border bg-background relative z-10 border-t',
+        props.className
+      )}
     >
-      <div className='mx-auto max-w-6xl px-6 py-12 md:py-16'>
-        <div className='flex flex-col justify-between gap-10 md:flex-row md:gap-16'>
+      <div className='mx-auto max-w-7xl px-4 pt-16 pb-10 md:px-6 md:pt-20'>
+        <div className='grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16'>
           {/* Brand column */}
-          <div className='shrink-0'>
-            <Link to='/' className='group flex items-center gap-2.5'>
-              <img
-                src={displayLogo}
-                alt={displayName}
-                className='size-7 rounded-lg object-contain'
-              />
-              <span className='text-sm font-semibold tracking-tight'>
-                {displayName}
+          <div className='max-w-xs'>
+            <Link
+              to='/'
+              className={cn(
+                'text-foreground inline-flex items-center gap-2.5 rounded-sm text-lg font-medium',
+                FOCUS_RING
+              )}
+            >
+              <span className='flex size-5 shrink-0 items-center justify-center'>
+                <BrandLogoImage
+                  src={displayLogo}
+                  alt=''
+                  className='size-full rounded-md object-contain'
+                />
               </span>
+              {displayName}
             </Link>
-            <p className='text-muted-foreground/60 mt-3 max-w-[200px] text-xs leading-relaxed'>
+            <p className='text-muted-foreground mt-4 text-sm leading-relaxed'>
               {t('Powerful API Management Platform')}
             </p>
           </div>
 
-          {/* Links columns */}
-          {isDemoSiteMode && (
-            <div className='grid grid-cols-3 gap-8 md:gap-16'>
-              {displayColumns.map((column, index) => (
-                <div key={index}>
-                  <p className='text-muted-foreground/50 mb-3 text-xs font-medium tracking-wider uppercase'>
-                    {t(column.title)}
-                  </p>
-                  <ul className='space-y-2.5'>
-                    {column.links.map((link, linkIndex) => (
-                      <li key={linkIndex}>
-                        <FooterLinkItem link={link} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          {/* Link columns: 2 on mobile, 4 from sm. Empty columns are omitted. */}
+          {renderColumns.length > 0 && (
+            <nav
+              aria-label={t('Footer')}
+              className='grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4'
+            >
+              {renderColumns.map((column) => (
+                <FooterColumnView key={column.key} column={column} />
               ))}
-            </div>
+            </nav>
           )}
         </div>
 
-        {/* Copyright + optional legal links inline on the left, project
-            attribution on the right; wraps on narrow screens. */}
-        <div className='border-border/30 mt-12 flex flex-col items-center justify-between gap-x-3 gap-y-2 border-t pt-6 sm:flex-row'>
-          <div className='text-muted-foreground/40 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:justify-start'>
-            <span>
+        {/* Copyright + disclaimer on the left, real status and attribution on the right. */}
+        <div className='border-border text-muted-foreground mt-16 flex flex-col gap-4 border-t pt-8 text-xs md:flex-row md:items-center md:justify-between md:gap-8'>
+          <div className='flex flex-col gap-1.5 md:flex-row md:gap-4'>
+            <p>
               &copy; {currentYear} {displayName}.{' '}
               {props.copyright ?? t('footer.defaultCopyright')}
-            </span>
-            <LegalLinks leadingSeparator />
+            </p>
+            <p>
+              {t(
+                'All product names, logos, and brands are property of their respective owners.'
+              )}
+            </p>
           </div>
-          <ProjectAttribution currentYear={currentYear} />
+          <div className='flex flex-col gap-2 md:items-end'>
+            <FooterStatus />
+            <ProjectAttribution currentYear={currentYear} />
+          </div>
         </div>
       </div>
     </footer>

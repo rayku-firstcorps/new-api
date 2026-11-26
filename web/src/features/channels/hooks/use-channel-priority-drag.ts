@@ -432,7 +432,7 @@ export function useChannelPriorityDrag(options: DragOptions) {
           pointerEvents: 'none',
           background: 'var(--card)',
           borderRadius: 'var(--radius)',
-          boxShadow: '0 12px 28px #0003',
+          boxShadow: '0 12px 28px rgb(0 0 0 / calc(0.2 * var(--shadow-k)))',
           outline: '1px solid var(--primary)',
           overflow: 'hidden',
           willChange: 'transform',

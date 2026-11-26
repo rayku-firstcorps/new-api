@@ -23,6 +23,7 @@ import {
   formatLatency,
   formatThroughput,
   getSuccessRateDotClass,
+  getSuccessRateTextClass,
 } from '@/features/performance-metrics/lib/format'
 import type { SuccessRatePoint } from '@/features/performance-metrics/types'
 import { cn } from '@/lib/utils'
@@ -92,7 +93,19 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
             )}
             className='text-muted-foreground flex items-center justify-between gap-1 text-[11px] leading-4'
           >
-            <span>{t('Status')}</span>
+            <span className='inline-flex items-center gap-1.5'>
+              {hasSuccessRate && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    'size-1.5 shrink-0 rounded-full shadow-[0_0_6px_1px_currentColor]',
+                    getSuccessRateDotClass(successRate),
+                    getSuccessRateTextClass(successRate)
+                  )}
+                />
+              )}
+              {t('Status')}
+            </span>
             <span className='font-mono'>
               {hasSuccessRate ? `${successRate.toFixed(2)}%` : '—'}
             </span>

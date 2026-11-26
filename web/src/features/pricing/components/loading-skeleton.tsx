@@ -28,14 +28,18 @@ export interface LoadingSkeletonProps {
 export function LoadingSkeleton(props: LoadingSkeletonProps) {
   return (
     <div aria-busy='true'>
-      <div className='mx-auto mb-5 flex max-w-3xl flex-col items-center pt-5 sm:mb-10 sm:pt-10'>
-        <Skeleton className='h-[clamp(2.3rem,6.325vw,4.025rem)] w-48 max-w-full sm:w-64' />
-        <Skeleton className='mt-3 h-5 w-56 max-w-full sm:mt-4 sm:h-6' />
-        <Skeleton className='mt-2 h-5 w-full max-w-xl' />
-        <Skeleton className='mt-4 h-10 w-full max-w-2xl sm:mt-6' />
+      <div className='flex flex-col items-center pt-10 pb-8 sm:pt-16 sm:pb-10'>
+        <Skeleton className='h-7 w-36 rounded-full' />
+        <Skeleton className='mt-6 h-10 w-full max-w-[560px] sm:h-14' />
+        <Skeleton className='mt-4 h-5 w-full max-w-[480px]' />
+        <Skeleton className='mt-8 h-[74px] w-full max-w-[440px] rounded-2xl sm:mt-10 sm:h-[86px]' />
       </div>
-      <div className='grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]'>
-        <div className='hidden self-start rounded-xl border p-3 xl:block'>
+      <div className='flex flex-col gap-2 border-b py-3 lg:flex-row lg:items-center lg:gap-4'>
+        <Skeleton className='h-9 w-full lg:w-[320px]' />
+        <Skeleton className='h-8 w-full max-w-md' />
+      </div>
+      <div className='grid gap-6 pt-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8'>
+        <div className='hidden self-start rounded-xl border p-4 lg:block'>
           <Skeleton className='mb-4 h-5 w-24' />
           {Array.from({ length: 5 }, (_, index) => (
             <div
@@ -52,14 +56,6 @@ export function LoadingSkeleton(props: LoadingSkeletonProps) {
           ))}
         </div>
         <div className='flex min-w-0 flex-col gap-4'>
-          <div className='flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3'>
-            <Skeleton className='h-7 w-20' />
-            <div className='flex flex-wrap gap-2'>
-              <Skeleton className='h-7 w-32' />
-              <Skeleton className='h-7 w-20' />
-              <Skeleton className='h-7 w-24' />
-            </div>
-          </div>
           {props.viewMode === VIEW_MODES.TABLE ? (
             <div className='overflow-hidden rounded-xl border'>
               {Array.from({ length: 10 }, (_, index) => (

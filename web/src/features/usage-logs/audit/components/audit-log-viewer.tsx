@@ -27,6 +27,10 @@ import { Button } from '@/components/ui/button'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { useAuthStore } from '@/stores/auth-store'
 
+import {
+  LOG_ROW_ACCENT,
+  LOG_TABLE_CLASS_NAME,
+} from '../../components/log-view-styles'
 import { getAuditLogs, type AuditFilters, type AuditLog } from '../api'
 import { useAuditLogColumns } from './audit-log-columns'
 import { AuditLogFilterBar } from './audit-log-filter-bar'
@@ -123,7 +127,10 @@ export function AuditLogViewer(props: {
         className='h-auto min-h-0 flex-1'
         applyHeaderSize
         getColumnClassName={() => 'py-2'}
-        tableClassName='[&_[data-slot=table]]:text-[13px] [&_[data-slot=table]_td]:text-[13px] [&_[data-slot=table]_td_*]:text-[13px] [&_[data-slot=table]_th]:text-[13px] [&_[data-slot=table]_th_*]:text-[13px]'
+        tableClassName={LOG_TABLE_CLASS_NAME}
+        getRowClassName={(row) =>
+          row.original.success ? undefined : LOG_ROW_ACCENT.danger
+        }
         toolbar={
           <div className='shrink-0 space-y-2'>
             <AuditLogFilterBar

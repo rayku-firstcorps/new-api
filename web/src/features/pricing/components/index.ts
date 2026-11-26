@@ -18,6 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 export { PricingSidebar } from './pricing-sidebar'
 export { PricingToolbar } from './pricing-toolbar'
+export { PricingActiveFilters } from './pricing-active-filters'
+export { PricingPageHeader } from './pricing-page-header'
 export { ModelCard } from './model-card'
 export { ModelCardGrid } from './model-card-grid'
 export { LoadingSkeleton } from './loading-skeleton'

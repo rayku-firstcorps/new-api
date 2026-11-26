@@ -125,7 +125,14 @@ export function LegalDocument({
   return (
     <PublicLayout showMainContainer={!contentIsHtml}>
       {contentIsHtml ? (
-        <RichContent mode='html' htmlVariant='isolated' content={rawContent} />
+        // Top padding clears the fixed public header (h-[72px]) plus breathing room.
+        <main className='px-4 pt-[calc(72px+2rem)] md:px-6 lg:pt-[calc(72px+2.5rem)]'>
+          <RichContent
+            mode='html'
+            htmlVariant='isolated'
+            content={rawContent}
+          />
+        </main>
       ) : (
         <div className='mx-auto max-w-4xl space-y-6 py-12'>
           <div className='space-y-2'>

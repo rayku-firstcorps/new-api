@@ -21,7 +21,7 @@ import { useMemo } from 'react'
 import type { SystemStatus } from '@/features/auth/types'
 import { useStatus } from '@/hooks/use-status'
 
-const FALLBACK_GATEWAY_BASE_URL = 'https://www.kudexapi.com'
+const FALLBACK_GATEWAY_BASE_URL = 'https://kucodeapi.com'
 
 function trimTrailingSlash(value: string) {
   return value.trim().replace(/\/+$/, '')

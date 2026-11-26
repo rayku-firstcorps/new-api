@@ -43,39 +43,47 @@ const COMPACT_NUMBER = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 })
 
+// Podium ranks show a trophy, so each one gets its own look (and the rank
+// number stays available to screen readers).
+const PODIUM_PALETTE: Record<number, string> = {
+  1: 'bg-primary/15 text-primary dark:bg-primary/20',
+  2: 'bg-foreground/10 text-foreground',
+  3: 'border-warning/40 text-warning border bg-transparent',
+}
+
 function RankBadge(props: { rank: number }) {
   const rank = props.rank
-  const isPodium = rank <= 3
-  const palette =
-    rank === 1
-      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-      : rank === 2
-        ? 'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300'
-        : rank === 3
-          ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300'
-          : 'bg-muted text-muted-foreground'
+  const podiumPalette = PODIUM_PALETTE[rank]
   return (
     <span
       className={cn(
         'inline-flex size-7 shrink-0 items-center justify-center rounded-md font-mono text-xs font-bold tabular-nums',
-        palette
+        podiumPalette ?? 'bg-muted text-muted-foreground'
       )}
     >
-      {isPodium ? <Trophy className='size-3.5' /> : rank}
+      {podiumPalette ? (
+        <>
+          <Trophy aria-hidden className='size-3.5' />
+          <span className='sr-only'>{rank}</span>
+        </>
+      ) : (
+        rank
+      )}
     </span>
   )
 }
 
 function GrowthChip(props: { value: number }) {
   const value = props.value
-  const isUp = value > 0
-  const isDown = value < 0
-  const palette = isUp
-    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-    : isDown
-      ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
-      : 'bg-muted text-muted-foreground'
-  const Icon = isUp ? ArrowUpRight : isDown ? ArrowDownRight : null
+  let palette = 'bg-muted text-muted-foreground'
+  let Icon: typeof ArrowUpRight | null = null
+  if (value > 0) {
+    palette = 'bg-success/10 text-success dark:bg-success/20'
+    Icon = ArrowUpRight
+  } else if (value < 0) {
+    palette = 'bg-destructive/10 text-destructive dark:bg-destructive/20'
+    Icon = ArrowDownRight
+  }
   const formatted = `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
   return (
     <span

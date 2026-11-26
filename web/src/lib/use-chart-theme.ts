@@ -19,10 +19,12 @@ For commercial licensing, please contact support@quantumnous.com
 import { useEffect, useRef, useState } from 'react'
 
 import { useTheme } from '@/context/theme-provider'
+import { registerChartThemes } from '@/lib/vchart'
 
 /**
- * Lazy-load VChart's `ThemeManager` and switch its theme to follow the
- * resolved app theme (light / dark). Returns flags consumers can use to
+ * Lazy-load VChart's `ThemeManager`, make sure the KuCode chart themes are
+ * registered, and switch its theme to follow the resolved app theme
+ * (light / dark). Returns flags consumers can use to
  * defer chart rendering until the theme is ready.
  */
 let themeManagerPromise: Promise<
@@ -48,6 +50,7 @@ export function useChartTheme() {
       const ThemeManager = await themeManagerPromise
       if (cancelled) return
       themeRef.current = ThemeManager
+      registerChartThemes(ThemeManager)
       ThemeManager.setCurrentTheme(resolvedTheme === 'dark' ? 'dark' : 'light')
       setThemeReady(true)
     }

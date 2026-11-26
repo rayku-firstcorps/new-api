@@ -76,20 +76,56 @@ describe('index.html theme boot script', () => {
     expect(document.documentElement).not.toHaveClass('dark')
   })
 
-  it('follows the system dark mode when no preference is saved', () => {
-    mockSystemDarkMode(true)
+  it('defaults to dark when no preference is saved, even on a light system', () => {
+    mockSystemDarkMode(false)
+
+    runBootScript()
+
+    expect(document.documentElement).toHaveClass('dark')
+    expect(document.documentElement).not.toHaveClass('light')
+  })
+
+  it('defaults to dark when the saved value is invalid', () => {
+    mockSystemDarkMode(false)
+    localStorage.setItem(THEME_STORAGE_KEYS.mode, 'sepia')
 
     runBootScript()
 
     expect(document.documentElement).toHaveClass('dark')
   })
 
-  it('follows the system light mode when the saved value is invalid', () => {
+  it.each([
+    [true, 'dark'],
+    [false, 'light'],
+  ])(
+    'follows the system when system is saved (system dark: %s)',
+    (systemDark, expected) => {
+      mockSystemDarkMode(systemDark)
+      localStorage.setItem(THEME_STORAGE_KEYS.mode, 'system')
+
+      runBootScript()
+
+      expect(document.documentElement).toHaveClass(expected)
+    }
+  )
+
+  it.each([
+    ['dark', '#0e0e0e'],
+    ['light', '#f7f7f7'],
+  ])('sets the theme-color meta tag for a saved %s mode', (mode, color) => {
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<meta name="theme-color" content="#0e0e0e" />'
+    )
     mockSystemDarkMode(false)
-    localStorage.setItem(THEME_STORAGE_KEYS.mode, 'sepia')
+    localStorage.setItem(THEME_STORAGE_KEYS.mode, mode)
 
     runBootScript()
 
-    expect(document.documentElement).toHaveClass('light')
+    expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
+      'content',
+      color
+    )
+    document.head.querySelector('meta[name="theme-color"]')?.remove()
   })
 })

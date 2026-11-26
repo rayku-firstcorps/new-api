@@ -16,15 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useId, type SVGProps } from 'react'
+import type { SVGProps } from 'react'
 
 type IconSub2apiProps = SVGProps<SVGSVGElement> & {
   size?: number
 }
 
 export function IconSub2api({ size = 20, ...props }: IconSub2apiProps) {
-  const gradientId = useId()
-
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -33,23 +31,9 @@ export function IconSub2api({ size = 20, ...props }: IconSub2apiProps) {
       height={size}
       {...props}
     >
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1='4'
-          y1='4'
-          x2='20'
-          y2='20'
-          gradientUnits='userSpaceOnUse'
-        >
-          <stop stopColor='#67EDB1' />
-          <stop offset='.48' stopColor='#2FD3E1' />
-          <stop offset='1' stopColor='#2E68EA' />
-        </linearGradient>
-      </defs>
       <g
         fill='none'
-        stroke={`url(#${gradientId})`}
+        stroke='currentColor'
         strokeLinecap='round'
         strokeLinejoin='round'
         strokeWidth='2.7'

@@ -25,11 +25,17 @@ import {
   DataTableRow,
   DataTableView,
   useDataTable,
+  type DataTablePinnedColumn,
 } from '@/components/data-table'
 
 import { DEFAULT_PRICING_PAGE_SIZE, DEFAULT_TOKEN_UNIT } from '../constants'
 import type { PricingModel, TokenUnit } from '../types'
 import { usePricingColumns } from './pricing-columns'
+
+// Keep the model name visible while the table scrolls sideways on small screens.
+const PINNED_COLUMNS: DataTablePinnedColumn[] = [
+  { columnId: 'model_name', side: 'left' },
+]
 
 export interface PricingTableProps {
   models: PricingModel[]
@@ -96,14 +102,20 @@ export function PricingTable(props: PricingTableProps) {
         emptyDescription={t('No models match your current filters.')}
         skeletonKeyPrefix='pricing-skeleton'
         applyHeaderSize
+        pinnedColumns={PINNED_COLUMNS}
         getColumnClassName={(_columnId, kind) =>
-          kind === 'header' ? 'text-muted-foreground font-medium' : undefined
+          kind === 'header'
+            ? 'text-muted-foreground text-xs font-medium tracking-wider uppercase'
+            : undefined
         }
-        renderRow={(row: Row<PricingModel>) => (
+        renderRow={(row: Row<PricingModel>, helpers) => (
           <DataTableRow
             key={row.id}
             row={row}
-            className='hover:bg-muted/30 cursor-pointer transition-colors'
+            getColumnClassName={(columnId) =>
+              helpers.getCellClassName(columnId)
+            }
+            className='hover:bg-foreground/5 cursor-pointer transition-colors'
             onClick={() => handleRowClick(row.original)}
           />
         )}

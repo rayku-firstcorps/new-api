@@ -25,7 +25,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { getLobeIcon, getLobeIconNames } from '../lobe-icon'
 
-vi.mock('@lobehub/icons/es/Mistral/components/Color.js', () => {
+vi.mock('@lobehub/icons/es/Mistral/components/Mono.js', () => {
   throw new Error('Icon chunk unavailable')
 })
 
@@ -127,18 +127,23 @@ describe('Lobe icons', () => {
     rerender(getLobeIcon('  '))
     expect(screen.getByText('?')).toBeVisible()
     rerender(getLobeIcon('SGLang', 24))
-    expect(screen.getByRole('presentation', { hidden: true })).toHaveAttribute(
-      'width',
-      '24'
-    )
+    expect(document.querySelector('span[aria-hidden="true"]')).toHaveStyle({
+      width: '24px',
+      height: '24px',
+    })
     expect(getLobeIconNames()).toEqual(
-      expect.arrayContaining([
-        'OpenAI',
-        'Claude.Color',
-        'SGLang',
-        'Sub2API',
-        'Wan',
-      ])
+      expect.arrayContaining(['OpenAI', 'Claude', 'SGLang', 'Sub2API', 'Wan'])
     )
+    expect(getLobeIconNames()).not.toContain('Claude.Color')
   })
+
+  it.each(['Claude.Color', 'Claude'])(
+    'renders %s as the single-color variant',
+    async (name) => {
+      render(getLobeIcon(`${name}.role="img".aria-label="Claude icon"`))
+      const icon = await screen.findByRole('img', { name: 'Claude icon' })
+      expect(icon).toHaveAttribute('fill', 'currentColor')
+      expect(icon.querySelector('[fill]:not([fill="currentColor"])')).toBeNull()
+    }
+  )
 })

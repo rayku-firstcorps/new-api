@@ -90,7 +90,7 @@ export function CommunityPluginReach(props: CommunityPluginReachProps) {
   }
 
   return (
-    <Alert className='border-amber-500/30 bg-amber-500/5 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400'>
+    <Alert className='border-warning/30 bg-warning/5 [&>svg]:text-warning dark:[&>svg]:text-warning'>
       <AlertTriangle />
       <AlertTitle>{t('What this plugin can reach')}</AlertTitle>
       <AlertDescription className='text-foreground'>

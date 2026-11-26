@@ -46,6 +46,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
 
 import { checkIsActive } from '../lib/url-utils'
 import type {
@@ -57,6 +58,26 @@ import type {
 import { ChatPresetsItem } from './chat-presets-item'
 
 /**
+ * KuCode console item look: muted text, a subtle surface tint when hovered or
+ * active, and a slim amber indicator on the left edge of the active item.
+ */
+const NAV_ITEM_CLASS = cn(
+  'text-muted-foreground relative h-9 rounded-md px-3 text-[14px] font-normal',
+  'hover:bg-foreground/[0.04] hover:text-foreground',
+  'before:bg-primary before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:opacity-0 before:transition-opacity',
+  'data-active:bg-foreground/[0.06] data-active:text-foreground data-active:font-normal data-active:before:opacity-100',
+  'data-active:hover:bg-foreground/[0.06] data-active:hover:text-foreground'
+)
+
+const NAV_SUB_ITEM_CLASS = cn(
+  'text-muted-foreground relative',
+  'hover:bg-foreground/[0.04] hover:text-foreground',
+  'before:bg-primary before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:opacity-0 before:transition-opacity',
+  'data-active:bg-foreground/[0.06] data-active:text-foreground data-active:before:opacity-100',
+  'data-active:hover:bg-foreground/[0.06] data-active:hover:text-foreground'
+)
+
+/**
  * Sidebar navigation group component
  * Renders a group of navigation items, supporting regular links and collapsible submenus
  */
@@ -65,8 +86,8 @@ export function NavGroup({ title, items }: NavGroupProps) {
   const href = useLocation({ select: (location) => location.href })
 
   return (
-    <SidebarGroup className='px-2 py-1'>
-      <SidebarGroupLabel className='text-muted-foreground/70 px-2 text-[11px] font-medium tracking-wider uppercase'>
+    <SidebarGroup className='not-first:border-border px-3 py-1 not-first:mt-2 not-first:border-t not-first:pt-3'>
+      <SidebarGroupLabel className='text-muted-foreground px-3 text-[11px] font-medium tracking-[0.08em] uppercase'>
         {title}
       </SidebarGroupLabel>
       <SidebarMenu>
@@ -127,6 +148,7 @@ function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
       <SidebarMenuButton
         isActive={checkIsActive(href, item)}
         tooltip={item.title}
+        className={NAV_ITEM_CLASS}
         render={
           <Link
             to={item.url}
@@ -176,7 +198,9 @@ function SidebarMenuCollapsible({
     >
       <CollapsibleTrigger
         className='group/collapsible-trigger'
-        render={<SidebarMenuButton tooltip={item.title} />}
+        render={
+          <SidebarMenuButton tooltip={item.title} className={NAV_ITEM_CLASS} />
+        }
       >
         {item.icon && <item.icon className='shrink-0' />}
         <span className='min-w-0 flex-1 truncate'>{item.title}</span>
@@ -189,6 +213,7 @@ function SidebarMenuCollapsible({
             <SidebarMenuSubItem key={subItem.title}>
               <SidebarMenuSubButton
                 isActive={checkIsActive(href, subItem)}
+                className={NAV_SUB_ITEM_CLASS}
                 render={
                   <Link
                     to={subItem.url}
@@ -228,6 +253,7 @@ function SidebarMenuCollapsedDropdown({
             <SidebarMenuButton
               tooltip={item.title}
               isActive={checkIsActive(href, item)}
+              className={NAV_ITEM_CLASS}
             />
           }
         >

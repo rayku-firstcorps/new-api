@@ -16,48 +16,45 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
-import { useTranslation } from 'react-i18next'
+import '@/styles/auth.css'
+import { useMediaQuery } from '@/hooks/use-media-query'
 
-import { Skeleton } from '@/components/ui/skeleton'
-import { useSystemConfig } from '@/hooks/use-system-config'
+import { AuthFooter } from './components/auth-footer'
+import { AuthHeader } from './components/auth-header'
+import { AuthVisual, type AuthVisualMode } from './components/auth-visual'
+import { AuthVisualStrip } from './components/auth-visual-strip'
 
 type AuthLayoutProps = {
   children: React.ReactNode
+  /** Picks the side panel's title (and the base_url card on sign-up). Default `sign-in`. */
+  mode?: AuthVisualMode
 }
 
-export function AuthLayout({ children }: AuthLayoutProps) {
-  const { t } = useTranslation()
-  const { systemName, logo, loading } = useSystemConfig()
+/** Split layout breakpoint (Tailwind `lg`). */
+const SPLIT_QUERY = '(min-width: 1024px)'
+
+/**
+ * Auth shell: two 50% columns from 1024px (header, form and footer on the
+ * left, sphere panel on the right; the left column scrolls on its own), a
+ * single column with a decorative sphere band below. Only one sphere canvas is
+ * mounted at a time.
+ */
+export function AuthLayout(props: AuthLayoutProps) {
+  const split = useMediaQuery(SPLIT_QUERY)
 
   return (
-    <div className='relative grid h-svh max-w-none'>
-      <Link
-        to='/'
-        className='absolute top-4 left-4 z-10 flex items-center gap-2 transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
-      >
-        <div className='relative h-8 w-8'>
-          {loading ? (
-            <Skeleton className='absolute inset-0 rounded-full' />
-          ) : (
-            <img
-              src={logo}
-              alt={t('Logo')}
-              className='h-8 w-8 rounded-full object-cover'
-            />
-          )}
-        </div>
-        {loading ? (
-          <Skeleton className='h-6 w-24' />
-        ) : (
-          <h1 className='text-xl font-medium'>{systemName}</h1>
-        )}
-      </Link>
-      <div className='container flex items-center pt-16 sm:pt-0'>
-        <div className='mx-auto flex w-full flex-col justify-center space-y-2 px-4 py-8 sm:w-[480px] sm:p-8'>
-          {children}
-        </div>
+    <div className='bg-background flex min-h-svh flex-col lg:grid lg:h-svh lg:grid-cols-2 lg:overflow-hidden'>
+      <div className='flex min-h-svh min-w-0 flex-col lg:h-svh lg:min-h-0 lg:overflow-y-auto'>
+        <AuthHeader />
+        {!split && <AuthVisualStrip />}
+        <main className='flex flex-1 flex-col px-4 pt-2 pb-8 sm:px-6 lg:px-10 lg:py-8'>
+          <div className='auth-form mx-auto my-auto flex w-full max-w-[400px] flex-col justify-center'>
+            {props.children}
+          </div>
+        </main>
+        <AuthFooter />
       </div>
+      {split && <AuthVisual mode={props.mode ?? 'sign-in'} />}
     </div>
   )
 }

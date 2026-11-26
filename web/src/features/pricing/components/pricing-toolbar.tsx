@@ -86,15 +86,15 @@ export function PricingToolbar(props: PricingToolbarProps) {
   const sortLabels = getSortLabels(t)
 
   return (
-    <div className='bg-card rounded-xl border p-3'>
-      <div className='flex flex-wrap items-center justify-between gap-3'>
+    <div className='min-w-0 flex-1'>
+      <div className='flex flex-wrap items-center justify-between gap-x-3 gap-y-2'>
         <div className='flex items-center gap-2'>
           <Button
             type='button'
             variant='outline'
             size='sm'
             onClick={() => setMobileFiltersOpen(true)}
-            className='gap-1.5 xl:hidden'
+            className='gap-1.5 lg:hidden'
           >
             <Filter className='size-4' />
             {t('Filter')}

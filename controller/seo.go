@@ -16,7 +16,6 @@ var publicSitemapPaths = []string{
 	"/pricing",
 	"/rankings",
 	"/about",
-	"/image-generation",
 	"/privacy-policy",
 	"/user-agreement",
 }

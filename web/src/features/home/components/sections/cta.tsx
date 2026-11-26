@@ -17,44 +17,31 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, TrendingUp } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
 import { cn } from '@/lib/utils'
 
-import { usePopularModels } from '../../hooks/use-popular-models'
-import {
-  getLandingPrimaryAction,
-  isLandingPricingEnabled,
-} from '../../lib/landing-actions'
-import { PopularModelCard } from './popular-model-card'
+import { getLandingPrimaryAction } from '../../lib/landing-actions'
+import { HomeSphere } from '../home-sphere'
+import { MixedHeading } from '../mixed-heading'
 
 interface CTAProps {
   className?: string
   isAuthenticated?: boolean
 }
 
+/** Full-width band with the inverted, top-lit dot sphere behind the call to action. */
 export function CTA(props: CTAProps) {
   const { t } = useTranslation()
-  const { status, loading, error } = useStatus()
-  const statusRecord = status as Record<string, unknown> | null
+  const { status } = useStatus()
   const primaryAction = getLandingPrimaryAction(
-    statusRecord,
+    status as Record<string, unknown> | null,
     Boolean(props.isAuthenticated)
   )
-  const showPricing = isLandingPricingEnabled(statusRecord)
-  const popularModels = usePopularModels(
-    Boolean(status) &&
-      !loading &&
-      !error &&
-      showPricing &&
-      !props.isAuthenticated
-  )
-  const modelCount = popularModels.length
 
   if (props.isAuthenticated) {
     return null
@@ -62,77 +49,51 @@ export function CTA(props: CTAProps) {
 
   return (
     <section
+      id='home-cta'
       aria-labelledby='home-cta-title'
-      className={cn('px-5 pb-16 sm:px-8 md:pb-24', props.className)}
+      className={cn(
+        'home-cta relative isolate flex min-h-[480px] items-center justify-center overflow-hidden px-5 sm:px-8 md:min-h-[560px]',
+        props.className
+      )}
     >
-      <AnimateInView className='home-cta mx-auto max-w-7xl rounded-2xl border px-6 py-10 sm:px-10 lg:px-14 lg:py-14'>
-        <div className='grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-16'>
-          <div className='min-w-0'>
-            {modelCount > 0 ? (
-              <Badge
-                variant='outline'
-                className='mb-4 h-auto max-w-full gap-2 px-3 py-1.5 whitespace-normal'
-              >
-                <TrendingUp aria-hidden='true' className='shrink-0' />
-                {t('Most called models · Last 24 hours')}
-              </Badge>
-            ) : null}
-            <h2
-              id='home-cta-title'
-              className='text-2xl leading-tight font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl'
-            >
-              {t('Start with the AI tool you already use')}
-            </h2>
-            <p className='text-muted-foreground mt-4 max-w-xl text-sm leading-7 text-pretty wrap-anywhere'>
-              {t(
-                'Create one account, copy the right setup, and keep keys, models, balance, usage, and cost records visible from the console.'
-              )}
-            </p>
-          </div>
-          <div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:max-w-64 lg:flex-col'>
-            <Button
-              role='link'
-              className='group h-auto min-h-12 rounded-xl px-6 py-3 whitespace-normal'
-              render={<Link to={primaryAction.to} />}
-            >
-              {t(primaryAction.label)}
-              <ArrowRight
-                aria-hidden='true'
-                className='ml-1 size-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1'
-              />
-            </Button>
-            {showPricing ? (
-              <Button
-                role='link'
-                variant='outline'
-                className='h-auto min-h-12 rounded-xl px-6 py-3 whitespace-normal'
-                render={<Link to='/pricing' />}
-              >
-                {t('View Pricing')}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-        {modelCount > 0 ? (
-          <ul
-            aria-label={t('Most called models · Last 24 hours')}
-            className={cn(
-              'mt-10 grid gap-4',
-              modelCount === 1 && 'max-w-md',
-              modelCount === 2 && 'sm:grid-cols-2',
-              modelCount >= 3 && 'lg:grid-cols-3'
-            )}
+      <div
+        className='pointer-events-none absolute inset-0 -z-10'
+        aria-hidden='true'
+      >
+        <HomeSphere variant='inverted' />
+      </div>
+      <div
+        className='from-background pointer-events-none absolute inset-x-0 top-0 -z-10 h-16 bg-linear-to-b to-transparent'
+        aria-hidden='true'
+      />
+      <div
+        className='from-background pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-linear-to-t to-transparent'
+        aria-hidden='true'
+      />
+      <div className='mx-auto flex max-w-7xl flex-col items-center pt-28 pb-16 text-center md:pt-36'>
+        <AnimateInView className='flex min-w-0 flex-col items-center'>
+          <MixedHeading
+            id='home-cta-title'
+            lead={t('Start routing')}
+            rest={t('in minutes')}
+            className='max-w-3xl text-[clamp(40px,6.5vw,80px)] leading-[1.02]'
+          />
+          <p className='text-muted-foreground mt-5 max-w-xl text-base leading-relaxed text-pretty wrap-anywhere md:text-lg'>
+            {t('Create a key, change your base_url, ship.')}
+          </p>
+          <Button
+            role='link'
+            className='group mt-9 h-auto min-h-12 px-6 py-3 whitespace-normal'
+            render={<Link to={primaryAction.to} />}
           >
-            {popularModels.map((model, index) => (
-              <PopularModelCard
-                key={model.model_name}
-                model={model}
-                rank={index + 1}
-              />
-            ))}
-          </ul>
-        ) : null}
-      </AnimateInView>
+            {t(primaryAction.label)}
+            <ArrowRight
+              aria-hidden='true'
+              className='ml-1 size-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1'
+            />
+          </Button>
+        </AnimateInView>
+      </div>
     </section>
   )
 }

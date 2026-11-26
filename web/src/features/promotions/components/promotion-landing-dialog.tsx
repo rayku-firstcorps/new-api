@@ -131,7 +131,7 @@ export function PromotionLandingDialog() {
   return (
     <Dialog open onOpenChange={(open) => setDismissed(!open)}>
       <DialogContent
-        className='dark:bg-background overflow-hidden border-amber-200/70 bg-white p-0 shadow-2xl dark:border-amber-800/50'
+        className='border-warning/30 dark:border-warning/30 bg-card overflow-hidden p-0 shadow-2xl'
         style={{
           width: `min(${popupMinWidth}px, calc(100vw - 2rem))`,
           minWidth: `min(${popupMinWidth}px, calc(100vw - 2rem))`,
@@ -153,7 +153,7 @@ export function PromotionLandingDialog() {
             }}
           >
             {banner.image_url ? (
-              <div className='absolute inset-0 flex items-center justify-center bg-black/5 dark:bg-black/20'>
+              <div className='bg-foreground/5 dark:bg-foreground/10 absolute inset-0 flex items-center justify-center'>
                 <img
                   src={banner.image_url}
                   alt={banner.title || t('Promotion image')}
@@ -161,13 +161,13 @@ export function PromotionLandingDialog() {
                 />
               </div>
             ) : (
-              <div className='dark:via-background dark:to-background absolute inset-0 flex h-full w-full items-center justify-center bg-linear-to-br from-amber-100 via-orange-50 to-white dark:from-amber-950/30'>
-                <div className='bg-background/80 flex h-28 w-28 items-center justify-center rounded-3xl border border-amber-200/70 text-amber-700 shadow-sm dark:border-amber-800/50 dark:text-amber-300'>
+              <div className='dark:via-background dark:to-background from-warning/10 via-warning/10 dark:from-warning/10 to-card absolute inset-0 flex h-full w-full items-center justify-center bg-linear-to-br'>
+                <div className='bg-background/80 border-warning/30 text-warning dark:border-warning/30 flex h-28 w-28 items-center justify-center rounded-3xl border shadow-sm'>
                   <Gift className='h-12 w-12' />
                 </div>
               </div>
             )}
-            <div className='pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-black/50 to-transparent' />
+            <div className='from-background/60 pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t to-transparent' />
           </div>
 
           <div className='space-y-5 p-6 md:p-8'>

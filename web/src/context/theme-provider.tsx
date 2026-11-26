@@ -26,6 +26,7 @@ import {
 } from 'react'
 
 import {
+  clearLegacyThemeCustomization,
   readThemePreference,
   THEME_STORAGE_KEYS,
   writeThemePreference,
@@ -34,7 +35,11 @@ import {
 type Theme = 'dark' | 'light' | 'system'
 type ResolvedTheme = Exclude<Theme, 'system'>
 
-const DEFAULT_THEME = 'system'
+// KuCode is dark-first: visitors without a stored choice get dark, whatever
+// the OS prefers. `system` stays available as an explicit choice.
+const DEFAULT_THEME = 'dark'
+// Keep in sync with the inline script in index.html.
+const THEME_COLORS = { dark: '#0e0e0e', light: '#f7f7f7' } as const
 const THEMES = new Set<Theme>(['dark', 'light', 'system'])
 
 type ThemeProviderProps = {
@@ -53,7 +58,7 @@ type ThemeProviderState = {
 
 const initialState: ThemeProviderState = {
   defaultTheme: DEFAULT_THEME,
-  resolvedTheme: 'light',
+  resolvedTheme: 'dark',
   theme: DEFAULT_THEME,
   setTheme: () => null,
   resetTheme: () => null,
@@ -62,7 +67,7 @@ const initialState: ThemeProviderState = {
 const ThemeContext = createContext<ThemeProviderState>(initialState)
 
 function getSystemTheme(): ResolvedTheme {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined') return 'dark'
   return window.matchMedia('(prefers-color-scheme: dark)').matches
     ? 'dark'
     : 'light'
@@ -86,6 +91,11 @@ export function ThemeProvider({
   )
 
   useEffect(() => {
+    // Stored preset/font/radius/layout choices no longer exist; drop them.
+    clearLegacyThemeCustomization()
+  }, [])
+
+  useEffect(() => {
     const root = window.document.documentElement
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -93,6 +103,9 @@ export function ThemeProvider({
       const nextResolvedTheme = theme === 'system' ? getSystemTheme() : theme
       root.classList.remove('light', 'dark')
       root.classList.add(nextResolvedTheme)
+      document
+        .querySelector("meta[name='theme-color']")
+        ?.setAttribute('content', THEME_COLORS[nextResolvedTheme])
       setResolvedTheme(nextResolvedTheme)
     }
 

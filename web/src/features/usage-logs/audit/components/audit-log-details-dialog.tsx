@@ -30,6 +30,7 @@ import {
   DetailRow,
   DetailSection,
 } from '../../components/dialogs/log-detail-layout'
+import { LOG_DRAWER_CONTENT_CLASS_NAME } from '../../components/log-view-styles'
 import type { AuditLog } from '../api'
 import { auditFieldLabel, buildAuditDetails } from '../lib/audit-details'
 import { AuditDetailFields } from './audit-detail-fields'
@@ -80,7 +81,7 @@ export function AuditLogDetailsDialog(props: { entry: AuditLog }) {
           {t('Details')}
         </Button>
       }
-      contentClassName='min-w-0 sm:max-w-lg max-sm:max-h-(--dialog-available-height) max-sm:w-[calc(100vw-1.5rem)] max-sm:max-w-[calc(100vw-1.5rem)]'
+      contentClassName={`min-w-0 sm:max-w-lg max-sm:max-h-(--dialog-available-height) max-sm:w-[calc(100vw-1.5rem)] max-sm:max-w-[calc(100vw-1.5rem)] ${LOG_DRAWER_CONTENT_CLASS_NAME}`}
       titleClassName='text-base'
       contentHeight='auto'
       bodyClassName='space-y-3'

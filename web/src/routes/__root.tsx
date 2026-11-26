@@ -29,7 +29,6 @@ import { useEffect } from 'react'
 
 import { NavigationProgress } from '@/components/navigation-progress'
 import { Toaster } from '@/components/ui/sonner'
-import { ThemeCustomizationProvider } from '@/context/theme-customization-provider'
 import {
   saveAffiliateCode,
   savePromotionCode,
@@ -137,7 +136,7 @@ function RootComponent() {
   )
 
   return (
-    <ThemeCustomizationProvider>
+    <>
       <NavigationProgress />
       <Outlet />
       <SplashAdDialog />
@@ -145,7 +144,7 @@ function RootComponent() {
       {import.meta.env.DEV ? (
         <ReactQueryDevtools buttonPosition='bottom-left' />
       ) : null}
-    </ThemeCustomizationProvider>
+    </>
   )
 }
 

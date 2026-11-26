@@ -18,10 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { memo, useMemo, useState } from 'react'
+import { useReducedMotion } from 'motion/react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { SpotlightGroup } from '@/features/home/components/spotlight-card'
 import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import { requireServerSuccess } from '@/lib/server-error-message'
 
@@ -87,13 +89,24 @@ export const ModelCardGrid = memo(function ModelCardGrid(
     return map
   }, [perfQuery.data])
 
+  // Fade the grid in (150ms) when the result set or page changes; no movement.
+  const gridRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  useEffect(() => {
+    if (reduceMotion || typeof gridRef.current?.animate !== 'function') return
+    gridRef.current.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 150,
+      easing: 'ease-out',
+    })
+  }, [props.models, currentPage, reduceMotion])
+
   if (props.models.length === 0) {
     return null
   }
 
   return (
-    <div className='flex flex-col gap-4 sm:gap-5'>
-      <div className='grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3'>
+    <div ref={gridRef} className='flex flex-col gap-4 sm:gap-5'>
+      <SpotlightGroup className='grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3'>
         {pagedModels.map((model) => (
           <ModelCard
             key={model.id ?? model.model_name}
@@ -107,7 +120,7 @@ export const ModelCardGrid = memo(function ModelCardGrid(
             onClick={props.onModelClick}
           />
         ))}
-      </div>
+      </SpotlightGroup>
 
       {totalPages > 1 && (
         <div className='text-muted-foreground flex flex-col items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:flex-row'>

@@ -16,35 +16,27 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
 import { AuthLayout } from '../auth-layout'
+import {
+  AuthInlineLink,
+  AuthPageHeading,
+} from '../components/auth-page-heading'
 import { OtpForm } from './components/otp-form'
 
 export function Otp() {
   const { t } = useTranslation()
   return (
-    <AuthLayout>
+    <AuthLayout mode='sign-in'>
       <div className='w-full space-y-8'>
-        <div className='space-y-3'>
-          <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
-            {t('Security verification')}
-          </h2>
-          <p className='text-muted-foreground text-left text-sm sm:text-base'>
-            {t('Verify your identity to finish signing in.')}
-          </p>
-          <p className='text-muted-foreground text-left text-sm sm:text-base'>
+        <AuthPageHeading lead={t('Security verification')}>
+          <p>{t('Verify your identity to finish signing in.')}</p>
+          <p>
             {t('Session expired?')}{' '}
-            <Link
-              to='/sign-in'
-              className='hover:text-primary font-medium underline underline-offset-4'
-            >
-              {t('Re-login')}
-            </Link>
-            .
+            <AuthInlineLink to='/sign-in'>{t('Re-login')}</AuthInlineLink>
           </p>
-        </div>
+        </AuthPageHeading>
 
         <OtpForm />
       </div>

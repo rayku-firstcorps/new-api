@@ -2667,7 +2667,7 @@ export function ChannelMutateDrawer({
               </Alert>
             )}
             {modelMappingGuardrail.missingSourceModels.length > 0 && (
-              <Alert className='border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-50'>
+              <Alert className='border-warning/40 bg-warning/10 text-foreground'>
                 <AlertDescription className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                   <span>
                     {t('Add')}{' '}
@@ -3432,7 +3432,7 @@ export function ChannelMutateDrawer({
                       </>
                     )}
                   {modelMappingGuardrail.exposedTargetModels.length > 0 && (
-                    <Alert className='border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-50'>
+                    <Alert className='border-warning/40 bg-warning/10 text-foreground'>
                       <AlertDescription className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                         <span>
                           {t('The mapped upstream model(s)')}{' '}
@@ -3743,7 +3743,7 @@ export function ChannelMutateDrawer({
         )}
 
         {sensitiveLocked && (
-          <Alert className='border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-50'>
+          <Alert className='border-warning/40 bg-warning/10 text-foreground'>
             <AlertDescription>
               {t('No permission to perform this action')}
             </AlertDescription>
@@ -4796,7 +4796,7 @@ export function ChannelMutateDrawer({
                       )}
                     </div>
                   </div>
-                  <Alert className='border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-50'>
+                  <Alert className='border-warning/40 bg-warning/10 text-foreground'>
                     <AlertDescription>
                       {t(
                         "Disclaimer: Personal use only. Do not distribute or share any credentials. This channel has prerequisites and requires prior setup; use it only if you understand the flow and risks, and comply with OpenAI's terms and policies. Credentials and configuration are for Codex CLI integration only, and are not intended for any other client, platform, or channel."
@@ -5235,7 +5235,7 @@ export function ChannelMutateDrawer({
           )}
 
           {sensitiveLocked && (
-            <Alert className='border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-50'>
+            <Alert className='border-warning/40 bg-warning/10 text-foreground'>
               <AlertDescription>
                 {t(
                   'Sensitive channel settings are read-only for your account.'

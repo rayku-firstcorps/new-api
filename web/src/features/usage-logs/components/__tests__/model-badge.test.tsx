@@ -267,7 +267,11 @@ it.each(
     expect(screen.getByText(model.trim())).toBeVisible()
     const icon = screen.getByLabelText(label)
     expect(icon).toBeVisible()
-    await waitFor(() => expect(icon.querySelector('svg, img')).not.toBeNull())
+    await waitFor(() =>
+      expect(
+        icon.querySelector('svg, img, [style*="mask-image"]')
+      ).not.toBeNull()
+    )
   }
 )
 

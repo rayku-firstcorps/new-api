@@ -147,10 +147,10 @@ export function PromotionRewardBanner() {
 
   return (
     <Dialog open={shouldShow} onOpenChange={(open) => setDismissed(!open)}>
-      <DialogContent className='dark:via-background max-w-xl overflow-hidden border-amber-200/70 bg-linear-to-br from-amber-50 via-white to-sky-50 p-0 shadow-xl dark:border-amber-800/50 dark:from-amber-950/20 dark:to-sky-950/20'>
+      <DialogContent className='dark:via-background border-warning/30 from-warning/10 to-info/10 dark:border-warning/30 dark:from-warning/10 dark:to-info/10 via-card max-w-xl overflow-hidden bg-linear-to-br p-0 shadow-xl'>
         <div className='p-6'>
           <div className='flex items-start gap-4'>
-            <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'>
+            <div className='bg-warning/10 text-warning dark:bg-warning/10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl'>
               {reward.email_bound ? (
                 <Gift className='h-5 w-5' />
               ) : (
@@ -159,7 +159,7 @@ export function PromotionRewardBanner() {
             </div>
             <div className='min-w-0 flex-1 space-y-4'>
               <DialogHeader className='space-y-2 text-left'>
-                <div className='flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300'>
+                <div className='text-warning flex items-center gap-2 text-sm font-medium'>
                   <Sparkles className='h-4 w-4' />
                   {t('Registration Trial Coupon')}
                 </div>

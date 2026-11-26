@@ -18,7 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
 
-type StatusRecord = Record<string, unknown> | null
+export type LandingStatus = Record<string, unknown> | null
+type StatusRecord = LandingStatus
 
 export type LandingPrimaryAction = {
   label: 'Get Started' | 'Go to Dashboard' | 'Sign In'

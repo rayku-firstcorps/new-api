@@ -123,7 +123,7 @@ export function SplashAdDialog() {
     <Dialog open onOpenChange={(next) => setOpen(next)}>
       <DialogContent
         showCloseButton={false}
-        className='dark:bg-background overflow-hidden border-amber-200/70 bg-white p-0 shadow-2xl dark:border-amber-800/50'
+        className='border-warning/30 dark:border-warning/30 bg-card overflow-hidden p-0 shadow-2xl'
         style={{
           width: 'min(640px, calc(100vw - 2rem))',
           maxWidth: 'calc(100vw - 2rem)',
@@ -135,7 +135,7 @@ export function SplashAdDialog() {
           type='button'
           onClick={() => canSkipNow && setOpen(false)}
           disabled={!canSkipNow}
-          className='absolute top-3 right-3 z-10 rounded-full bg-black/50 px-3 py-1 text-xs text-white transition hover:bg-black/70 disabled:cursor-default disabled:opacity-70'
+          className='bg-background/70 text-foreground hover:bg-background/90 absolute top-3 right-3 z-10 rounded-full px-3 py-1 text-xs transition disabled:cursor-default disabled:opacity-70'
         >
           {canSkipNow ? t('Skip') : t('Skip ({{n}}s)', { n: secondsLeft })}
         </button>

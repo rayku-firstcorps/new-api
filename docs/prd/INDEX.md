@@ -24,6 +24,7 @@
 |---|---|
 | [payment-prd.md](payment-prd.md) | 支付业务 PRD — 完整流程分析与优化建议 |
 | [antom-safari-popup-optimization-plan.md](antom-safari-popup-optimization-plan.md) | Antom Safari 支付弹窗优化实施计划 |
+| [antom-payment-security-hardening-plan.md](antom-payment-security-hardening-plan.md) | Antom 支付安全加固实施计划 |
 | [payssion-integration-prd.md](payssion-integration-prd.md) | Payssion 支付接入开发流程 |
 
 ## SSO
@@ -37,7 +38,7 @@
 
 | 文件 | 说明 |
 |---|---|
-| [re-design.md](re-design.md) | 首页重塑设计方案（Docs-Nav 风格，当前方向） |
+| [re-design.md](re-design.md) | 首页重塑设计方案（Docs-Nav 风格）— 已被 KuCode 换肤方案取代（2026-11-25） |
 | [homepage-user-friendly-backend-dev-prd.md](homepage-user-friendly-backend-dev-prd.md) | 首页改版 — 后端开发 PRD |
 | [homepage-user-friendly-frontend-dev-prd.md](homepage-user-friendly-frontend-dev-prd.md) | 首页改版 — 前端开发 PRD |
 | [prd-image-gen-gallery.md](prd-image-gen-gallery.md) | 生图广场 PRD |

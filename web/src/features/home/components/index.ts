@@ -16,12 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export { AccountUsageStrip } from './account-usage-strip'
+export { CodeDemo } from './sections/code-demo'
 export { CTA } from './sections/cta'
-export { DeveloperAccess } from './sections/developer-access'
+export { FAQ } from './sections/faq'
 export { Features } from './sections/features'
 export { Hero } from './sections/hero'
 export { HowItWorks } from './sections/how-it-works'
-export { IntegrationToolGrid } from './integration-tool-grid'
-export { SectionProgressDots } from './section-progress-dots'
-export { Stats } from './sections/stats'
+export { Providers } from './sections/providers'

@@ -48,6 +48,7 @@ import { LOG_TYPE_ALL_VALUE, LOG_TYPE_FILTERS } from '../constants'
 import { buildSearchParams } from '../lib/filter'
 import { getDefaultTimeRange } from '../lib/utils'
 import type { CommonLogFilters } from '../types'
+import { CommonLogsFilterChips } from './common-logs-filter-chips'
 import { CommonLogsStats } from './common-logs-stats'
 import { CompactDateTimeRangePicker } from './compact-date-time-range-picker'
 import { ExportLogsDialog } from './dialogs/export-logs-dialog'
@@ -489,6 +490,7 @@ export function CommonLogsFilterBar<TData>(
       table={props.table}
       compactMobile
       stats={statsBar}
+      chips={<CommonLogsFilterChips />}
       actionStart={sensitiveToggle}
       actionEnd={<ExportLogsDialog />}
       primaryFilters={

@@ -48,6 +48,7 @@ import { parseLogOther } from '../lib/format'
 import { fetchLogsByCategory } from '../lib/utils'
 import type { LogCategory } from '../types'
 import { CommonLogsFilterBar } from './common-logs-filter-bar'
+import { LOG_ROW_ACCENT, LOG_TABLE_CLASS_NAME } from './log-view-styles'
 import { TaskLogsFilterBar } from './task-logs-filter-bar'
 import { UsageLogsMobileList } from './usage-logs-mobile-card'
 import { useLogsViewScope, type LogsViewAccess } from './usage-logs-provider'
@@ -55,13 +56,13 @@ import { useLogsViewScope, type LogsViewAccess } from './usage-logs-provider'
 const route = getRouteApi('/_authenticated/usage-logs/$section')
 
 const logTypeRowTint: Record<number, string> = {
-  [LOG_TYPE_ENUM.ERROR]: 'bg-rose-50/40 dark:bg-rose-950/20',
-  [LOG_TYPE_ENUM.REFUND]: 'bg-blue-50/30 dark:bg-blue-950/15',
+  [LOG_TYPE_ENUM.ERROR]: LOG_ROW_ACCENT.danger,
+  [LOG_TYPE_ENUM.REFUND]: LOG_ROW_ACCENT.info,
 }
 
 // Warning tint for logs where a quota conversion saturated (admin-only marker).
 // Takes precedence over the per-type tint since it flags a billing anomaly.
-const quotaSaturationRowTint = 'bg-amber-50/60 dark:bg-amber-950/25'
+const quotaSaturationRowTint = LOG_ROW_ACCENT.warning
 
 function getColumnVisibilityStorageKey(
   logCategory: LogCategory,
@@ -240,9 +241,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       )}
       skeletonKeyPrefix='usage-log-skeleton'
       applyHeaderSize
-      tableClassName={cn(
-        '[&_[data-slot=table]]:text-[13px] [&_[data-slot=table]_td]:text-[13px] [&_[data-slot=table]_td_*]:text-[13px] [&_[data-slot=table]_th]:text-[13px] [&_[data-slot=table]_th_*]:text-[13px]'
-      )}
+      tableClassName={LOG_TABLE_CLASS_NAME}
       mobile={
         <UsageLogsMobileList
           table={table}

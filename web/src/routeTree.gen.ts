@@ -30,7 +30,6 @@ import { Route as AuthenticatedChat2linkRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSystemSettingsRouteRouteImport } from './routes/_authenticated/system-settings/route'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
-import { Route as ImageGenerationIndexRouteImport } from './routes/image-generation/index'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
 import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as RankingsIndexRouteImport } from './routes/rankings/index'
@@ -181,11 +180,6 @@ const AboutIndexRoute = AboutIndexRouteImport.update({
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ImageGenerationIndexRoute = ImageGenerationIndexRouteImport.update({
-  id: '/image-generation/',
-  path: '/image-generation/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthProviderRoute = OauthProviderRouteImport.update({
@@ -483,7 +477,6 @@ export interface FileRoutesByFullPath {
   '/sso/authorize': typeof SsoAuthorizeRoute
   '/about/': typeof AboutIndexRoute
   '/docs/': typeof DocsIndexRoute
-  '/image-generation/': typeof ImageGenerationIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
@@ -551,7 +544,6 @@ export interface FileRoutesByTo {
   '/sso/authorize': typeof SsoAuthorizeRoute
   '/about': typeof AboutIndexRoute
   '/docs': typeof DocsIndexRoute
-  '/image-generation': typeof ImageGenerationIndexRoute
   '/pricing': typeof PricingIndexRoute
   '/rankings': typeof RankingsIndexRoute
   '/setup': typeof SetupIndexRoute
@@ -623,7 +615,6 @@ export interface FileRoutesById {
   '/sso/authorize': typeof SsoAuthorizeRoute
   '/about/': typeof AboutIndexRoute
   '/docs/': typeof DocsIndexRoute
-  '/image-generation/': typeof ImageGenerationIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
@@ -694,7 +685,6 @@ export interface FileRouteTypes {
     | '/sso/authorize'
     | '/about/'
     | '/docs/'
-    | '/image-generation/'
     | '/pricing/'
     | '/rankings/'
     | '/setup/'
@@ -762,7 +752,6 @@ export interface FileRouteTypes {
     | '/sso/authorize'
     | '/about'
     | '/docs'
-    | '/image-generation'
     | '/pricing'
     | '/rankings'
     | '/setup'
@@ -833,7 +822,6 @@ export interface FileRouteTypes {
     | '/sso/authorize'
     | '/about/'
     | '/docs/'
-    | '/image-generation/'
     | '/pricing/'
     | '/rankings/'
     | '/setup/'
@@ -896,7 +884,6 @@ export interface RootRouteChildren {
   SsoAuthorizeRoute: typeof SsoAuthorizeRoute
   AboutIndexRoute: typeof AboutIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
-  ImageGenerationIndexRoute: typeof ImageGenerationIndexRoute
   PricingIndexRoute: typeof PricingIndexRoute
   RankingsIndexRoute: typeof RankingsIndexRoute
   SetupIndexRoute: typeof SetupIndexRoute
@@ -1050,13 +1037,6 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs/'
       preLoaderRoute: typeof DocsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/image-generation/': {
-      id: '/image-generation/'
-      path: '/image-generation'
-      fullPath: '/image-generation/'
-      preLoaderRoute: typeof ImageGenerationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth/$provider': {
@@ -1558,7 +1538,6 @@ const rootRouteChildren: RootRouteChildren = {
   SsoAuthorizeRoute: SsoAuthorizeRoute,
   AboutIndexRoute: AboutIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
-  ImageGenerationIndexRoute: ImageGenerationIndexRoute,
   PricingIndexRoute: PricingIndexRoute,
   RankingsIndexRoute: RankingsIndexRoute,
   SetupIndexRoute: SetupIndexRoute,

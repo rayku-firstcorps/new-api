@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next'
 import { useChartTheme } from '@/lib/use-chart-theme'
 import { VCHART_OPTION } from '@/lib/vchart'
 
+import { useChartPalette } from '../hooks/use-chart-palette'
 import { formatShare, formatTokens } from '../lib/format'
 import type { RankingPeriod, VendorRanking, VendorShareSeries } from '../types'
 import { VendorLink } from './entity-links'
@@ -35,53 +36,22 @@ const PERIOD_DESCRIPTIONS: Record<RankingPeriod, string> = {
   year: 'Token share by model author across the past year',
 }
 
-/** Stable colour palette for vendors, used in both the share chart and the
- * legend dots. Falls back to a neutral palette for unknown vendors so that
- * future additions still render. */
-const VENDOR_COLOURS: Record<string, string> = {
-  OpenAI: '#10a37f',
-  Anthropic: '#d97757',
-  Google: '#4285f4',
-  DeepSeek: '#7c5cff',
-  Alibaba: '#ff9900',
-  xAI: '#1f2937',
-  Meta: '#1877f2',
-  Moonshot: '#ec4899',
-  Zhipu: '#06b6d4',
-  Mistral: '#ff7000',
-  ByteDance: '#3b82f6',
-  Tencent: '#22c55e',
-  MiniMax: '#a855f7',
-  Cohere: '#fb923c',
-  Baidu: '#ef4444',
-  Others: '#94a3b8',
-}
-
-const FALLBACK_PALETTE = [
-  '#0ea5e9',
-  '#22c55e',
-  '#a855f7',
-  '#f97316',
-  '#14b8a6',
-  '#eab308',
-  '#ec4899',
-  '#84cc16',
-  '#6366f1',
-  '#10b981',
-  '#f43f5e',
-  '#0891b2',
-  '#94a3b8',
-]
-
-function buildVendorColourMap(names: string[]): Record<string, string> {
+/** Stable colour assignment for vendors, used in both the share chart and the
+ * legend dots. Vendors take the theme's chart tokens in order ("Others" uses
+ * the neutral token), so the colours follow the active light/dark theme. */
+function buildVendorColourMap(
+  names: string[],
+  palette: string[],
+  neutral: string | undefined
+): Record<string, string> {
   const result: Record<string, string> = {}
-  let fallbackIdx = 0
+  let paletteIdx = 0
   for (const name of names) {
-    if (VENDOR_COLOURS[name]) {
-      result[name] = VENDOR_COLOURS[name]
-    } else {
-      result[name] = FALLBACK_PALETTE[fallbackIdx % FALLBACK_PALETTE.length]
-      fallbackIdx += 1
+    if (name === 'Others' && neutral) {
+      result[name] = neutral
+    } else if (palette.length > 0) {
+      result[name] = palette[paletteIdx % palette.length]
+      paletteIdx += 1
     }
   }
   return result
@@ -103,18 +73,21 @@ type MarketShareSectionProps = {
 export function MarketShareSection(props: MarketShareSectionProps) {
   const { t } = useTranslation()
   const { resolvedTheme, themeReady } = useChartTheme()
-  const chartTextColor =
-    resolvedTheme === 'dark'
-      ? 'rgba(255, 255, 255, 0.68)'
-      : 'rgba(15, 23, 42, 0.58)'
-  const chartGridColor =
-    resolvedTheme === 'dark'
-      ? 'rgba(255, 255, 255, 0.12)'
-      : 'rgba(15, 23, 42, 0.12)'
+  const {
+    series: paletteColors,
+    textColor: chartTextColor,
+    gridColor: chartGridColor,
+    neutralColor,
+  } = useChartPalette()
 
   const colourMap = useMemo(
-    () => buildVendorColourMap(props.history.vendors.map((v) => v.name)),
-    [props.history]
+    () =>
+      buildVendorColourMap(
+        props.history.vendors.map((v) => v.name),
+        paletteColors,
+        neutralColor
+      ),
+    [neutralColor, paletteColors, props.history]
   )
 
   const orderedPoints = useMemo(() => {
@@ -286,7 +259,8 @@ function VendorList(props: {
             aria-hidden
             className='size-2.5 shrink-0 rounded-full'
             style={{
-              backgroundColor: props.colourMap[vendor.vendor] ?? '#94a3b8',
+              backgroundColor:
+                props.colourMap[vendor.vendor] ?? 'var(--neutral)',
             }}
           />
           <VendorLink

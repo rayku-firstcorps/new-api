@@ -28,6 +28,8 @@ import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
 
+import { BrandLogoImage } from './brand-mark'
+
 type SystemBrandProps = {
   defaultName?: string
   defaultVersion?: string
@@ -61,12 +63,12 @@ export function SystemBrand(props: SystemBrandProps) {
         to='/'
         aria-label={t('Go to home')}
         className={cn(
-          'text-foreground inline-flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium transition-colors outline-none select-none',
-          'hover:bg-accent focus-visible:ring-ring/40 focus-visible:ring-2'
+          'text-foreground inline-flex h-8 min-w-0 items-center gap-2 rounded-md px-1.5 text-[15px] font-medium tracking-[-0.01em] transition-colors outline-none select-none',
+          'hover:bg-foreground/5 focus-visible:ring-ring focus-visible:ring-2'
         )}
       >
         <div className='flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-md'>
-          <img
+          <BrandLogoImage
             src={logo}
             alt={t('Logo')}
             className='size-full rounded-md object-cover'
@@ -86,7 +88,7 @@ export function SystemBrand(props: SystemBrandProps) {
           render={<div />}
         >
           <div className='flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg'>
-            <img
+            <BrandLogoImage
               src={logo}
               alt={t('Logo')}
               className='size-full rounded-lg object-cover'

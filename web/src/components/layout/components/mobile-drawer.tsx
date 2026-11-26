@@ -17,81 +17,52 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { X, User, Wallet, LogOut, ShieldCheck } from 'lucide-react'
-import { AnimatePresence, motion, type Variants } from 'motion/react'
+import { LogOut, ShieldCheck, User, Wallet, X } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { SignOutDialog } from '@/components/sign-out-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import useDialogState from '@/hooks/use-dialog'
 import { useIsSidebarModuleVisible } from '@/hooks/use-sidebar-config'
 import { useUserDisplay } from '@/hooks/use-user-display'
+import { cn } from '@/lib/utils'
 import type { AuthUser } from '@/stores/auth-store'
 
-import { MOBILE_DRAWER_ANIMATION, MOBILE_DRAWER_CONFIG } from '../constants'
+import { FOCUS_RING, isNavLinkActive } from '../lib/public-chrome'
 import type { TopNavLink } from '../types'
+import { PublicBrandLink } from './header-logo'
 
-/**
- * Brand logo component with skeleton loading
- */
-interface BrandLogoProps {
-  homeUrl: string
-  displayLogo: React.ReactNode
-  displaySiteName: string
-  loading: boolean
-  logoLoaded: boolean
-  onClick?: () => void
-}
+const PROFILE_ROW_CLASS = cn(
+  'text-muted-foreground hover:text-foreground border-border flex items-center gap-2.5 border-b py-3 text-sm transition-colors duration-150',
+  FOCUS_RING
+)
 
-function BrandLogo({
-  homeUrl,
-  displayLogo,
-  displaySiteName,
-  loading,
-  logoLoaded,
-  onClick,
-}: BrandLogoProps) {
-  return (
-    <Link
-      to={homeUrl}
-      className='flex items-center gap-2 text-xl font-bold'
-      onClick={onClick}
-    >
-      <div className='relative h-6 w-6'>
-        {loading || !logoLoaded ? (
-          <Skeleton className='absolute inset-0 rounded-full' />
-        ) : null}
-        {displayLogo}
-      </div>
-      {loading ? <Skeleton className='h-5 w-20' /> : displaySiteName}
-    </Link>
-  )
-}
-
-/**
- * Mobile user profile section with navigation links
- */
-interface MobileUserProfileProps {
+/** Signed-in block of the drawer: who you are, profile / security / wallet, sign out. */
+function MobileUserProfile(props: {
   user: AuthUser | null
-  onNavigate?: () => void
-}
-
-function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
+  onNavigate: () => void
+}) {
   const { t } = useTranslation()
   const [signOutOpen, setSignOutOpen] = useDialogState()
-  const { displayName, initials, roleLabel } = useUserDisplay(user)
+  const { displayName, initials, roleLabel } = useUserDisplay(props.user)
   const isSecurityVisible = useIsSidebarModuleVisible('/security')
 
-  if (!user) return null
+  if (!props.user) return null
 
   return (
     <>
-      {/* User info section - compact style matching navigation */}
       <div className='flex flex-col text-sm'>
-        {/* User header - simplified */}
-        <div className='border-border flex items-center gap-2.5 border-b p-2.5'>
+        <div className='border-border flex items-center gap-2.5 border-b py-3'>
           <Avatar className='size-9'>
             <AvatarImage src='/avatars/01.png' alt={`@${displayName}`} />
             <AvatarFallback className='text-xs'>{initials}</AvatarFallback>
@@ -102,11 +73,11 @@ function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
             </p>
             <div className='flex items-center gap-1.5'>
               <span className='text-muted-foreground text-xs'>{roleLabel}</span>
-              {user.group && (
+              {props.user.group && (
                 <>
                   <span className='text-muted-foreground text-xs'>·</span>
                   <span className='text-muted-foreground text-xs'>
-                    {String(user.group)}
+                    {String(props.user.group)}
                   </span>
                 </>
               )}
@@ -114,43 +85,41 @@ function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
           </div>
         </div>
 
-        {/* Navigation links - same style as top nav */}
         <Link
           to='/profile'
-          onClick={onNavigate}
-          className='text-primary/60 hover:text-primary/80 border-border flex items-center gap-2.5 border-b p-2.5 transition-colors'
+          onClick={props.onNavigate}
+          className={PROFILE_ROW_CLASS}
         >
-          <User className='size-4' />
+          <User className='size-4' aria-hidden='true' />
           {t('Profile')}
         </Link>
 
         {isSecurityVisible && (
           <Link
             to='/security'
-            onClick={onNavigate}
-            className='text-primary/60 hover:text-primary/80 border-border flex items-center gap-2.5 border-b p-2.5 transition-colors'
+            onClick={props.onNavigate}
+            className={PROFILE_ROW_CLASS}
           >
-            <ShieldCheck className='size-4' />
+            <ShieldCheck className='size-4' aria-hidden='true' />
             {t('Security & Access')}
           </Link>
         )}
 
         <Link
           to='/wallet'
-          onClick={onNavigate}
-          className='text-primary/60 hover:text-primary/80 border-border flex items-center gap-2.5 border-b p-2.5 transition-colors'
+          onClick={props.onNavigate}
+          className={PROFILE_ROW_CLASS}
         >
-          <Wallet className='size-4' />
+          <Wallet className='size-4' aria-hidden='true' />
           {t('Wallet')}
         </Link>
 
-        {/* Sign out - consistent style */}
         <Button
           variant='ghost'
           onClick={() => setSignOutOpen(true)}
-          className='text-destructive hover:text-destructive/80 h-auto w-full justify-start gap-2.5 p-2.5 hover:bg-transparent'
+          className='text-destructive hover:text-destructive/80 mt-1 h-auto w-full justify-start gap-2.5 py-3 hover:bg-transparent'
         >
-          <LogOut className='size-4' />
+          <LogOut className='size-4' aria-hidden='true' />
           {t('Sign out')}
         </Button>
       </div>
@@ -160,150 +129,197 @@ function MobileUserProfile({ user, onNavigate }: MobileUserProfileProps) {
   )
 }
 
-/**
- * Mobile sign in button for unauthenticated users
- */
-interface MobileSignInButtonProps {
-  onNavigate?: () => void
-}
-
-function MobileSignInButton({ onNavigate }: MobileSignInButtonProps) {
+/** Sign in / Sign up (or Go to Dashboard plus the account links) at the bottom of the drawer. */
+function MobileAuthActions(props: {
+  user: AuthUser | null
+  showRegister: boolean
+  onNavigate: () => void
+}) {
   const { t } = useTranslation()
+
+  if (props.user) {
+    return (
+      <>
+        <Button
+          className='h-11 w-full text-[15px]'
+          render={<Link to='/dashboard' onClick={props.onNavigate} />}
+        >
+          {t('Go to Dashboard')}
+        </Button>
+        <div className='mt-6'>
+          <MobileUserProfile user={props.user} onNavigate={props.onNavigate} />
+        </div>
+      </>
+    )
+  }
+
   return (
-    <Button
-      variant='secondary'
-      size='sm'
-      className='h-10 w-full'
-      render={<Link to='/sign-in' onClick={onNavigate} />}
-    >
-      {t('Sign in')}
-    </Button>
+    <div className='flex flex-col gap-3'>
+      {props.showRegister && (
+        <Button
+          className='h-11 w-full text-[15px]'
+          render={<Link to='/sign-up' onClick={props.onNavigate} />}
+        >
+          {t('Sign up')}
+        </Button>
+      )}
+      <Button
+        variant={props.showRegister ? 'outline' : 'default'}
+        className='h-11 w-full text-[15px]'
+        render={<Link to='/sign-in' onClick={props.onNavigate} />}
+      >
+        {t('Sign in')}
+      </Button>
+    </div>
   )
 }
 
-/**
- * Mobile drawer component props
- */
 export interface MobileDrawerProps {
   isOpen: boolean
   onClose: () => void
   homeUrl: string
-  displayLogo: React.ReactNode
+  /** Configured logo url (the KuCode mark is drawn inline when it matches). */
+  logoSrc: string
+  /** Replaces the configured logo mark. */
+  customLogo?: ReactNode
   displaySiteName: string
   loading: boolean
   logoLoaded: boolean
   mobileLinksList: TopNavLink[]
   showAuthButtons: boolean
+  /** Show the Sign up button next to Sign in (registration is available). */
+  showRegister?: boolean
+  showLanguageSwitcher?: boolean
   user: AuthUser | null
+  pathname?: string
+  /** Same handler as the desktop links: disabled links and the requireAuth prompt. */
+  onLinkClick?: (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    link: TopNavLink
+  ) => void
 }
 
 /**
- * Mobile drawer component with bottom slide-up animation
- * Displays navigation links and user profile section
+ * KuCode mobile menu: a full-screen dialog (focus trap, Esc, scroll lock and
+ * focus return come from the shared Sheet) with the brand and a close button
+ * on top, large display-font links, and the auth actions at the bottom.
  */
-export function MobileDrawer({
-  isOpen,
-  onClose,
-  homeUrl,
-  displayLogo,
-  displaySiteName,
-  loading,
-  logoLoaded,
-  mobileLinksList,
-  showAuthButtons,
-  user,
-}: MobileDrawerProps) {
+export function MobileDrawer(props: MobileDrawerProps) {
   const { t } = useTranslation()
+  const pathname = props.pathname ?? ''
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Overlay */}
-          <motion.div
-            className={MOBILE_DRAWER_CONFIG.overlayClassName}
-            initial='hidden'
-            animate='visible'
-            exit='exit'
-            variants={MOBILE_DRAWER_ANIMATION.overlay as Variants}
-            transition={{
-              duration: MOBILE_DRAWER_CONFIG.overlayTransitionDuration,
-            }}
-            onClick={onClose}
+    <Sheet
+      open={props.isOpen}
+      onOpenChange={(open) => {
+        if (!open) props.onClose()
+      }}
+    >
+      <SheetContent
+        side='top'
+        showCloseButton={false}
+        className='inset-0 h-dvh gap-0 overflow-y-auto border-b-0 motion-reduce:transition-none xl:hidden'
+      >
+        <SheetTitle className='sr-only'>{props.displaySiteName}</SheetTitle>
+
+        <div className='flex h-[72px] shrink-0 items-center justify-between px-6'>
+          <PublicBrandLink
+            to={props.homeUrl}
+            name={props.displaySiteName}
+            src={props.logoSrc}
+            customLogo={props.customLogo}
+            loading={props.loading}
+            logoLoaded={props.logoLoaded}
+            onClick={props.onClose}
           />
-
-          {/* Drawer Content */}
-          <motion.div
-            className={MOBILE_DRAWER_CONFIG.drawerClassName}
-            initial='hidden'
-            animate='visible'
-            exit='exit'
-            variants={MOBILE_DRAWER_ANIMATION.drawer as Variants}
+          <SheetClose
+            aria-label={t('Close menu')}
+            className={cn(
+              'text-foreground hover:bg-foreground/5 active:bg-foreground/10 -me-2 inline-flex size-10 items-center justify-center rounded-full transition-colors duration-150',
+              FOCUS_RING
+            )}
           >
-            <div className='flex flex-col gap-4'>
-              {/* Header with logo and close button */}
-              <div className='flex items-center justify-between'>
-                <BrandLogo
-                  homeUrl={homeUrl}
-                  displayLogo={displayLogo}
-                  displaySiteName={displaySiteName}
-                  loading={loading}
-                  logoLoaded={logoLoaded}
-                  onClick={onClose}
-                />
-                <Button
-                  variant='ghost'
-                  size='icon-sm'
-                  onClick={onClose}
-                  className='hover:text-primary cursor-pointer'
-                  aria-label={t('Close menu')}
-                >
-                  <X className='size-5' />
-                </Button>
-              </div>
+            <X className='size-5' aria-hidden='true' />
+          </SheetClose>
+        </div>
 
-              {/* Navigation links */}
-              <motion.div
-                className='border-border mb-4 flex flex-col rounded-md border text-sm'
-                variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-              >
-                {loading ? (
-                  <div className='flex flex-col gap-1 p-2'>
-                    {Array.from({ length: 4 }, (_, i) => (
-                      <Skeleton key={i} className='h-8 w-full' />
-                    ))}
-                  </div>
-                ) : (
-                  <AnimatePresence>
-                    {mobileLinksList.map((link) => (
-                      <motion.div
-                        key={link.href}
-                        className='border-border border-b p-2.5 last:border-b-0'
-                        variants={MOBILE_DRAWER_ANIMATION.menuItem as Variants}
-                      >
-                        <Link
-                          to={link.href}
-                          className='text-primary/60 hover:text-primary/80 transition-colors'
-                          onClick={onClose}
-                        >
-                          {link.title}
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                )}
-              </motion.div>
-
-              {/* User profile section */}
-              {showAuthButtons &&
-                (user ? (
-                  <MobileUserProfile user={user} onNavigate={onClose} />
-                ) : (
-                  <MobileSignInButton onNavigate={onClose} />
-                ))}
+        <nav aria-label={t('Main navigation')} className='px-6 pt-6'>
+          {props.loading ? (
+            <div className='flex flex-col gap-3'>
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={i} className='h-10 w-full' />
+              ))}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          ) : (
+            <ul className='border-border border-t'>
+              {props.mobileLinksList.map((link) => {
+                const isActive = isNavLinkActive(pathname, link.href)
+                const label = t(link.title)
+                const linkClass = cn(
+                  'font-display block rounded-sm py-4 text-2xl font-medium tracking-[-0.02em] transition-colors duration-150',
+                  isActive
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                  link.disabled && 'pointer-events-none opacity-50',
+                  FOCUS_RING
+                )
+                const onClick = (
+                  event: React.MouseEvent<HTMLAnchorElement>
+                ) => {
+                  if (props.onLinkClick) props.onLinkClick(event, link)
+                  else props.onClose()
+                }
+                return (
+                  <li
+                    key={`${link.title}:${link.href}`}
+                    className='border-border border-b'
+                  >
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        aria-disabled={link.disabled}
+                        tabIndex={link.disabled ? -1 : undefined}
+                        onClick={onClick}
+                        className={linkClass}
+                      >
+                        {label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        disabled={link.disabled}
+                        aria-current={isActive ? 'page' : undefined}
+                        onClick={onClick}
+                        className={linkClass}
+                      >
+                        {label}
+                      </Link>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </nav>
+
+        <div className='px-6 pt-8 pb-10'>
+          {props.showAuthButtons && (
+            <MobileAuthActions
+              user={props.user}
+              showRegister={props.showRegister ?? false}
+              onNavigate={props.onClose}
+            />
+          )}
+          {props.showLanguageSwitcher && (
+            <div className='text-muted-foreground border-border mt-6 flex items-center justify-between border-t pt-4 text-sm'>
+              <span>{t('Change language')}</span>
+              <LanguageSwitcher className='size-10 rounded-full' />
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }

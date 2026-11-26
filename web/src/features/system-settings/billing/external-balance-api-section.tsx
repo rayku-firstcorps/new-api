@@ -161,7 +161,7 @@ export function ExternalBalanceApiSection(props: Props) {
         'Configure the independent service key used for external quota queries and deductions'
       )}
     >
-      <div className='rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950 dark:text-amber-100'>
+      <div className='border-warning/30 bg-warning/10 text-warning dark:border-warning/30 dark:bg-warning/15 rounded-md border p-4 text-sm'>
         {t(
           'This key is not echoed back by the server. Leave the field empty to keep the existing saved key.'
         )}

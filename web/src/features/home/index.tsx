@@ -27,10 +27,17 @@ import { PromotionLandingDialog } from '@/features/promotions/components/promoti
 import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { Hero, IntegrationToolGrid } from './components'
-import { CTA } from './components/sections/cta'
-import { HowItWorks } from './components/sections/how-it-works'
+import {
+  CodeDemo,
+  CTA,
+  FAQ,
+  Features,
+  Hero,
+  HowItWorks,
+  Providers,
+} from './components'
 import { useHomePageContent } from './hooks'
+import { useHomeCatalog } from './hooks/use-home-catalog'
 
 import '@/styles/home.css'
 
@@ -41,6 +48,7 @@ export function Home() {
   const { auth } = useAuthStore()
   const isAuthenticated = !!auth.user
   const { content, isLoaded, isUrl } = useHomePageContent()
+  const catalog = useHomeCatalog(isAuthenticated, isLoaded && !content)
 
   const syncIframePreferences = useCallback(() => {
     try {
@@ -86,14 +94,17 @@ export function Home() {
             causing inconsistent behavior. This token only permits user-activated
             top-level navigation and does NOT grant same-origin access.
           */}
-          <iframe
-            ref={iframeRef}
-            src={content}
-            className='h-screen w-full border-none'
-            title={t('Custom Home Page')}
-            sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation'
-            onLoad={syncIframePreferences}
-          />
+          {/* pt-[72px]: clears the fixed public header (h-[72px]). */}
+          <main className='pt-[72px]'>
+            <iframe
+              ref={iframeRef}
+              src={content}
+              className='block h-[calc(100svh-72px)] w-full border-none'
+              title={t('Custom Home Page')}
+              sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts allow-top-navigation-by-user-activation'
+              onLoad={syncIframePreferences}
+            />
+          </main>
         </PublicLayout>
       )
     }
@@ -104,12 +115,14 @@ export function Home() {
       return (
         <PublicLayout showMainContainer={false}>
           <PromotionLandingDialog />
-          <RichContent
-            mode='html'
-            htmlVariant='isolated'
-            content={content}
-            className='custom-home-content'
-          />
+          <main className='pt-[calc(72px+2rem)] lg:pt-[calc(72px+2.5rem)]'>
+            <RichContent
+              mode='html'
+              htmlVariant='isolated'
+              content={content}
+              className='custom-home-content'
+            />
+          </main>
         </PublicLayout>
       )
     }
@@ -117,7 +130,7 @@ export function Home() {
     return (
       <PublicLayout showMainContainer={false}>
         <PromotionLandingDialog />
-        <main className='overflow-x-hidden'>
+        <main className='overflow-x-hidden pt-[72px]'>
           <div className='container mx-auto py-8'>
             <RichContent
               mode='markdown'
@@ -135,9 +148,12 @@ export function Home() {
       <PromotionLandingDialog />
       <main className='w-full max-w-[100vw] overflow-x-hidden pt-16'>
         <div className='home-landing'>
-          <Hero isAuthenticated={isAuthenticated} />
-          <IntegrationToolGrid />
-          <HowItWorks />
+          <Hero isAuthenticated={isAuthenticated} catalog={catalog} />
+          <Providers catalog={catalog} />
+          <Features />
+          <HowItWorks catalog={catalog} />
+          <CodeDemo />
+          <FAQ />
           <CTA isAuthenticated={isAuthenticated} />
         </div>
         <Footer />

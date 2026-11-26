@@ -24,7 +24,6 @@ import { ChatSettingsSection } from './chat-settings-section'
 import { DashboardSection } from './dashboard-section'
 import { DrawingSettingsSection } from './drawing-settings-section'
 import { FAQSection } from './faq-section'
-import { ImageGenTemplatesSection } from './image-gen-templates/image-gen-templates-section'
 import { OfficialSocialLinksSection } from './official-social-links-section'
 import { UptimeKumaSection } from './uptime-kuma-section'
 
@@ -126,11 +125,6 @@ const CONTENT_SECTIONS = [
         }}
       />
     ),
-  },
-  {
-    id: 'image-gen-templates',
-    titleKey: 'Image Gen Templates',
-    build: (_settings: ContentSettings) => <ImageGenTemplatesSection />,
   },
 ] as const
 

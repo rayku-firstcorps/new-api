@@ -2,7 +2,6 @@ const INDEXABLE_PATHS = new Set([
   '/',
   '/about',
   '/docs',
-  '/image-generation',
   '/pricing',
   '/privacy-policy',
   '/rankings',

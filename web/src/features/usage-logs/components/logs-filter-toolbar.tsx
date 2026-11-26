@@ -49,6 +49,7 @@ interface LogsFilterToolbarProps<TData> {
   mobileFilters?: ReactNode
   mobileFilterCount?: number
   stats?: ReactNode
+  chips?: ReactNode
   actionStart?: ReactNode
   actionEnd?: ReactNode
   hasActiveFilters: boolean
@@ -244,10 +245,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
 
   return (
     <div
-      className={cn(
-        'bg-card/50 rounded-lg border p-2.5 sm:p-3',
-        props.className
-      )}
+      className={cn('bg-card rounded-xl border p-3 sm:p-4', props.className)}
     >
       <div className='flex flex-wrap items-start gap-2'>
         <div className='grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]'>
@@ -266,7 +264,9 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
         </div>
       )}
 
-      <div className='mt-2 flex flex-wrap items-center gap-2'>
+      {props.chips}
+
+      <div className='mt-3 flex flex-wrap items-center gap-2'>
         {props.stats}
         <div className='ms-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-2'>
           {props.actionStart}

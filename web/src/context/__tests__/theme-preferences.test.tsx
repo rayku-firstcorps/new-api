@@ -20,15 +20,10 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  ThemeCustomizationProvider,
-  useThemeCustomization,
-} from '@/context/theme-customization-provider'
 import { ThemeProvider, useTheme } from '@/context/theme-provider'
 import { initializeFrontendCache } from '@/lib/frontend-cache'
 
-const savedPreferences = {
-  'newapi:theme:v1:mode': 'dark',
+const legacyPreferences = {
   'newapi:theme:v1:preset': 'rose-garden',
   'newapi:theme:v1:font': 'serif',
   'newapi:theme:v1:radius': 'lg',
@@ -36,48 +31,31 @@ const savedPreferences = {
   'newapi:theme:v1:content-layout': 'centered',
 }
 
+function mockSystemDarkMode(dark: boolean) {
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    (query: string) =>
+      ({
+        matches: dark && query === '(prefers-color-scheme: dark)',
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }) as unknown as MediaQueryList
+  )
+}
+
 function ThemeControls() {
   const theme = useTheme()
-  const customization = useThemeCustomization()
 
   return (
     <>
       <output aria-label='Theme mode'>{theme.theme}</output>
-      <button type='button' onClick={() => customization.setFont('sans')}>
-        Sans font
+      <button type='button' onClick={() => theme.setTheme('light')}>
+        Light
       </button>
-      <button type='button' onClick={() => customization.setFont('default')}>
-        Auto font
+      <button type='button' onClick={() => theme.setTheme('system')}>
+        System
       </button>
-      <button
-        type='button'
-        onClick={() => customization.setPreset('anthropic')}
-      >
-        Anthropic preset
-      </button>
-      <button type='button' onClick={() => customization.setPreset('default')}>
-        Default preset
-      </button>
-      <button
-        type='button'
-        onClick={() => {
-          theme.setTheme('dark')
-          customization.setPreset('rose-garden')
-          customization.setFont('serif')
-          customization.setRadius('lg')
-          customization.setScale('sm')
-          customization.setContentLayout('centered')
-        }}
-      >
-        Customize
-      </button>
-      <button
-        type='button'
-        onClick={() => {
-          theme.resetTheme()
-          customization.resetCustomization()
-        }}
-      >
+      <button type='button' onClick={() => theme.resetTheme()}>
         Reset
       </button>
     </>
@@ -87,81 +65,97 @@ function ThemeControls() {
 function ThemeFixture() {
   return (
     <ThemeProvider>
-      <ThemeCustomizationProvider>
-        <ThemeControls />
-      </ThemeCustomizationProvider>
+      <ThemeControls />
     </ThemeProvider>
   )
 }
 
+function clearCookies() {
+  for (const cookie of document.cookie.split(';')) {
+    const name = cookie.trim().split('=')[0]
+    document.cookie = `${name}=; path=/; max-age=0`
+  }
+}
+
 beforeEach(() => {
   localStorage.clear()
+  mockSystemDarkMode(false)
+  document.head.insertAdjacentHTML(
+    'beforeend',
+    '<meta name="theme-color" content="#0e0e0e" />'
+  )
 })
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   localStorage.clear()
-  for (const cookie of document.cookie.split(';')) {
-    const name = cookie.trim().split('=')[0]
-    document.cookie = `${name}=; path=/; max-age=0`
-  }
+  clearCookies()
   document.documentElement.classList.remove('light', 'dark')
+  document.head.querySelector('meta[name="theme-color"]')?.remove()
   for (const name of document.body.getAttributeNames()) {
     if (name.startsWith('data-theme-')) document.body.removeAttribute(name)
   }
 })
 
-describe('theme preference persistence', () => {
-  it('starts with defaults when only shared legacy theme cookies exist', () => {
-    document.cookie = 'theme_preset=ocean-breeze; path=/'
-    document.cookie = 'vite-ui-theme=dark; path=/'
-    document.cookie = 'theme_font=serif; path=/'
-    document.cookie = 'theme_radius=xl; path=/'
-    document.cookie = 'theme_scale=lg; path=/'
-    document.cookie = 'theme_content_layout=centered; path=/'
-
-    render(<ThemeFixture />)
-
-    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('system')
-    expect(document.documentElement).toHaveClass('light')
-    expect(document.body).not.toHaveAttribute('data-theme-preset')
-    expect(document.body).toHaveAttribute('data-theme-font', 'system')
-    expect(document.body).not.toHaveAttribute('data-theme-radius')
-    expect(document.body).not.toHaveAttribute('data-theme-scale')
-    expect(document.body).toHaveAttribute('data-theme-content-layout', 'full')
-  })
-
-  it('restores all customized preferences after remounting without writing cookies', async () => {
-    const user = userEvent.setup()
-    const first = render(<ThemeFixture />)
-
-    await user.click(screen.getByRole('button', { name: 'Customize' }))
-    first.unmount()
+describe('theme mode preference', () => {
+  it('defaults first-time visitors to dark even when the system prefers light', () => {
     render(<ThemeFixture />)
 
     expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
     expect(document.documentElement).toHaveClass('dark')
-    expect(document.body).toHaveAttribute('data-theme-preset', 'rose-garden')
-    expect(document.body).toHaveAttribute('data-theme-font', 'serif')
-    expect(document.body).toHaveAttribute('data-theme-radius', 'lg')
-    expect(document.body).toHaveAttribute('data-theme-scale', 'sm')
-    expect(document.body).toHaveAttribute(
-      'data-theme-content-layout',
-      'centered'
-    )
-    for (const [key, value] of Object.entries(savedPreferences)) {
-      expect(localStorage.getItem(key)).toBe(value)
-    }
-    expect(document.cookie).toBe('')
+    expect(document.documentElement).not.toHaveClass('light')
   })
 
-  it('keeps a reset after remounting even when the legacy ocean cookie remains', async () => {
-    for (const [key, value] of Object.entries(savedPreferences)) {
-      localStorage.setItem(key, value)
-    }
-    localStorage.setItem('unrelated-preference', 'keep')
+  it('ignores shared legacy theme cookies', () => {
+    document.cookie = 'vite-ui-theme=light; path=/'
     document.cookie = 'theme_preset=ocean-breeze; path=/'
+
+    render(<ThemeFixture />)
+
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
+    expect(document.documentElement).toHaveClass('dark')
+  })
+
+  it('keeps a saved light choice after remounting', async () => {
+    const user = userEvent.setup()
+    const first = render(<ThemeFixture />)
+
+    await user.click(screen.getByRole('button', { name: 'Light' }))
+    first.unmount()
+    render(<ThemeFixture />)
+
+    expect(localStorage.getItem('newapi:theme:v1:mode')).toBe('light')
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('light')
+    expect(document.documentElement).toHaveClass('light')
+  })
+
+  it('follows the operating system only after system is chosen', async () => {
+    mockSystemDarkMode(false)
+    const user = userEvent.setup()
+    render(<ThemeFixture />)
+
+    await user.click(screen.getByRole('button', { name: 'System' }))
+
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('system')
+    expect(document.documentElement).toHaveClass('light')
+  })
+
+  it('sets the theme-color meta tag for the resolved theme', async () => {
+    const user = userEvent.setup()
+    render(<ThemeFixture />)
+
+    const meta = document.querySelector('meta[name="theme-color"]')
+    expect(meta).toHaveAttribute('content', '#0e0e0e')
+
+    await user.click(screen.getByRole('button', { name: 'Light' }))
+
+    expect(meta).toHaveAttribute('content', '#f7f7f7')
+  })
+
+  it('returns to dark and forgets the saved choice on reset', async () => {
+    localStorage.setItem('newapi:theme:v1:mode', 'light')
+    localStorage.setItem('unrelated-preference', 'keep')
     const user = userEvent.setup()
     const first = render(<ThemeFixture />)
 
@@ -169,50 +163,30 @@ describe('theme preference persistence', () => {
     first.unmount()
     render(<ThemeFixture />)
 
-    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('system')
-    expect(document.documentElement).toHaveClass('light')
-    expect(document.body).not.toHaveAttribute('data-theme-preset')
-    expect(document.body).toHaveAttribute('data-theme-font', 'system')
-    expect(document.body).not.toHaveAttribute('data-theme-radius')
-    expect(document.body).not.toHaveAttribute('data-theme-scale')
-    expect(document.body).toHaveAttribute('data-theme-content-layout', 'full')
-    for (const key of Object.keys(savedPreferences)) {
-      expect(localStorage.getItem(key)).toBeNull()
-    }
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
+    expect(localStorage.getItem('newapi:theme:v1:mode')).toBeNull()
     expect(localStorage.getItem('unrelated-preference')).toBe('keep')
-    expect(document.cookie).toContain('theme_preset=ocean-breeze')
   })
 
-  it.each(['', 'unknown'])(
-    'uses defaults when stored preferences are %j',
-    (value) => {
-      for (const key of Object.keys(savedPreferences)) {
-        localStorage.setItem(key, value)
-      }
+  it.each(['', 'unknown'])('uses dark when the stored mode is %j', (value) => {
+    localStorage.setItem('newapi:theme:v1:mode', value)
 
-      render(<ThemeFixture />)
+    render(<ThemeFixture />)
 
-      expect(screen.getByLabelText('Theme mode')).toHaveTextContent('system')
-      expect(document.body).not.toHaveAttribute('data-theme-preset')
-      expect(document.body).toHaveAttribute('data-theme-font', 'system')
-      expect(document.body).not.toHaveAttribute('data-theme-radius')
-      expect(document.body).not.toHaveAttribute('data-theme-scale')
-      expect(document.body).toHaveAttribute('data-theme-content-layout', 'full')
-    }
-  )
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
+  })
 
-  it('renders defaults when reading local storage fails', () => {
+  it('renders dark when reading local storage fails', () => {
     vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
       throw new DOMException('Storage unavailable', 'SecurityError')
     })
 
     render(<ThemeFixture />)
 
-    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('system')
-    expect(document.body).not.toHaveAttribute('data-theme-preset')
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
   })
 
-  it('still applies and resets preferences when storage writes fail', async () => {
+  it('still applies and resets the mode when storage writes fail', async () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage full', 'QuotaExceededError')
     })
@@ -222,80 +196,64 @@ describe('theme preference persistence', () => {
     const user = userEvent.setup()
     render(<ThemeFixture />)
 
-    await user.click(screen.getByRole('button', { name: 'Customize' }))
+    await user.click(screen.getByRole('button', { name: 'Light' }))
 
-    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
-    expect(document.body).toHaveAttribute('data-theme-preset', 'rose-garden')
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('light')
 
     await user.click(screen.getByRole('button', { name: 'Reset' }))
 
-    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('system')
-    expect(document.body).not.toHaveAttribute('data-theme-preset')
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
   })
 
-  it('preserves saved theme preferences during frontend cache initialization', () => {
-    for (const [key, value] of Object.entries(savedPreferences)) {
-      localStorage.setItem(key, value)
-    }
+  it('preserves the saved mode during frontend cache initialization', () => {
+    localStorage.setItem('newapi:theme:v1:mode', 'light')
     localStorage.setItem('stale-ui-cache', 'old')
 
     initializeFrontendCache()
-    initializeFrontendCache()
     render(<ThemeFixture />)
 
-    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('dark')
-    expect(document.body).toHaveAttribute('data-theme-preset', 'rose-garden')
-    for (const [key, value] of Object.entries(savedPreferences)) {
-      expect(localStorage.getItem(key)).toBe(value)
-    }
+    expect(screen.getByLabelText('Theme mode')).toHaveTextContent('light')
+    expect(localStorage.getItem('newapi:theme:v1:mode')).toBe('light')
     expect(localStorage.getItem('stale-ui-cache')).toBeNull()
   })
 })
 
-describe('theme font selection', () => {
-  it('keeps manually selected Sans after remounting and switching presets', async () => {
-    const user = userEvent.setup()
-    const first = render(<ThemeFixture />)
+describe('removed theme customization', () => {
+  it('clears stored preset, font, radius, scale and layout values on load', () => {
+    for (const [key, value] of Object.entries(legacyPreferences)) {
+      localStorage.setItem(key, value)
+    }
+    localStorage.setItem('newapi:theme:v1:mode', 'light')
+    localStorage.setItem('unrelated-preference', 'keep')
 
-    await user.click(screen.getByRole('button', { name: 'Sans font' }))
-    first.unmount()
     render(<ThemeFixture />)
 
-    expect(document.body).toHaveAttribute('data-theme-font', 'sans')
-    expect(localStorage.getItem('newapi:theme:v1:font')).toBe('sans')
-
-    await user.click(screen.getByRole('button', { name: 'Anthropic preset' }))
-
-    expect(document.body).toHaveAttribute('data-theme-font', 'sans')
+    for (const key of Object.keys(legacyPreferences)) {
+      expect(localStorage.getItem(key)).toBeNull()
+    }
+    expect(localStorage.getItem('newapi:theme:v1:mode')).toBe('light')
+    expect(localStorage.getItem('unrelated-preference')).toBe('keep')
   })
 
-  it('restores the browser font after selecting Auto and remounting', async () => {
-    localStorage.setItem('newapi:theme:v1:font', 'sans')
-    const user = userEvent.setup()
-    const first = render(<ThemeFixture />)
+  it('clears the font, direction and sidebar layout cookies on load', () => {
+    document.cookie = 'font=manrope; path=/'
+    document.cookie = 'dir=rtl; path=/'
+    document.cookie = 'layout_collapsible=none; path=/'
+    document.cookie = 'layout_variant=floating; path=/'
+    document.cookie = 'unrelated=keep; path=/'
 
-    await user.click(screen.getByRole('button', { name: 'Auto font' }))
-
-    expect(document.body).toHaveAttribute('data-theme-font', 'system')
-    expect(localStorage.getItem('newapi:theme:v1:font')).toBeNull()
-
-    first.unmount()
     render(<ThemeFixture />)
 
-    expect(document.body).toHaveAttribute('data-theme-font', 'system')
+    expect(document.cookie).toBe('unrelated=keep')
   })
 
-  it('uses the preset font in Auto and restores the browser font on the default preset', async () => {
-    const user = userEvent.setup()
+  it('removes theme attributes a previous version left on the body', () => {
+    document.body.setAttribute('data-theme-preset', 'rose-garden')
+    document.body.setAttribute('data-theme-radius', 'lg')
+
     render(<ThemeFixture />)
 
-    await user.click(screen.getByRole('button', { name: 'Anthropic preset' }))
-
-    expect(document.body).toHaveAttribute('data-theme-font', 'serif')
-
-    await user.click(screen.getByRole('button', { name: 'Default preset' }))
-
-    expect(document.body).toHaveAttribute('data-theme-font', 'system')
-    expect(localStorage.getItem('newapi:theme:v1:font')).toBeNull()
+    expect(document.body).not.toHaveAttribute('data-theme-preset')
+    expect(document.body).not.toHaveAttribute('data-theme-radius')
   })
 })

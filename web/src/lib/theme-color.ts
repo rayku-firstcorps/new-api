@@ -20,9 +20,9 @@ import { useEffect, useState } from 'react'
 
 /**
  * Resolve a theme color token (e.g. `--foreground`) to an `rgba()` string a
- * canvas chart can draw with. The token is read from `<body>` so theme preset
- * overrides apply, and normalized through a canvas because tokens are written
- * as `oklch()` / `color-mix()`, which chart libraries do not parse.
+ * canvas chart can draw with. The token is read from `<body>` and normalized
+ * through a canvas because tokens may be written as `oklch()` / `color-mix()`,
+ * which chart libraries do not parse.
  */
 export function resolveThemeColor(cssVariable: string): string | undefined {
   if (typeof document === 'undefined') return undefined
@@ -44,9 +44,9 @@ export function resolveThemeColor(cssVariable: string): string | undefined {
 }
 
 /**
- * Track a theme color token. The light/dark class on `<html>` and the theme
- * preset attribute on `<body>` are applied by provider effects that run after
- * this hook's, so the color is re-resolved when either attribute changes.
+ * Track a theme color token. The light/dark class on `<html>` is applied by a
+ * provider effect that runs after this hook's, so the color is re-resolved when
+ * it changes.
  */
 export function useThemeColor(cssVariable: string): string | undefined {
   const [color, setColor] = useState<string | undefined>()
@@ -59,10 +59,6 @@ export function useThemeColor(cssVariable: string): string | undefined {
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class'],
-    })
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['data-theme-preset'],
     })
     return () => observer.disconnect()
   }, [cssVariable])

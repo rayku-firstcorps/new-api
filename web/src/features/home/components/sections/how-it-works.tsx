@@ -16,93 +16,81 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { BarChart3, ClipboardList, LogIn, PlugZap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
 
-export function HowItWorks() {
-  const { t } = useTranslation()
+import {
+  FALLBACK_PROVIDERS,
+  type HomeCatalogSummary,
+} from '../../lib/catalog-summary'
+import { HowItWorksDiagram } from '../how-it-works-diagram'
+import { SectionShell } from '../section-shell'
 
+const DIAGRAM_TARGETS = 5
+
+interface HowItWorksProps {
+  catalog: HomeCatalogSummary | null
+}
+
+/** Routing diagram (real providers when the catalog is public) plus three steps. */
+export function HowItWorks(props: HowItWorksProps) {
+  const { t } = useTranslation()
+  const targets = props.catalog
+    ? props.catalog.providers.slice(0, DIAGRAM_TARGETS)
+    : FALLBACK_PROVIDERS
   const steps = [
     {
-      num: '1',
-      title: t('Create an account'),
-      desc: t('Sign up and enter the console.'),
-      icon: <LogIn className='size-6' strokeWidth={1.5} />,
+      title: t('Send request'),
+      description: t('Call the gateway with the SDK you already use.'),
     },
     {
-      num: '2',
-      title: t('Get connection settings'),
-      desc: t('Create a token and choose available models or plans.'),
-      icon: <ClipboardList className='size-6' strokeWidth={1.5} />,
-    },
-    {
-      num: '3',
-      title: t('Paste into your AI tool'),
-      desc: t(
-        'Use the configuration in Cherry Studio, Open WebUI, LobeChat, or another supported client.'
+      title: t('Router picks a channel'),
+      description: t(
+        'Priority, weight and channel health decide where each request goes.'
       ),
-      icon: <PlugZap className='size-6' strokeWidth={1.5} />,
     },
     {
-      num: '4',
-      title: t('Track usage and cost'),
-      desc: t('Check balance, request records, and cost details anytime.'),
-      icon: <BarChart3 className='size-6' strokeWidth={1.5} />,
+      title: t('Best response returned'),
+      description: t('Streamed back in the exact format your SDK expects.'),
     },
   ]
 
   return (
-    <section
+    <SectionShell
       id='home-how-it-works'
-      aria-labelledby='home-steps-title'
-      className='home-section border-border border-t px-5 sm:px-8'
+      titleId='home-steps-title'
+      lead={t('One request in.')}
+      rest={t('The best answer out.')}
     >
-      <div className='mx-auto max-w-7xl'>
-        <AnimateInView className='mb-10 md:mb-14'>
-          <p className='text-primary mb-4 flex items-center gap-3 text-xs font-semibold tracking-widest uppercase'>
-            <span className='home-section-number' aria-hidden='true'>
-              02 /
-            </span>
-            {t('How It Works')}
-          </p>
-          <h2
-            id='home-steps-title'
-            className='text-3xl font-semibold tracking-tight text-balance md:text-4xl'
-          >
-            {t('Four steps to start using AI tools')}
-          </h2>
-        </AnimateInView>
+      {/* One reveal for the whole diagram: per-node transforms would skew the measured SVG paths. */}
+      <AnimateInView delay={120} className='mt-4'>
+        <HowItWorksDiagram targets={targets} />
+      </AnimateInView>
 
-        <ol className='grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10'>
-          {steps.map((step, i) => (
-            <AnimateInView
-              key={step.num}
-              as='li'
-              delay={i * 120}
-              animation='fade-up'
-              className='home-step relative flex min-w-0 flex-col border-t pt-6'
-            >
-              <div
-                className='mb-6 flex items-center justify-between'
-                aria-hidden='true'
-              >
-                <div className='text-primary flex size-10 items-center justify-center'>
-                  {step.icon}
-                </div>
-                <span className='home-step-number font-mono text-3xl'>
-                  0{step.num}
-                </span>
-              </div>
-              <h3 className='mb-2 text-base font-semibold'>{step.title}</h3>
-              <p className='text-muted-foreground max-w-sm text-sm leading-7'>
-                {step.desc}
-              </p>
-            </AnimateInView>
-          ))}
-        </ol>
-      </div>
-    </section>
+      <ol
+        aria-label={t('How a request is routed')}
+        className='mt-20 grid gap-4 md:mt-28 md:grid-cols-3 md:gap-5'
+      >
+        {steps.map((step, index) => (
+          <AnimateInView
+            key={step.title}
+            as='li'
+            delay={index * 90}
+            className='border-border bg-card min-w-0 rounded-xl border p-6 md:p-7'
+          >
+            <span aria-hidden='true' className='text-primary font-mono text-sm'>
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <h3 className='font-display mt-4 text-lg font-medium tracking-[-0.01em]'>
+              {step.title}
+            </h3>
+            <p className='text-muted-foreground mt-2 text-[15px] leading-relaxed text-pretty'>
+              {step.description}
+            </p>
+          </AnimateInView>
+        ))}
+      </ol>
+    </SectionShell>
   )
 }

@@ -96,7 +96,7 @@ export function LobeIconField(props: {
         </div>
       )}
       <div className='bg-muted/40 flex items-center gap-3 rounded-lg border p-3'>
-        <span className='flex size-9 shrink-0 items-center justify-center'>
+        <span className='text-foreground flex size-9 shrink-0 items-center justify-center'>
           {getLobeIcon(effectiveIcon, 28)}
         </span>
         <div className='min-w-0 text-xs'>

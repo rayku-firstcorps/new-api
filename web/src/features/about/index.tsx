@@ -149,12 +149,15 @@ export function About() {
   if (isUrl) {
     return (
       <PublicLayout showMainContainer={false}>
-        <iframe
-          src={rawContent}
-          className='h-[calc(100vh-3.5rem)] w-full border-0'
-          title={t('About')}
-          sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts'
-        />
+        {/* pt-[72px]: clears the fixed public header (h-[72px]). */}
+        <main className='pt-[72px]'>
+          <iframe
+            src={rawContent}
+            className='block h-[calc(100svh-72px)] w-full border-0'
+            title={t('About')}
+            sandbox='allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts'
+          />
+        </main>
       </PublicLayout>
     )
   }
@@ -162,12 +165,15 @@ export function About() {
   if (contentIsHtml) {
     return (
       <PublicLayout showMainContainer={false}>
-        <RichContent
-          mode='html'
-          htmlVariant='isolated'
-          content={rawContent}
-          className='prose-neutral dark:prose-invert max-w-none'
-        />
+        {/* Top padding clears the fixed public header (h-[72px]) plus breathing room. */}
+        <main className='px-4 pt-[calc(72px+2rem)] md:px-6 lg:pt-[calc(72px+2.5rem)]'>
+          <RichContent
+            mode='html'
+            htmlVariant='isolated'
+            content={rawContent}
+            className='prose-neutral dark:prose-invert max-w-none'
+          />
+        </main>
       </PublicLayout>
     )
   }

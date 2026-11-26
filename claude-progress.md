@@ -5,9 +5,9 @@
 
 ## 当前 Stage
 
-**Stage 1** — 推广链接功能（promotion links）
+**Stage 2** — KuCode 前端换肤（stage2-kucode-skin）
 
-目标：管理员可创建推广链接，用户通过推广链接注册后自动获得 10 块额度，系统记录渠道归因。
+目标：参考 KuCode 原型（`C:\Users\Administrator\Desktop\kucode-landing-page`，计划见其 `prompts/new-api-rebuild-plan.md`）只改布局和样式；new-api 功能不删减、不新增，后端零改动，变更只在 `web/`。旧 Stage 1 推广链接的待办已按用户要求移除。
 
 ## 功能进度
 
@@ -27,19 +27,102 @@
 | antom-safari-popup-plan | done | 已输出 Safari 下 Antom 支付弹窗优化实施计划，未修改支付业务代码 |
 | antom-safari-popup-fix | done | 已实现 Antom 支付窗口同步预开、失败清理和同页降级；待部署环境 Safari 真机验收 |
 | seo-technical-optimization | done | 已补齐站点分享元数据、路由级 canonical/noindex、robots.txt 与 sitemap.xml；保留受保护项目标识 |
-| promotion-backend-model | pending | 尚未开始 |
-| promotion-backend-api | pending | 依赖 model |
-| promotion-registration-flow | pending | 依赖 api |
-| promotion-frontend-capture | pending | 尚未开始 |
-| promotion-frontend-admin | pending | 依赖 capture + api |
+| kucode-design-tokens | in_progress | KuCode 配色映射到 shadcn token，默认深色，图表跟随主题；待浏览器视觉验收 |
+| kucode-remove-theme-presets | done | 删除 10 个主题预设及字体/圆角/缩放/布局选项，只保留深/浅/跟随系统；旧存储值清理 |
+| kucode-color-cleanup | done | 硬编码 Tailwind 调色板类清零；剩余十六进制为 token、画布配色、品牌/二维码白名单 |
+| kucode-provider-icons | in_progress | 品牌图标全站单色，撤销 homepage-client-brand-icons / homepage-model-brand-icons 的彩色图标；上传图片图标的中性底色待办 |
+| kucode-ui-primitives | in_progress | components/ui 改为 KuCode 风格，props 与行为不变；待视觉验收 |
+| kucode-console-shell | in_progress | 控制台侧栏/顶栏换肤，配置与角色控制不变；待视觉验收 |
+| kucode-public-shell | in_progress | 公共导航/页脚换肤，受保护链接保留；待视觉验收 |
+| kucode-brand-defaults | in_progress | 新增 web/public/kucode-mark*.svg；运营需在后台设置 SystemName/Logo/页脚并清空自定义首页 |
+| kucode-home | in_progress | 按用户要求首页严格照 KuCode：首屏 → 供应商 → 功能 → 使用步骤示意图 → 代码示例 → FAQ（后台 faq 数据，空则隐藏）→ CTA；区块标题不显示（保留 sr-only）；无定价区；首页不再展示工具网格、接入示意、社群按钮、大陆直连地址、热门模型卡片（对应功能与后台配置保留）；点阵球体为共享组件 components/dot-sphere；浏览器测试已重写未跑 |
+| kucode-model-square | in_progress | 模型广场 KuCode 布局，筛选/排序/分组定价全部保留；2026-11-26 补完页头（标签/两段色标题/统计条/球体弧）、卡片、表格固定列、抽屉（手机底部弹出）、详情页容器；待浏览器视觉验收 |
+| kucode-auth-pages | in_progress | 登录注册页 KuCode 布局，认证逻辑零改动；2026-11-26 补齐两段色标题+副标题、44px 表单控件（`styles/auth.css` 限定 `.auth-form`）、前景色主按钮、OAuth 置顶+分隔线、底部切换链接、右栏按页标题/浮动供应商标签/统计/注册 base_url 卡片、页脚法律链接；待真机键盘与浅色主题验收 |
+| kucode-console-overview | in_progress | 总览 KPI/面板布局，原数据保留；页头副标题待 SectionPageLayout 支持 |
+| kucode-api-keys | in_progress | Key 页换肤，表单与查看/复制不变 |
+| kucode-usage-logs | in_progress | 使用日志 KuCode 布局，筛选/列/导出保留 |
+| kucode-audit-log | in_progress | 审计 KuCode 布局；未做按天分组与 Sheet 详情 |
+| kucode-billing | in_progress | 钱包 KuCode 布局，所有支付流程不变（含 Antom Safari 预开窗口）；需沙箱验证 |
+| kucode-docs | in_progress | /docs 按用户决定（D17）只保留 CC Switch 指南（模型 claude-opus-5-5），单页正文 + 本页目录；深/浅插画随主题；深浅主题 1440/1920/768/390 已截图核对，键盘待人工验收 |
+| kucode-restyle-t4 | in_progress | 其余页面仅换样式（继承 token/基础组件）；渠道/系统设置区块框架等细化待办 |
 
 ## 上次停在哪里
+
+2026-11-26 登录注册页对齐 KuCode（`kucode-auth-pages`，用户要求「newapi 登录注册页与本项目设计不一致, 需要修正」）。与 KuCode `/login/` `/register/` 截图逐项对比后只改样式与布局，认证逻辑（提交、Turnstile、Passkey、OAuth、微信、法律同意、2FA、重置）零改动：
+- 标题：新增 `features/auth/components/auth-page-heading.tsx`（`AuthPageHeading` 两段色 h1 + 副标题，`AuthSwitchPrompt`/`AuthInlineLink`）；登录「Sign in to {systemName}」、注册「Create your account」、忘记密码「Reset your password」，OTP/重置确认同样式。「没有账号？注册」等切换链接移到表单下方居中（显示条件不变）。`MixedHeading` 的 `as` 增加 `p`。
+- 表单：新增 `styles/auth.css`（由 `auth-layout.tsx` 引入，只作用于 `.auth-form` 内）：输入框 44px/背景色/琥珀焦点环（注意 `FormControl` 会把 input 的 `data-slot` 改成 `form-control`，选择器两者都覆盖）、标签 13px、错误 12px、密码显隐按钮；`.auth-primary` 为 KuCode 前景色主按钮（登录/注册/发送重置邮件/重置确认）。弹窗被 portal 到外面，不受影响。
+- OAuth：`OAuthProviders` 分隔线移到按钮下方（新增 `divider` 属性与导出 `AuthDivider`），注册页 OAuth 移到表单顶部；登录页在 Passkey/OAuth 之后、账号密码之前显示分隔线（仅两者都有时）。按钮 44px、`border-input` 透明底。法律同意去掉方框底色，链接改前景色下划线。
+- 外框：顶栏统一 72px；页脚新增 `components/auth-footer.tsx`（版权 + 已启用的用户协议/隐私政策链接）；右栏 `auth-visual.tsx` 按页面显示 KuCode 标题（Welcome back / One key / Locked out?）、三个浮动供应商标签（悬停吸引球体光点，减少动态效果时不浮动，放不下自动隐藏）、目录统计（复用 `useHomeCatalog`，与首页同一查询）、注册页 base_url 卡片（`useGatewayBaseUrl`）。`AuthLayout` 新增 `mode` 属性。
+- i18n：新增 13 个键（七语言），复用 `Change one line.`、`Or continue with`、`{{models}} models from {{providers}} providers`；`i18n:sync` missing/extras 0。
+- OWASP：仅视觉改动，未触碰凭据传输、会话、Turnstile、Passkey、OAuth state 等控制（ASVS 4.0.3 V2/V3 相关控制不变）；无新增客户端存储。
+- 验证：typecheck、改动文件 oxlint/oxfmt、版权头通过（`lib/validation.ts` 两个 lint error 为存量，未改）；全量 262 文件 / 3078 测试通过；`build:check` 通过；`verify.sh kucode-auth-pages` 2 项通过。dev 服务（`VITE_REACT_APP_SERVER_URL=http://127.0.0.1:3000`，本机 localhost 走代理会导致 /api 代理失败）+ 无头 Chrome `--virtual-time-budget` 截图核对 /sign-in、/sign-up、/forgot-password 1440 中/英、390。浅色主题与键盘操作未在浏览器中核对。
+- 续（用户要求重建容器）：`docker compose build new-api` + `docker compose up -d --no-deps new-api`（postgres/redis 未动）。容器 healthy，/api/status、/sign-in、/sign-up 均 200；无头 Chrome 确认 http://127.0.0.1:3000/sign-in 与 /sign-up 已是新登录注册页。镜像包含全部未提交工作区改动。
+
+2026-11-26 公共页顶栏遮挡（`kucode-restyle-t4`，用户要求「/about 服务条款 title 被 topnav 覆盖」）：公共页顶栏为 `fixed` 72px（换肤前也是 fixed），`PublicLayout showMainContainer={false}` 的分支没有顶部留白，后台配置的 HTML/URL 内容被顶栏盖住。修改：`features/about` 的 HTML 分支与 `features/legal/legal-document.tsx`（用户协议/隐私政策）的 HTML 分支包一层 `<main className='px-4 pt-[calc(72px+2rem)] md:px-6 lg:pt-[calc(72px+2.5rem)]'>`；about 的 URL iframe 改为 `pt-[72px]` + `h-[calc(100svh-72px)]`（原 `100vh-3.5rem` 按旧 56px 顶栏算）；首页后台自定义内容同类问题一并修：iframe 同上、HTML 分支加同样顶部留白（不加左右边距，整页内容）、Markdown 分支 `main` 加 `pt-[72px]`。只改 class，无逻辑改动。验证：typecheck、oxlint、oxfmt 通过；全量 262 文件 / 3078 测试通过；重建容器后无头 Chrome：/about 与 /user-agreement 在 1440 / 390 下 h1 顶部 120 / 112px（顶栏底 72px），无横向滚动。
+
+2026-11-26 首页标题与图标行补位（`kucode-home`，用户要求「可以 mock 多几个，参考本项目的设计；homepage 的部分 cta 没有标题，需要补全」，用户选择前端补位；KuCode 计划 D18/D19）：
+- 区块标题：`SectionShell` 恢复可见标题（KuCode 样式：居中 `MixedHeading`，下方 mb-14/16；可选 `subtitle`；`heading='custom'` 时由区块自己放标题）。Providers 加副标题（新 key `Use each provider through its own native protocol, or call any model through any SDK.`），代码区标题放在左栏正文上方。`layout.browser.mjs` 的断言改为“标题可见”（未运行，无 Playwright）。
+- CTA 标题：原来 lead `Start routing in` + rest 复用通用 key `minutes`，中文显示成“只需几分钟， 分钟”。改用新 key `Start routing` / `in minutes`（七语言，如 zh“开始路由，/只需几分钟”），删除旧 key `Start routing in`；`minutes` 其它地方在用，未动。
+- Hero 图标行：`buildHeroProviders` = 目录全部供应商 + `HERO_FALLBACK_PROVIDERS`（KuCode 的 10 家：OpenAI、Anthropic、Google Gemini、DeepSeek、Qwen、Mistral、Meta Llama、xAI Grok、Moonshot Kimi、Zhipu GLM）中未出现者，补足到 `HERO_MIN_LOGOS = 10`；补位标识无模型数，旁边总数仍只来自目录。去重用名称、图标和别名表 `PROVIDER_ALIASES`（如 xai/grok、moonshot/kimi、zhipu/智谱），滚动条 `buildMarqueeProviders` 也改用它（线上原先会同时出现 xAI 与 Grok、Moonshot 与 Kimi）。<640px 图标改 size-7、间距 0.5、隐藏分隔线，10 个一行放下。
+- 验证：home 测试 34/34；全量 262 文件 / 3078 测试通过；typecheck、oxlint、oxfmt、版权头、i18n sync（七语言 missing/extras 0）通过。重建容器后无头 Chrome：1440/390 十个图标、各区块标题可见、CTA“开始路由， 只需几分钟”，scrollWidth = clientWidth。
+
+2026-11-26 首页 Hero 供应商图标行（`kucode-home`，用户要求「home-logos 需要显示所有模型」）：`hero-logo-row.tsx` 去掉 `MAX_LOGOS = 6` 上限，有公开目录时显示目录里全部供应商（按模型数排序，自动换行）；无目录时仍为 4 个备用标识。线上目录有 7 个有模型的供应商，原先第 7 个（Moonshot）被截掉。新增 `features/home/__tests__/hero-logo-row.test.tsx`（2 例）；home 测试 28/28、typecheck、oxlint、oxfmt、版权头通过。本地目录无供应商，未重建容器、未截图。
+- 续（用户反馈「newapi 上目前没有显示」）：本地 3000 的目录只有 `gpt-6-astra` 且无 vendor，图标行为空、文案为“来自 0 家提供商的 1 个模型”。`summarizeCatalog` 现在把无 vendor（或 vendor 不在列表中）的模型用 `lib/model-provider.ts#resolveModelProvider` 按模型名归属：与目录已有 vendor 同名或同图标（去掉 `.Color` 后缀）则并入该 vendor，否则生成推断供应商（id 从 -800000 起）；无法识别的模型只计入总数。Hero 图标行、供应商区和路由图都随之受益。catalog-summary 新增 2 例；home 测试 30/30，typecheck、oxlint、oxfmt、版权头通过。重建 new-api 容器后无头 Chrome 确认 1440/390 首页显示 OpenAI 图标与“来自 1 家提供商的 1 个模型”。已登录用户首页不请求目录（`use-home-catalog.ts` 的 `!isAuthenticated`），仍显示 4 个备用图标，未改。
+
+2026-11-26 `kucode-docs` 精简（用户要求「doc 只需要 cc-switch，其余去掉，模型说明换成 claude-opus-5-5」，KuCode 计划记为 D17；只改 `web/src/features/docs/`）：
+- 去掉 Codex、Cursor、Claude Code、OpenCode、Cherry Studio 五个指南、FAQ 页、Route selection 三张卡片与 Route rule 提示；只有一页后左侧分组导航与 <1024px 的 Sheet 也一并去掉（删除 `docs-nav.tsx`、`faq-article.tsx`）。保留：CC Switch 的 6 个步骤、复制与提示、插画、指向 /keys 的 Tip，Before publishing 警告移到 Tip 下方。
+- 模型：`GUIDE_MODEL = 'claude-opus-5-5'`，用于 h1、Model 徽章、配置中的 `Model:` 与 `ANTHROPIC_MODEL`。`lib/guides.ts` 改为 `createCcSwitchGuide()`；`lib/toc.ts` 只剩步骤锚点；`DocsArticleHeader` 去掉 headingRef（不再切换页面）。
+- i18n 未改：`Docs navigation`、`Open docs navigation`、FAQ 与其余指南的 key 现在不再被文档页使用，留在七语言文件中（sync 只比对 en.json，missing/extras 仍为 0）。
+- 备份：改动前的 `features/docs/`（未跟踪）和路由文件复制到 `D:\Projects\ai-project\new-api-docs-backup-20261126\`。
+- 验证：docs 测试 5/5；全量 261 文件 / 3070 测试通过；typecheck、build:check、oxlint、oxfmt --check、版权头检查通过。随后按用户同意 `docker compose build new-api` + `up -d --no-deps new-api` 重建容器（postgres/redis 未动），无头 Chrome 截图 http://127.0.0.1:3000/docs：深色 1440/1920/768/390、浅色 1440/768/390 均正常，scrollWidth = clientWidth，插画随主题切换，h1 为 “CC Switch · claude-opus-5-5”，≥1280px 显示本页目录。发现：zh 步骤译文有误（“安装或更新该设备”“启动节目并发送一条短信”），属原有翻译问题，未改。
+
+2026-11-26 本地 Docker 重新部署（用户要求）：用当前未提交工作区 `docker compose build new-api` 重建 `new-api:local`，`docker compose up -d --no-deps new-api` 只重建该容器（postgres/redis 未动，数据卷保留）。容器 healthy，/api/status 与 /docs 200；截图确认 http://127.0.0.1:3000/docs 已是新文档页（含 CC Switch 指南与插画）。注意：镜像包含全部未提交的 stage2 换肤改动及 Go 侧删除 /image-generation 的未确认改动。未推送、未部署线上。
+
+2026-11-26 `kucode-docs` 续（用户决定加入 CC Switch 指南与插画，KuCode 计划记为 D16；仍只改 `web/`）：
+- 指南：`lib/guides.ts` 新增 `cc-switch`（Claude compatible 组，位于 OpenCode 之后，图标 `ArrowRightLeft` 与 API 密钥页的 CC Switch 菜单项一致）。内容依据官方 README（`brew install --cask cc-switch`，Windows/Linux 从 GitHub Releases 下载）和用户手册 2.1（Add Provider → Custom Configuration；Name / API Key / Endpoint URL / Model；Config JSON 为 `env` 中的 `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_MODEL`；Claude Code 切换后无需重启）。请求地址用网关根地址（与 `features/keys/components/dialogs/cc-switch-dialog.tsx` 对 claude 的处理一致）。
+- 提示框：指南新增 Tip，指向 API 密钥页已有的「CC Switch」行操作（导入对话框生成 `ccswitch://v1/import` 深链），用 TanStack `Link` 到 `/keys`；`ClientGuide` 增加可选 `consoleTip`、`illustration` 字段。
+- 插画：深色原图 + 新生成的浅色版（KuCode 仓库 `prompts/assets/docs-illustrations/`，含提示词），裁掉顶部 224px 空白并缩到 1520×792，用无头 Chrome canvas 编码为 WebP（深 40 KB / 浅 33 KB）放在 `web/src/assets/docs/`。两张 `<img>` 分别 `dark:hidden` / `hidden dark:block`，跟随站点主题（`.dark` 类）而非系统设置，`loading="lazy"` 使隐藏的一张不下载；纯装饰，`alt=""`。
+- i18n：新增 2 个 key（指南摘要、Tip 正文），七语言；ja/vi 的“API 密钥”用语与现有翻译对齐。missing/extras 为 0。
+- 验证：docs 测试 9/9（新增 CC Switch 用例：两张主题图、根地址、/keys 链接）；全量 261 文件 / 3074 测试通过；typecheck、build:check、oxlint、oxfmt、版权头通过。临时后端截图：深色/浅色 1440 与浅色 390 正常，无横向滚动；临时文件已删。
+- 发现：文档页原有译文质量差（如 vi 把 “Anthropic Messages” 译成 “Thông điệp Nhân loại”，zh-TW 多条未翻译），不在本次范围，建议单列修复。
+
+2026-11-26 `kucode-docs`（单功能会话，未提交，只改 `web/`，后端零改动；计划见 KuCode 仓库 `prompts/new-api-rebuild-plan.md` §4.1 / D15）：
+- `/docs` 由 T4 改为 T3，参考 Claude Docs 的布局与阅读模式（不用其品牌、文案、橙色），颜色全走 KuCode token。`routes/docs/index.tsx` 只剩路由接线；页面拆到 fork 自有的 `features/docs/`：`lib/guides.ts`（原数据原样搬移）、`lib/toc.ts`（锚点与目录，纯函数）、`hooks/use-active-heading.ts`（IntersectionObserver 滚动高亮）、`components/`（docs-page 三栏、docs-nav、docs-toc、docs-article-header、guide-article、faq-article、docs-steps、docs-code-block、docs-callout）。
+- 映射：协议标签 + 客户端按钮 → 左侧分组导航（Button，`aria-current="page"`，琥珀竖条）；<1024px 改为吸顶条 + 左侧 Sheet（选中后关闭，焦点回到写有当前页名的菜单按钮）；侧栏切换页面后滚到顶部并把焦点移到 h1。原“Model”按钮无处理函数 → 不可交互 Badge。右栏“Route selection”与两条提示 → 正文“Route selection”区（卡片保留原 button 语义，激活态琥珀描边）+ Note / Warning 提示框；第 6 步 → 绿色状态提示框（带图标）。代码块去掉装饰性窗口圆点，`pre` 可聚焦以便键盘横向滚动。FAQ 保持原生 details。
+- 复用说明：提示框用 `components/ui/alert`（改 `role="note"`，静态内容不应作为 live 通知）；导航与复制按钮用 `Button`；复制直接用 `useCopyToClipboard` 而非 `CopyButton`，因为 `CopyButton` 固定 `notify: false`，会丢掉原有“Configuration copied”提示；移动端导航用 `components/ui/sheet`。
+- i18n：新增 `Docs navigation`、`Open docs navigation`（七语言）；`On this page` 原先 fr/vi/zh-TW 未翻译、zh 为“在此页面上”，改为 Sur cette page / Trên trang này / 本頁內容 / 本页内容，ja 改为 このページの内容（该 key 只被新目录使用）。`bun run i18n:sync` 七语言 missing/extras 为 0。
+- 验证：`features/docs/__tests__/{toc,docs-page}.test.*` 8/8；全量 `vitest run --maxWorkers=4` 261 文件 / 3073 测试通过；`bun run typecheck`、`bun run build:check` 通过；改动文件 oxlint 0 error/0 warning、oxfmt --check 通过；`add-copyright.mjs --check` 未列出 docs 文件（注意：版权头后不能有空行）。视觉：临时目录构建 Go 二进制（内嵌新 dist）+ 临时 SQLite，经 /api/setup 初始化后用 Chrome DevTools 截图，深色 1440/1100/390 正常、scrollWidth = clientWidth，滚动高亮与移动端 Sheet 正常；临时文件已删除。截图中修了两处：路由卡片内容垂直居中（改 flex-col 顶对齐）、Alert 描述的 text-balance 在窄屏过窄（改 text-pretty）；网格宽度改为与页头一致的 max-w-7xl。
+- 未做：浅色主题、768/1920、纯键盘操作的人工验收；cc-switch 指南与插画（KuCode 仓库 `prompts/assets/docs-illustrations/cc-switch-conductor.png`，仅深色）待用户决定是否加入（属新增内容，需另立决定）。
+- 发现（非本功能改动，未处理）：工作区已有 `controller/seo.go`、`pkg/jsplugin/routing.go` 删除 `/image-generation` 的未提交改动，与“后端零改动”规则冲突，需确认来源。
+
+2026-11-26 首页供应商滚动条（`kucode-home`，用户要求）：滚动条原先只列精选卡片之外的供应商，本地目录只有 1 个供应商时不显示。现改为始终显示：目录里的其余供应商在前，再用 `MARQUEE_FALLBACK_PROVIDERS`（16 个知名供应商单色标识，无模型数据，按名称/图标去重，最多 24 个）补足；没有公开目录时也显示滚动条，只是不显示精选卡片。`buildMarqueeProviders` 在 `features/home/lib/catalog-summary.ts`，测试在 `catalog-summary.test.ts`；`layout.browser.mjs` 中「无目录时隐藏供应商区」的断言改为「无目录时只有滚动条」（未运行，无 Playwright）。home 测试 26/26、typecheck、lint 通过。
+
+2026-11-26 `kucode-model-square` 补完（单功能会话，未提交，只改 `web/`，后端零改动）：
+- 页头：新增 `features/pricing/components/pricing-page-header.tsx`，复用首页 `MixedHeading`、`HomeSphere`（不可交互、intensity 0.5）；统计条只有模型数、供应商数（由 `/api/pricing` 数据计算），不加 SLA/可用率。原「本站已启用 N 个模型」句由统计条取代。新增 3 个 i18n key（七语言）。
+- 工具栏高度改为 ResizeObserver 实测写入 `--toolbar-h`（`index.tsx`），保留原写死值作首帧兜底；页面容器类移到 `constants.ts` 与详情页共享。
+- 卡片：外层换 `SpotlightCard`/`SpotlightGroup`（琥珀光晕）；标签改胶囊（保留 `group` 名 Tags 与 `+n` 的 title）；按 token / 按次价格改为 11px 大写标签 + 18px 等宽数字；筛选结果变化时 150ms 淡入（reduced-motion 关闭）。其余价格分支、分组/端点、性能条、Details 按钮不变。
+- 表格：用 `DataTableView` 既有 `pinnedColumns` 固定 Model 列。**未做**：页面级吸顶表头（表格容器 `overflow-auto`，横滚与页面吸顶不可兼得，保留容器内吸顶）；价格列右对齐（价格单元格是多行带标签的块，右对齐需重写单元格）。
+- 抽屉：手机（<768px）改底部弹出 90dvh；可见模型名改为 `SheetTitle`（h2，同时作为对话框名称），页面上不再有两个 h1；宽度与内容不变。卡片右上角状态点**未加**：卡片底部性能条已有同一状态点和成功率，避免重复。
+- 详情页 `/pricing/$modelId`：改用共享容器、返回按钮显示「模型广场」，「Model not found」改为 h1；数据、Tab、图表不变。
+- 修复：`model-details-apps.tsx` 前三名奖杯徽章第 1、3 名同色（`--primary` 与 `--warning` 同值）→ 第 3 名改描边，并为奖杯加 sr-only 名次；顺带把该文件既有嵌套三元改为查表/if-else（lint 要求）。
+- 新增测试：`__tests__/page-header.test.tsx`、`model-details-drawer.test.tsx`、`table-layout.test.tsx`；`model-cards.test.tsx` 的标签断言按新结构更新。
+
+验证：本机经 `npm i -g bun` 装 Bun 1.4.5，`bun install --frozen-lockfile` 无变更；`bun run typecheck` 通过；`bun run test` 259 文件 / 3062 测试全部通过；`bun run build:check` 通过；改动文件 `oxlint` 0 error、`bun x --no-install oxfmt -c .oxfmtrc.json --check <改动文件>` 通过（注意：`scripts/format-with-protected-headers.mjs` 忽略路径参数、遍历整个 `web/`，且直接用 node 运行时 PATH 上没有 `oxfmt`，会静默不格式化；本次误跑一次 `--write`，只重写了文件头，内容未变，本次未改动的文件 git 状态仍为干净）；`add-copyright.mjs --check` 未列出任何 pricing 文件；`node scripts/sync-i18n.mjs` 七语言 missing/extras 为 0；`bash .harness/verify.sh kucode-model-square` 2/2。未完成：本机无 Playwright 与后端，375/768/1024/1280/1920、深浅主题、键盘焦点的浏览器验收待人工完成。
+
+2026-11-25 KuCode 换肤：按用户要求用多 agent 并行完成第一轮（两次 workflow：地基 6 个 agent、页面 9 个 agent），偏离“一会话一功能”规则系用户明确要求。全部改动未提交，只在 `web/`（约 246 个已跟踪文件 + 60 个新文件）；后端零改动。工具：本机无 Bun，使用 `web/node_modules/.bin` 下的 tsgo/vitest/oxlint/oxfmt/rsbuild，未新增依赖（Inter/Inter Tight/JetBrains Mono 未安装，字体栈回退到 Public Sans）。
+
+验证：`tsgo -b` 通过；`vitest run --maxWorkers=4` 250 文件 / 3013 测试全部通过（基线 2927）；`rsbuild build` 通过，主包 5869.9 kB 与 HEAD 基线 5868.8 kB 持平、总量 68.5 MB（基线 68.8 MB）；`sync-i18n` 七语言 missing/extras 为 0；新文件 AGPL 头检查通过；硬编码调色板类为 0；diff 中无空格被压缩的行。未完成：无 Playwright/浏览器，未做 375/768/1280/1920 与深浅主题视觉验收，`features/home/__tests__/layout.browser.mjs` 已更新但未运行；支付方式需沙箱回归。
+
+下一步：本地启动前后端做视觉验收；后台设置 SystemName=KuCode、Logo=/kucode-mark.svg、页脚，清空自定义首页；补充 SectionPageLayout 描述插槽（页头副标题）、渠道/系统设置区块框架与保存栏、上传图片图标中性底色、dashboard/lib/flow.ts 默认色；安装 Bun 1.4.4 后补装 KuCode 字体并移除未用的 @fontsource-variable/lora 与 assets/custom/icon-layout-*/icon-sidebar-*/icon-theme-*。
+
 
 2026-11-23：本地 main 合并 upstream/main `51a1ceeae`（40 个提交），VERSION 同步至最新发布标签 `v1.0.0-rc.51`（标签后另有 27 个提交）。保留首页、文档、生图、footer 和自定义支付。支付设置同时支持上游 Epay RSA 和 fork 原有渠道，定期更新继续清理过期订单。上游测试发现插件路由遗漏 fork 页面，已保留 /promotions、/docs、/image-generation 和 /sso。保留本地旧 rc.15 标签及原有未提交改动。Git 未配置提交者，单次提交使用 Codex <codex@localhost>。
 
 验证：`go test -p 6 ./...`、relaykit 内 `GOWORK=off go build ./...` 和 `GOWORK=off go test ./...`、`bash .harness/verify.sh upstream-merge-preserve-custom-ui`（2/2）通过；构建后 --version 输出 v1.0.0-rc.51。Bun 1.4.4 冻结锁安装、i18n:sync、typecheck、build:check、改动文件 oxlint（0 error、1 warning）、`bun run test --maxWorkers=4`（2927/2927）、生产构建首页浏览器回归（41/41）通过。七语言 missing/extras 为 0。账户验证包含已删除用户的 API key、密码反馈和现有账户安全测试；参考 OWASP Authentication、Session Management、Password Storage Cheat Sheets。
 
-实库验证：SQLite 3.50.4、MySQL 8.0.46、PostgreSQL 16.16 全部通过。设置 TEST_MYSQL_DSN / TEST_POSTGRES_DSN 后运行 `go test -p 1 ./model ./controller -run 'Test(.*DatabaseMatrix|JSONColumnDatabaseRoundTrip|ChannelAffinityRetryPriorities)$' -count=1 -v`，逐库设置 TEST_TASK_DB_DIALECT 运行 `go test ./model -run '^TestScheduledChannel' -count=1 -v`，配置 AUDIT_MYSQL_DSN / AUDIT_POSTGRES_DSN 后运行 `go test ./controller -run 'Test(AuditDatabaseMatrix|APITokenAuditDatabaseMatrix|IndependentAuditLogStores|LogExportDatabaseMatrix)/(mysql|postgres)' -count=1 -v`。ClickHouse 未运行。运行 `python %TEMP%/newapi-merge-1123-tools/checkmatrix.py`，三库各覆盖新建和从最新发布版 c9c6da278 升级（6/6）；三次启动确认敏感词转换幂等，用户、token、配额、审计、索引及唯一约束保留，MySQL/PG 使用独立日志库。临时容器已清理。下一步：审阅并按需推送本地 main。
+实库验证：SQLite 3.50.4、MySQL 8.0.46、PostgreSQL 16.16 全部通过。设置 TEST_MYSQL_DSN / TEST_POSTGRES_DSN 后运行 `go test -p 1 ./model ./controller -run 'Test(.*DatabaseMatrix|JSONColumnDatabaseRoundTrip|ChannelAffinityRetryPriorities)$' -count=1 -v`，逐库设置 TEST_TASK_DB_DIALECT 运行 `go test ./model -run '^TestScheduledChannel' -count=1 -v`，配置 AUDIT_MYSQL_DSN / AUDIT_POSTGRES_DSN 后运行 `go test ./controller -run 'Test(AuditDatabaseMatrix|APITokenAuditDatabaseMatrix|IndependentAuditLogStores|LogExportDatabaseMatrix)/(mysql|postgres)' -count=1 -v`。ClickHouse 未运行。运行 `python %TEMP%/newapi-merge-1123-tools/checkmatrix.py`，三库各覆盖新建和从最新发布版 c9c6da278 升级（6/6）；三次启动确认敏感词转换幂等，用户、token、配额、审计、索引及唯一约束保留，MySQL/PG 使用独立日志库。临时容器已清理。2026-11-23 已按用户要求推送合并提交 242426ea0 至 origin/main，并用 git ls-remote 核对远端提交一致。
+
+2026-11-09 GIF 限制只读核查：用户询问 `gpt-image-2.6.*` 是否受 GIF 限制。仓库搜索未发现 `GIF output is not enabled for this request.` 文案或针对该模型的 GIF 禁用分支；OpenAI 图像 DTO 保留 `output_format`、`frame_count`、`frame_duration_ms`，标准适配器直接转发 JSON 请求并复制 multipart 普通字段。`relaykit/` 中设置 `GOWORK=off` 后运行 `go test ./dto -run TestImageRequestPreserveGPTImage26Fields -count=1` 通过。仅更新本进度记录，无功能实现或 feature 状态变更；未检查线上渠道参数覆盖和上游配置，错误来源仍需请求日志确认。下一步：如继续排查，核对实际渠道、脱敏请求和上游原始错误。
 
 2026-11-09 版本标识同步：用户指出上游发布版为 v1.0.0-rc.49 并要求「同步」。本轮将 VERSION 从 `v1.0.0-rc.10-debug-01` 更新为 `v1.0.0-rc.49`，作为 upstream-merge-preserve-custom-ui 的补充，提交并推送 origin/main。Dockerfile 已从 VERSION 注入前端构建变量及后端 ldflags，无需修改业务代码。`go build -ldflags "-X github.com/QuantumNous/new-api/common.Version=v1.0.0-rc.49" -o <temp>/newapi-version-rc49.exe .` 成功，运行 `--version` 输出 `v1.0.0-rc.49`；Harness 2/2 通过。原有 docs/sample 未提交改动保留。本轮未部署，线上需重新构建并重启应用后显示新版本；若部署环境设置 VERSION，需同步其覆盖值。下一步：部署 origin/main 并检查 `/api/status` 的 version。
 

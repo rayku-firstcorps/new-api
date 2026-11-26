@@ -103,7 +103,7 @@ export function PluginIcon(props: PluginIconProps) {
     return (
       <span
         aria-hidden='true'
-        className='bg-muted/40 inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md'
+        className='bg-muted border-border/60 inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md border'
         style={{ width: size, height: size }}
       >
         <img

@@ -23,7 +23,6 @@ import { useTranslation } from 'react-i18next'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatLogQuota } from '@/lib/format'
 import { requireServerSuccess } from '@/lib/server-error-message'
-import { cn } from '@/lib/utils'
 
 import { getLogStats, getUserLogStats } from '../api'
 import { DEFAULT_LOG_STATS } from '../constants'
@@ -32,19 +31,16 @@ import { useLogsViewScope, useUsageLogsContext } from './usage-logs-provider'
 
 const route = getRouteApi('/_authenticated/usage-logs/$section')
 
-function StatBadge(props: {
-  label: string
-  value: string | number
-  accent: string
-}) {
+function StatCell(props: { label: string; value: string | number }) {
   return (
-    <span className='border-border/60 bg-muted/25 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-xs shadow-xs'>
-      <span className={cn('h-3.5 w-0.5 rounded-full', props.accent)} />
-      <span className='text-muted-foreground'>{props.label}</span>
-      <span className='text-foreground/85 font-mono font-semibold tabular-nums'>
+    <div className='flex min-w-0 items-baseline gap-2 px-3 py-1.5 sm:flex-col sm:items-start sm:gap-0.5 sm:px-4 sm:py-2'>
+      <dt className='text-muted-foreground truncate text-[11px] font-medium tracking-wide uppercase'>
+        {props.label}
+      </dt>
+      <dd className='font-display text-foreground text-sm font-medium tabular-nums sm:text-base'>
         {props.value}
-      </span>
-    </span>
+      </dd>
+    </div>
   )
 }
 
@@ -77,32 +73,20 @@ export function CommonLogsStats() {
   })
 
   if (isLoading) {
-    return (
-      <div className='flex items-center gap-2'>
-        <Skeleton className='h-7 w-[150px] rounded-md' />
-        <Skeleton className='h-7 w-[100px] rounded-md' />
-        <Skeleton className='h-7 w-[120px] rounded-md' />
-      </div>
-    )
+    return <Skeleton className='h-12 w-[300px] max-w-full rounded-lg' />
   }
 
   return (
-    <div className='flex flex-wrap items-center gap-2'>
-      <StatBadge
+    <dl
+      aria-label={t('Usage')}
+      className='border-border bg-card divide-border grid max-w-full grid-cols-3 divide-x overflow-hidden rounded-lg border'
+    >
+      <StatCell
         label={t('Usage')}
         value={sensitiveVisible ? formatLogQuota(stats?.quota || 0) : '••••'}
-        accent='bg-sky-500/70'
       />
-      <StatBadge
-        label={t('RPM')}
-        value={stats?.rpm || 0}
-        accent='bg-rose-500/65'
-      />
-      <StatBadge
-        label={t('TPM')}
-        value={stats?.tpm || 0}
-        accent='bg-slate-400/70'
-      />
-    </div>
+      <StatCell label={t('RPM')} value={stats?.rpm || 0} />
+      <StatCell label={t('TPM')} value={stats?.tpm || 0} />
+    </dl>
   )
 }

@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Skeleton } from '@/components/ui/skeleton'
@@ -41,16 +41,18 @@ function PanelHeader(props: {
   actions?: ReactNode
 }) {
   const heading = (
-    <div className='flex flex-col gap-1'>
-      <div className='text-sm font-semibold'>{props.title}</div>
+    <div className='flex flex-col gap-0.5'>
+      <h3 className='text-sm leading-5 font-medium'>{props.title}</h3>
       {props.description != null && (
-        <div className='text-muted-foreground text-xs'>{props.description}</div>
+        <p className='text-muted-foreground text-xs leading-4'>
+          {props.description}
+        </p>
       )}
     </div>
   )
 
   return (
-    <div className='border-b px-4 py-3 sm:px-5'>
+    <div className='px-4 pt-4 pb-3 sm:px-5'>
       {props.actions != null ? (
         <div className='flex items-start justify-between gap-2'>
           {heading}
@@ -68,7 +70,7 @@ export function PanelWrapper(props: PanelWrapperProps) {
   const resolvedEmptyMessage = props.emptyMessage ?? t('No data available')
   const height = props.height ?? 'h-64'
   const frameClassName = cn(
-    'overflow-hidden rounded-2xl border bg-card shadow-xs',
+    'bg-card overflow-hidden rounded-xl border',
     props.className
   )
 
@@ -76,7 +78,9 @@ export function PanelWrapper(props: PanelWrapperProps) {
     return (
       <div className={frameClassName}>
         <PanelHeader title={props.title} description={props.description} />
-        <div className={cn('p-4 sm:p-5', props.contentClassName)}>
+        <div
+          className={cn('px-4 pb-4 sm:px-5 sm:pb-5', props.contentClassName)}
+        >
           <Skeleton className={`w-full ${height}`} />
         </div>
       </div>
@@ -107,7 +111,7 @@ export function PanelWrapper(props: PanelWrapperProps) {
         description={props.description}
         actions={props.headerActions}
       />
-      <div className={cn('p-4 sm:p-5', props.contentClassName)}>
+      <div className={cn('px-4 pb-4 sm:px-5 sm:pb-5', props.contentClassName)}>
         {props.children}
       </div>
     </div>

@@ -35,22 +35,27 @@
     />
     <meta name="twitter:image" content="/logo.png" />
 
-    <meta name="theme-color" content="#fff" />
-    <!-- Resolve the theme before first paint so the page never flashes light
-         and one-shot detectors (e.g. Dark Reader) see the real theme.
-         Keep in sync with ThemeProvider and THEME_STORAGE_KEYS.mode. -->
+    <meta name="theme-color" content="#0e0e0e" />
+    <!-- Resolve the theme before first paint so the page never flashes the
+         wrong theme and one-shot detectors (e.g. Dark Reader) see the real
+         theme. Dark is the default; only a stored choice of light or system
+         changes it. Keep in sync with ThemeProvider and
+         THEME_STORAGE_KEYS.mode. -->
     <script>
       ;(function () {
-        var theme = 'system'
+        var theme = 'dark'
         try {
-          theme = localStorage.getItem('newapi:theme:v1:mode') || 'system'
+          var stored = localStorage.getItem('newapi:theme:v1:mode')
+          if (stored === 'light' || stored === 'system') theme = stored
         } catch (e) {}
-        if (theme !== 'dark' && theme !== 'light') {
+        if (theme === 'system') {
           theme = window.matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
             : 'light'
         }
         document.documentElement.classList.add(theme)
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0e0e0e' : '#f7f7f7')
       })()
     </script>
     <!--umami-->

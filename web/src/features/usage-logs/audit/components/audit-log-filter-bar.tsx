@@ -21,6 +21,10 @@ import { useTranslation } from 'react-i18next'
 
 import { Combobox } from '@/components/ui/combobox'
 
+import {
+  ActiveFilterChips,
+  type ActiveFilterChip,
+} from '../../components/active-filter-chips'
 import { CompactDateTimeRangePicker } from '../../components/compact-date-time-range-picker'
 import {
   LogsFilterField,
@@ -199,9 +203,70 @@ export function AuditLogFilterBar(props: {
     filterCount > 0 ||
     props.filters.start_timestamp !== undefined ||
     props.filters.end_timestamp !== undefined
+  const categoryLabels: Record<string, string> = {
+    login: t('Login'),
+    security: t('Account security'),
+    operation: t('Operation audit'),
+    access_token: t('Access Token'),
+  }
+  const chips: ActiveFilterChip[] = []
+  if (props.filters.category && !props.accessOnly) {
+    chips.push({
+      key: 'category',
+      label: t('Category'),
+      value: categoryLabels[props.filters.category] ?? props.filters.category,
+      onRemove: () => props.onChange({ category: undefined }),
+    })
+  }
+  if (props.filters.success) {
+    chips.push({
+      key: 'success',
+      label: t('Result'),
+      value: props.filters.success === 'true' ? t('Success') : t('Failed'),
+      onRemove: () => props.onChange({ success: undefined }),
+    })
+  }
+  if (props.filters.token_ref && !props.accessOnly) {
+    chips.push({
+      key: 'token_ref',
+      label: t('Token identifier'),
+      value: props.filters.token_ref,
+      onRemove: () => props.onChange({ token_ref: undefined }),
+    })
+  }
+  if (props.filters.request_id && !props.accessOnly) {
+    chips.push({
+      key: 'request_id',
+      label: t('Request ID'),
+      value: props.filters.request_id,
+      onRemove: () => props.onChange({ request_id: undefined }),
+    })
+  }
+  if (props.filters.username && props.scope === 'all') {
+    chips.push({
+      key: 'username',
+      label: t('Username'),
+      value: props.filters.username,
+      onRemove: () => props.onChange({ username: undefined }),
+    })
+  }
   return (
     <LogsFilterToolbar
       table={props.table}
+      chips={
+        <ActiveFilterChips
+          chips={chips}
+          onClearAll={() =>
+            props.onChange({
+              category: undefined,
+              success: undefined,
+              token_ref: undefined,
+              request_id: undefined,
+              username: undefined,
+            })
+          }
+        />
+      }
       primaryFilters={
         <>
           {dateFilter}

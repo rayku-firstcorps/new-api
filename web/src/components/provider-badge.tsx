@@ -28,7 +28,10 @@ type ProviderBadgeProps = Omit<StatusBadgeProps, 'children' | 'label'> & {
   iconKey?: string | null
   iconSize?: number
   label: string
-  /** Color the label text by provider name. Set false for a neutral label. */
+  /**
+   * Kept for call-site compatibility. Provider labels are always neutral now:
+   * brand colors are reserved for small dots and hover glows.
+   */
   colorText?: boolean
 }
 
@@ -38,7 +41,7 @@ export function ProviderBadge({
   iconNode,
   iconSize = 14,
   label,
-  colorText = true,
+  colorText: _colorText,
   ...badgeProps
 }: ProviderBadgeProps) {
   const icon = iconNode ?? (iconKey ? getLobeIcon(iconKey, iconSize) : null)
@@ -48,11 +51,14 @@ export function ProviderBadge({
       data-slot='provider-badge'
       className={cn('flex max-w-full min-w-0 items-center gap-1.5', className)}
     >
-      {icon && <span className='flex shrink-0 items-center'>{icon}</span>}
+      {icon && (
+        <span className='text-foreground flex shrink-0 items-center'>
+          {icon}
+        </span>
+      )}
       <StatusBadge
         label={label}
-        autoColor={colorText ? label : undefined}
-        variant={colorText ? undefined : 'neutral'}
+        variant='neutral'
         size='sm'
         className={cn('min-w-0 shrink overflow-hidden', !icon && 'pl-0')}
         {...badgeProps}

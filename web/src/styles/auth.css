@@ -1,0 +1,128 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+/* Auth pages only (sign-in, sign-up, forgot/reset password, OTP, OAuth
+ * callback): KuCode's form kit applied to the shared form primitives inside
+ * `.auth-form`, so every auth form gets the same 44px controls without
+ * changing the primitives used elsewhere. Dialogs are portaled out of
+ * `.auth-form` and keep the default look. Colors are theme tokens only. */
+.auth-form :is(input[data-slot='input'], input[data-slot='form-control']) {
+  height: 2.75rem;
+  padding-inline: 0.875rem;
+  border-color: var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  font-size: 16px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+@media (min-width: 1024px) {
+  .auth-form :is(input[data-slot='input'], input[data-slot='form-control']) {
+    font-size: 15px;
+  }
+}
+
+.auth-form
+  :is(input[data-slot='input'], input[data-slot='form-control']):hover:not(
+    :disabled
+  ) {
+  border-color: var(--input);
+}
+
+.auth-form
+  :is(input[data-slot='input'], input[data-slot='form-control']):focus-visible {
+  border-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.auth-form
+  :is(
+    input[data-slot='input'],
+    input[data-slot='form-control']
+  )[aria-invalid='true'] {
+  border-color: color-mix(in srgb, var(--destructive) 70%, transparent);
+}
+
+.auth-form
+  :is(
+    input[data-slot='input'],
+    input[data-slot='form-control']
+  )[aria-invalid='true']:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--destructive) 20%, transparent);
+}
+
+/* Show/hide password toggle (absolutely placed inside PasswordInput): a
+ * roomier hit area inside the taller input. */
+.auth-form
+  :is(input[data-slot='input'], input[data-slot='form-control'])
+  + [data-slot='button'].absolute {
+  inset-inline-end: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.auth-form
+  :is(input[data-slot='input'], input[data-slot='form-control']):has(
+    + [data-slot='button'].absolute
+  ) {
+  padding-inline-end: 3rem;
+}
+
+.auth-form [data-slot='form-label'],
+.auth-form [data-slot='label'] {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.auth-form [data-slot='form-message'] {
+  font-size: 12px;
+  line-height: 1rem;
+}
+
+/* Primary action of each auth form: KuCode's foreground-filled button. */
+.auth-form .auth-primary {
+  height: 2.75rem;
+  width: 100%;
+  border-radius: var(--radius);
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 15px;
+  transition:
+    translate 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms ease;
+}
+
+.auth-form .auth-primary:hover:not(:disabled) {
+  background: var(--foreground);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-form .auth-primary:hover:not(:disabled) {
+    translate: 0 -1px;
+  }
+}
+
+.auth-form .auth-primary:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px color-mix(in srgb, var(--primary) 60%, transparent);
+}

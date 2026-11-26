@@ -22,14 +22,13 @@ import { readCachedStatus, statusQueryOptions } from '@/lib/status-query'
 
 export type ModuleAccess = { enabled: boolean; requireAuth: boolean }
 
-export type HeaderNavModule = 'rankings' | 'pricing' | 'image-generation'
+export type HeaderNavModule = 'rankings' | 'pricing'
 
 export type HeaderNavModules = {
   home: boolean
   console: boolean
   pricing: ModuleAccess
   rankings: ModuleAccess
-  'image-generation': ModuleAccess
   docs: boolean
   about: boolean
   [key: string]: boolean | ModuleAccess
@@ -40,7 +39,6 @@ const DEFAULT_HEADER_NAV_MODULES: HeaderNavModules = {
   console: true,
   pricing: { enabled: true, requireAuth: false },
   rankings: { enabled: true, requireAuth: false },
-  'image-generation': { enabled: true, requireAuth: false },
   docs: true,
   about: true,
 }
@@ -48,7 +46,6 @@ const DEFAULT_HEADER_NAV_MODULES: HeaderNavModules = {
 const DEFAULTS: Record<HeaderNavModule, ModuleAccess> = {
   pricing: DEFAULT_HEADER_NAV_MODULES.pricing,
   rankings: DEFAULT_HEADER_NAV_MODULES.rankings,
-  'image-generation': DEFAULT_HEADER_NAV_MODULES['image-generation'],
 }
 
 function cloneHeaderNavDefaults(): HeaderNavModules {
@@ -56,7 +53,6 @@ function cloneHeaderNavDefaults(): HeaderNavModules {
     ...DEFAULT_HEADER_NAV_MODULES,
     pricing: { ...DEFAULT_HEADER_NAV_MODULES.pricing },
     rankings: { ...DEFAULT_HEADER_NAV_MODULES.rankings },
-    'image-generation': { ...DEFAULT_HEADER_NAV_MODULES['image-generation'] },
   }
 }
 
@@ -122,13 +118,6 @@ export function parseHeaderNavModules(raw: unknown): HeaderNavModules {
     }
     if (key === 'rankings') {
       result.rankings = parseAccess(value, result.rankings)
-      return
-    }
-    if (key === 'image-generation') {
-      result['image-generation'] = parseAccess(
-        value,
-        result['image-generation']
-      )
       return
     }
 

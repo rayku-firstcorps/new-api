@@ -17,138 +17,114 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { ArrowDown, ArrowRight, Braces } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { Fragment, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
 
-import {
-  getLandingPrimaryAction,
-  isLandingPricingEnabled,
-} from '../../lib/landing-actions'
-import { HomeIntegrationPreview } from '../home-integration-preview'
-import { OfficialSocialLinks } from '../official-social-links'
+import { useHeroParallax } from '../../hooks/use-hero-parallax'
+import { useSphereTopRatio } from '../../hooks/use-sphere-top-ratio'
+import type { HomeCatalogSummary } from '../../lib/catalog-summary'
+import { getLandingPrimaryAction } from '../../lib/landing-actions'
+import { HeroLogoRow } from '../hero-logo-row'
+import { HomeSphere } from '../home-sphere'
 
 interface HeroProps {
   className?: string
   isAuthenticated?: boolean
+  catalog?: HomeCatalogSummary | null
 }
+
+/** Brand names rendered in the foreground color inside the subtitle. */
+const SUBTITLE_HIGHLIGHT = /(OpenAI|Anthropic|Gemini)/
 
 export function Hero(props: HeroProps) {
   const { t } = useTranslation()
   const { status } = useStatus()
-  const { officialSocialLinks, systemName } = useSystemConfig()
-  const statusRecord = status as Record<string, unknown> | null
+  const { systemName } = useSystemConfig()
+  const rootRef = useRef<HTMLElement>(null)
+  const actionsRef = useRef<HTMLDivElement>(null)
+  const sphereTop = useSphereTopRatio(rootRef, actionsRef)
+  useHeroParallax(rootRef)
   const primaryAction = getLandingPrimaryAction(
-    statusRecord,
+    status as Record<string, unknown> | null,
     Boolean(props.isAuthenticated)
   )
-  const showPricing = isLandingPricingEnabled(statusRecord)
-  const communityLinks = officialSocialLinks.filter(
-    (link) =>
-      link.platform === 'telegram' ||
-      link.platform === 'whatsapp' ||
-      link.platform === 'linuxdo'
+  let offset = 0
+  const subtitleParts = t(
+    'OpenAI, Anthropic, Gemini and many more models through a single endpoint. Native API compatibility, routing and automatic failover, built for production.'
   )
-  const otherSocialLinks = officialSocialLinks.filter(
-    (link) =>
-      link.platform !== 'telegram' &&
-      link.platform !== 'whatsapp' &&
-      link.platform !== 'linuxdo'
-  )
+    .split(SUBTITLE_HIGHLIGHT)
+    .map((text, index) => {
+      const part = { text, offset, highlighted: index % 2 === 1 }
+      offset += text.length
+      return part
+    })
 
   return (
     <section
       id='home-hero'
+      ref={rootRef}
       aria-labelledby='home-title'
       className={cn(
-        'home-hero relative isolate overflow-hidden px-5 sm:px-8',
+        'home-hero relative isolate flex min-h-[calc(100svh-4rem)] flex-col items-center overflow-hidden px-6 pt-[max(2.5rem,7svh)] pb-28 text-center md:min-h-[max(calc(100svh-4rem),680px)]',
         props.className
       )}
     >
+      {/* Sphere layer: reverse parallax via the `translate` property. */}
       <div
-        className='home-hero-grid pointer-events-none absolute inset-0 -z-10'
+        className='pointer-events-none absolute inset-0 -z-10 [translate:calc(var(--px,0)*-12px)_calc(var(--py,0)*-12px)]'
+        aria-hidden='true'
+      >
+        <HomeSphere variant='hero' interactive topRatio={sphereTop} />
+      </div>
+      <div
+        className='from-background/0 to-background pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[22%] min-h-32 bg-linear-to-b'
         aria-hidden='true'
       />
-      <div className='mx-auto max-w-7xl'>
-        <div className='grid min-w-0 items-center gap-12 pt-16 pb-12 sm:pt-20 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pt-28 lg:pb-20'>
-          <div className='min-w-0'>
-            <div className='home-enter'>
-              <Badge
-                variant='outline'
-                className='home-eyebrow mb-7 max-w-full gap-2 rounded-full px-3 py-2 text-[11px] whitespace-normal'
-              >
-                <Braces className='size-3.5 shrink-0' aria-hidden='true' />
-                {t('Fast model gateway for daily AI tools')}
-              </Badge>
-            </div>
-            <h1
-              id='home-title'
-              className='home-enter home-title text-4xl leading-[1.12] font-semibold tracking-tight text-balance sm:text-5xl xl:text-6xl'
-            >
-              {t('Use frontier models inside the tools you already know')}
-            </h1>
-            <p className='home-enter home-description text-muted-foreground mt-6 max-w-xl text-base leading-8 text-pretty'>
-              {t(
-                'Connect once through new-api, route Codex, Claude Code, Cherry Studio, and Open WebUI to GPT, Claude, Gemini, and more.'
-              ).replace('new-api', systemName)}
-            </p>
-            <div className='home-enter home-actions mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap'>
-              <Button
-                role='link'
-                className='group h-auto min-h-12 rounded-xl px-6 py-3 whitespace-normal'
-                render={<Link to={primaryAction.to} />}
-              >
-                {t(primaryAction.label)}
-                <ArrowRight
-                  className='size-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1'
-                  aria-hidden='true'
-                />
-              </Button>
-              <OfficialSocialLinks links={communityLinks} variant='hero' />
-              {showPricing ? (
-                <Button
-                  role='link'
-                  variant='ghost'
-                  className='h-auto min-h-12 rounded-xl px-4 py-3 whitespace-normal'
-                  render={<Link to='/pricing' />}
-                >
-                  {t('View Pricing')}
-                </Button>
-              ) : null}
-            </div>
-            {otherSocialLinks.length > 0 ? (
-              <div className='home-enter mt-6'>
-                <OfficialSocialLinks links={otherSocialLinks} />
-              </div>
-            ) : null}
-          </div>
-          <div className='home-enter home-preview min-w-0'>
-            <HomeIntegrationPreview />
-          </div>
-        </div>
-        <div className='border-border flex flex-wrap items-center justify-between gap-4 border-t py-5'>
-          <p className='text-muted-foreground flex items-center gap-2 text-xs'>
-            <Braces className='text-primary size-4' aria-hidden='true' />
-            {t('OpenAI-compatible endpoints')}
-          </p>
-          <Button
-            role='link'
-            variant='ghost'
-            className='group min-h-11 gap-3 px-0 text-xs'
-            render={<a href='#home-tools' />}
-          >
-            {t('Unified setup')}
-            <ArrowDown
-              className='size-3.5 motion-safe:transition-transform motion-safe:group-hover:translate-y-1'
-              aria-hidden='true'
-            />
-          </Button>
-        </div>
+      <h1
+        id='home-title'
+        className='home-enter home-title font-display max-w-[960px] text-[clamp(40px,6vw,72px)] leading-[1.05] font-medium tracking-[-0.03em] text-balance'
+      >
+        <span className='block'>
+          <span className='text-foreground'>{t('One API for')}</span>{' '}
+          <span className='text-muted-foreground'>{t('Every Model')}</span>
+        </span>
+        <span className='block'>
+          <span className='text-muted-foreground'>{t('Routed by')}</span>{' '}
+          <span className='text-foreground wrap-anywhere'>{systemName}</span>
+        </span>
+      </h1>
+      <p className='home-enter home-description text-muted-foreground mt-5 max-w-[560px] text-[15px] leading-[1.6] text-pretty md:text-base'>
+        {subtitleParts.map((part) => (
+          <Fragment key={part.offset}>
+            {part.highlighted ? (
+              <span className='text-foreground'>{part.text}</span>
+            ) : (
+              part.text
+            )}
+          </Fragment>
+        ))}
+      </p>
+      <div className='home-enter home-logos mt-5 w-full'>
+        <HeroLogoRow catalog={props.catalog ?? null} />
+      </div>
+      <div ref={actionsRef} className='home-enter home-actions mt-7'>
+        <Button
+          role='link'
+          className='group h-auto min-h-12 px-6 py-3 whitespace-normal'
+          render={<Link to={primaryAction.to} />}
+        >
+          {t(primaryAction.label)}
+          <ArrowRight
+            className='size-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-1'
+            aria-hidden='true'
+          />
+        </Button>
       </div>
     </section>
   )

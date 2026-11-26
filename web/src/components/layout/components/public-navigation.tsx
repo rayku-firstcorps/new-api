@@ -16,73 +16,100 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 
 import { useTopNavLinks } from '@/hooks/use-top-nav-links'
 import { cn } from '@/lib/utils'
 
 import { defaultTopNavLinks } from '../config/top-nav.config'
+import { FOCUS_RING, isNavLinkActive } from '../lib/public-chrome'
 import type { TopNavLink } from '../types'
 
 interface PublicNavigationProps {
   /**
-   * Custom navigation links
-   * If not provided, will use dynamic links from backend or defaults
+   * Links to render. When omitted, the links produced by the backend
+   * HeaderNavModules configuration (or the defaults) are used.
    */
   links?: TopNavLink[]
-  /**
-   * Additional className
-   */
+  /** Click handler shared with the header (requireAuth prompt, disabled links). */
+  onLinkClick?: (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    link: TopNavLink
+  ) => void
   className?: string
 }
 
+const BASE_LINK_CLASS =
+  'min-w-0 rounded-sm whitespace-nowrap transition-colors duration-150'
+
 /**
- * Public navigation component that matches Launch UI template styling
- * Used in PublicHeader for desktop navigation
+ * Desktop link group of the public top bar (KuCode `NavLinks`): muted text
+ * links, the current page in the foreground color, `aria-current` on the
+ * active one. The header renders it once left and once right of the brand.
  */
-export function PublicNavigation({
-  links: providedLinks,
-  className,
-}: PublicNavigationProps = {}) {
-  // Use the same logic as AppHeader: prioritize dynamic links from backend
+export function PublicNavigation(props: PublicNavigationProps) {
+  const { t } = useTranslation()
   const dynamicLinks = useTopNavLinks()
-  const defaultLinks = providedLinks || defaultTopNavLinks
-  const links = dynamicLinks.length > 0 ? dynamicLinks : defaultLinks
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const defaultLinks = props.links || defaultTopNavLinks
+  const links =
+    props.links ?? (dynamicLinks.length > 0 ? dynamicLinks : defaultLinks)
 
   return (
-    <nav className={cn('hidden items-center gap-1 md:flex', className)}>
-      {links.map((link, index) => {
-        // Handle external links
+    <ul
+      className={cn(
+        'flex items-center gap-5 text-[14px] xl:gap-8',
+        props.className
+      )}
+    >
+      {links.map((link) => {
+        const isActive = isNavLinkActive(pathname, link.href)
+        const label = t(link.title)
+        const stateClass = cn(
+          BASE_LINK_CLASS,
+          FOCUS_RING,
+          isActive
+            ? 'text-foreground'
+            : 'text-muted-foreground hover:text-foreground',
+          link.disabled && 'pointer-events-none opacity-50'
+        )
+        const onClick = (event: React.MouseEvent<HTMLAnchorElement>) =>
+          props.onLinkClick?.(event, link)
+
         if (link.external) {
           return (
-            <a
-              key={index}
-              href={link.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              className={cn(
-                'text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground inline-flex h-9 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors focus:outline-none',
-                link.disabled && 'pointer-events-none opacity-50'
-              )}
-            >
-              {link.title}
-            </a>
+            <li key={`${link.title}:${link.href}`} className='min-w-0'>
+              <a
+                href={link.href}
+                title={label}
+                target='_blank'
+                rel='noopener noreferrer'
+                aria-disabled={link.disabled}
+                tabIndex={link.disabled ? -1 : undefined}
+                onClick={onClick}
+                className={cn('block truncate', stateClass)}
+              >
+                {label}
+              </a>
+            </li>
           )
         }
-        // Handle internal links
         return (
-          <Link
-            key={index}
-            to={link.href}
-            className={cn(
-              'text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground inline-flex h-9 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors focus:outline-none',
-              link.disabled && 'pointer-events-none opacity-50'
-            )}
-          >
-            {link.title}
-          </Link>
+          <li key={`${link.title}:${link.href}`} className='min-w-0'>
+            <Link
+              to={link.href}
+              title={label}
+              aria-current={isActive ? 'page' : undefined}
+              disabled={link.disabled}
+              onClick={onClick}
+              className={cn('block truncate', stateClass)}
+            >
+              {label}
+            </Link>
+          </li>
         )
       })}
-    </nav>
+    </ul>
   )
 }

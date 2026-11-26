@@ -1,7 +1,7 @@
 {
   "project": "new-api",
   "schema_version": "1.0",
-  "current_stage": "stage1",
+  "current_stage": "stage2-kucode-skin",
   "features": [
     {
       "id": "homepage-linuxdo-offers",
@@ -197,17 +197,6 @@
       ]
     },
     {
-      "id": "promotion-backend-model",
-      "title": "推广链接后端模型与迁移",
-      "status": "pending",
-      "scope": ["model/promotion.go", "model/main.go"],
-      "acceptance": [
-        "PromotionLink 和 PromotionRegistration GORM 结构体存在",
-        "AutoMigrate 在 SQLite/MySQL/PostgreSQL 三库通过",
-        "users 表增加 promotion_code、promotion_channel_tag 字段"
-      ]
-    },
-    {
       "id": "antom-payment-security-hardening-plan",
       "title": "Antom 支付安全加固实施计划",
       "status": "done",
@@ -221,73 +210,223 @@
       ]
     },
     {
-      "id": "promotion-backend-api",
-      "title": "推广链接 CRUD 接口",
-      "status": "pending",
-      "depends_on": ["promotion-backend-model"],
-      "scope": ["controller/promotion.go", "router/api-router.go"],
+      "id": "kucode-design-tokens",
+      "title": "KuCode 设计 token：琥珀主色、默认深色、图表主题",
+      "status": "in_progress",
+      "scope": ["web/src/styles/", "web/src/context/theme-provider.tsx", "web/src/lib/vchart.ts", "web/src/lib/use-chart-theme.ts", "web/index.html"],
       "acceptance": [
-        "GET/POST/PUT/DELETE /api/promotion 接口可用",
-        "Admin 权限校验通过",
-        "GET /api/promotion/:id/registrations 注册明细接口可用"
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "默认深色，保留深/浅/跟随系统切换",
+        "图表跟随主题",
+        "tsgo、vitest、build 通过",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
       ]
     },
     {
-      "id": "promotion-registration-flow",
-      "title": "注册流程接入推广归因",
-      "status": "pending",
-      "depends_on": ["promotion-backend-api"],
-      "scope": ["controller/user.go", "model/user.go"],
+      "id": "kucode-remove-theme-presets",
+      "title": "取消用户可选主题预设与布局选项",
+      "status": "done",
+      "scope": ["web/src/context/", "web/src/lib/theme-storage.ts", "web/src/components/theme-switch.tsx"],
       "acceptance": [
-        "promo/promotion_code/aff/aff_code 参数全部兼容",
-        "推广成功时用户获得 reward_quota",
-        "promotion_registrations 写入归因记录",
-        "同一用户不能重复领取推广奖励",
-        "OAuth 注册复用同一套归因逻辑"
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "删除 10 个预设及字体/圆角/缩放/布局选项",
+        "旧本地存储值被忽略并清理",
+        "tsgo、vitest、build 通过"
       ]
     },
     {
-      "id": "promotion-frontend-capture",
-      "title": "前端 URL 参数采集与注册提交",
-      "status": "pending",
-      "scope": [
-        "web/default/src/routes/__root.tsx",
-        "web/default/src/features/auth/lib/storage.ts",
-        "web/default/src/features/auth/types.ts",
-        "web/default/src/features/auth/api.ts",
-        "web/default/src/features/auth/sign-up/components/sign-up-form.tsx"
-      ],
+      "id": "kucode-color-cleanup",
+      "title": "硬编码颜色改为 token",
+      "status": "done",
+      "scope": ["web/src/"],
       "acceptance": [
-        "?promo=xxx 参数保存到 localStorage",
-        "?aff=xxx 向后兼容保存",
-        "注册请求携带 promotion_code 字段"
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "Tailwind 调色板类为 0",
+        "剩余十六进制仅为 token 定义、画布配色、品牌/二维码等白名单"
       ]
     },
     {
-      "id": "promotion-frontend-admin",
-      "title": "前端推广管理页面",
-      "status": "pending",
-      "depends_on": ["promotion-frontend-capture", "promotion-backend-api"],
-      "scope": ["web/default/src/features/promotions/"],
+      "id": "kucode-provider-icons",
+      "title": "品牌图标全站单色",
+      "status": "in_progress",
+      "scope": ["web/src/lib/lobe-icon.tsx", "web/src/components/provider-badge.tsx", "web/src/assets/"],
       "acceptance": [
-        "推广链接列表、创建、编辑、启停流程可用",
-        "复制推广链接功能可用",
-        "查看注册明细可用",
-        "管理端侧边栏新增「推广链接」菜单（仅 admin/root 可见）",
-        "i18n 文案同步：bun run i18n:sync 通过"
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "lobe 图标与首页客户端/模型图标改为单色 currentColor",
+        "撤销 homepage-client-brand-icons / homepage-model-brand-icons 的彩色图标",
+        "待办：后台上传的图片图标放入中性底色方块"
+      ]
+    },
+    {
+      "id": "kucode-ui-primitives",
+      "title": "components/ui 基础组件 KuCode 风格",
+      "status": "in_progress",
+      "scope": ["web/src/components/ui/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "不改 props 与行为",
+        "现有测试通过",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-console-shell",
+      "title": "控制台外框（侧栏/顶栏）KuCode 风格",
+      "status": "in_progress",
+      "scope": ["web/src/components/layout/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "保留侧栏/导航配置与角色控制",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-public-shell",
+      "title": "公共导航与页脚 KuCode 风格",
+      "status": "in_progress",
+      "scope": ["web/src/components/layout/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "保留受保护链接与 New API 默认值",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-brand-defaults",
+      "title": "KuCode 星芒 Logo 默认品牌",
+      "status": "in_progress",
+      "scope": ["web/public/kucode-mark.svg", "web/public/kucode-mark-mono.svg", "web/src/components/layout/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "新增 Logo 文件，不覆盖 logo.png/favicon",
+        "运营需在后台设置 SystemName=KuCode、Logo=/kucode-mark.svg、页脚，并清空自定义首页"
+      ]
+    },
+    {
+      "id": "kucode-home",
+      "title": "首页：严格照 KuCode（首屏/供应商/功能/步骤/代码示例/FAQ/CTA）",
+      "status": "in_progress",
+      "scope": ["web/src/features/home/", "web/src/components/dot-sphere/", "web/src/lib/dot-sphere/"],
+      "acceptance": [
+        "仅前端改动，后端零改动，变更只在 web/；首页模块删除为用户明确要求的例外",
+        "无定价区；区块标题按 KuCode 显示（2026-11-26 用户决定，KuCode 计划 D18，撤销原“只保留 sr-only”）；Hero 图标行显示目录全部供应商并用 KuCode 供应商标识补足到 10 个（D19）；FAQ 用后台 faq 数据，空则隐藏",
+        "保留后台自定义首页（URL/HTML/Markdown）与推广弹窗；社群链接等功能及后台配置保留，仅首页不展示",
+        "layout.browser.mjs 已更新但未运行",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-model-square",
+      "title": "模型广场 KuCode 布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/pricing/", "web/src/features/performance-metrics/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "全部筛选/排序/视图/分组定价保留",
+        "不新增 SLA 视图",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-auth-pages",
+      "title": "登录注册页 KuCode 布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/auth/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "认证逻辑零改动（Turnstile、密码加密、2FA、Passkey、OAuth、邮箱验证码）",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-console-overview",
+      "title": "Dashboard 总览 KuCode 布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/dashboard/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "原有数据与面板全部保留",
+        "待办：页头副标题（SectionPageLayout 无描述插槽）",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-api-keys",
+      "title": "API Key 页 KuCode 风格",
+      "status": "in_progress",
+      "scope": ["web/src/features/keys/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "表单字段与查看/复制行为不变",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-usage-logs",
+      "title": "使用日志 KuCode 布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/usage-logs/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "全部筛选、列、导出保留",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-audit-log",
+      "title": "审计日志 KuCode 布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/usage-logs/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "分类、筛选、权限不变",
+        "未做：按天分组、Sheet 详情",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-billing",
+      "title": "钱包页 KuCode 布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/wallet/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "所有支付方式流程不变（含 Antom Safari 预开窗口）",
+        "需沙箱验证各支付方式",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
+      ]
+    },
+    {
+      "id": "kucode-docs",
+      "title": "文档页 Claude Docs 风格三栏布局",
+      "status": "in_progress",
+      "scope": ["web/src/features/docs/", "web/src/routes/docs/index.tsx", "web/src/assets/docs/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "仅前端改动：后端零改动，变更只在 web/；用户 2026-11-26 决定（KuCode 计划 D17）：文档页只保留 CC Switch 指南，其余 5 个客户端指南、FAQ、路由选项与路由规则、左侧导航/移动端 Sheet 去掉；模型改为 claude-opus-5-5（标题、Model 徽章、配置 Model 与 ANTHROPIC_MODEL）。保留 6 个步骤、每个代码块复制与“Configuration copied”提示、发布前提示，真实网关根地址填入配置",
+        "Claude Docs 布局（仅借布局与阅读模式，KuCode token，无 Anthropic 品牌）：单页正文 + ≥1280px “On this page” 滚动高亮；绿色只用于第 6 步状态提示",
+        "不新增：文档搜索、Copy page、反馈组件、上一页/下一页、?client= 深链",
+        "例外（用户 2026-11-26 决定，KuCode 计划 D16）：新增 CC Switch 指南（Claude compatible 组；安装/配置字段依据官方 README 与用户手册；指向 API 密钥页已有的 CC Switch 导入）及深/浅两版插画（web/src/assets/docs/*.webp，随站点主题切换，装饰性 alt=''）",
+        "features/docs/__tests__ 两个测试文件 5 个用例通过；七语言 i18n missing/extras 为 0",
+        "深色 1440/1100/390、浅色 1440/390 已用本地后端截图核对、无横向滚动；768/1920 与纯键盘操作待人工验收"
+      ]
+    },
+    {
+      "id": "kucode-restyle-t4",
+      "title": "其余页面仅换样式",
+      "status": "in_progress",
+      "scope": ["web/src/features/"],
+      "acceptance": [
+        "仅前端换肤：new-api 功能不删减，后端零改动，变更只在 web/",
+        "布局与行为不变",
+        "待办：渠道/系统设置区块框架与保存栏、筛选 chip、空状态的细化",
+        "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
       ]
     }
   ],
   "out_of_scope": [
-    "分佣结算",
-    "多级推广",
-    "复杂 ROI 看板",
-    "A/B 实验",
-    "设备指纹",
-    "点击实时埋点的复杂漏斗分析",
-    "推广链接落地页编辑器",
-    "临时邮箱黑名单",
-    "首次成功调用 API 后再发奖励（延迟发放）",
-    "首次充值后再发邀请人奖励"
+    "后端任何改动（Go、迁移、配置项、接口）",
+    "删除或精简 new-api 原有功能",
+    "KuCode 原型独有功能（Key 轮换、保存银行卡、记住我、SLA 错误预算、审计改动对比与导出等）",
+    "首页定价区"
   ]
 }
