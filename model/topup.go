@@ -18,6 +18,7 @@ type TopUp struct {
 	UserId          int     `json:"user_id" gorm:"index"`
 	Amount          int64   `json:"amount"`
 	Money           float64 `json:"money"`
+	Currency        string  `json:"currency,omitempty" gorm:"type:varchar(16);default:''"`
 	TradeNo         string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod   string  `json:"payment_method" gorm:"type:varchar(50)"`
 	PaymentProvider string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
@@ -882,9 +883,9 @@ func RechargePayssion(tradeNo string, callerIp string) (err error) {
 	return nil
 }
 
-func RechargeAntom(tradeNo string, callerIp string) (err error) {
+func RechargeAntom(tradeNo string, callerIp string) (alreadyDone bool, err error) {
 	if tradeNo == "" {
-		return errors.New("未提供支付单号")
+		return false, errors.New("payment order number not provided")
 	}
 
 	var quotaToAdd int
@@ -896,9 +897,8 @@ func RechargeAntom(tradeNo string, callerIp string) (err error) {
 	}
 
 	err = DB.Transaction(func(tx *gorm.DB) error {
-		err := LockForUpdate(tx).Where(refCol+" = ?", tradeNo).First(topUp).Error
-		if err != nil {
-			return errors.New("充值订单不存在")
+		if err := lockForUpdate(tx).Where(refCol+" = ?", tradeNo).First(topUp).Error; err != nil {
+			return ErrTopUpNotFound
 		}
 
 		if topUp.PaymentProvider != PaymentProviderAntom {
@@ -906,18 +906,20 @@ func RechargeAntom(tradeNo string, callerIp string) (err error) {
 		}
 
 		if topUp.Status == common.TopUpStatusSuccess {
+			alreadyDone = true
 			return nil
 		}
 
 		if topUp.Status != common.TopUpStatusPending {
-			return errors.New("充值订单状态错误")
+			return ErrTopUpStatusInvalid
 		}
 
-		dAmount := decimal.NewFromInt(topUp.Amount)
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
-		if quotaToAdd <= 0 {
-			return errors.New("无效的充值额度")
+		var quotaErr error
+		quotaToAdd, quotaErr = common.WalletQuotaFromDecimalStrict(
+			decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)),
+		)
+		if quotaErr != nil || quotaToAdd <= 0 {
+			return ErrInvalidTopUpQuota
 		}
 
 		topUp.CompleteTime = common.GetTimestamp()
@@ -926,25 +928,25 @@ func RechargeAntom(tradeNo string, callerIp string) (err error) {
 			return err
 		}
 
-		if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error; err != nil {
-			return err
-		}
-
-		return nil
+		return creditTopUpQuota(tx, topUp.UserId, quotaToAdd, nil)
 	})
 
 	if err != nil {
-		common.SysError("antom topup failed: " + err.Error())
-		return errors.New("充值失败，请稍后重试")
+		if !errors.Is(err, ErrTopUpNotFound) && !errors.Is(err, ErrPaymentMethodMismatch) && !errors.Is(err, ErrTopUpStatusInvalid) {
+			common.SysError(common.LogText("antom topup failed: %s", err.Error()))
+		}
+		return false, err
 	}
-
-	if quotaToAdd > 0 {
-		RecordTopupLog(topUp.UserId, common.NewMessage("{{provider}} top-up succeeded, amount added: {{quota}}, payment amount: {{amount}}", map[string]any{"provider": "Antom", "quota": logger.FormatQuota(quotaToAdd), "amount": fmt.Sprintf("%.2f", topUp.Money)}), callerIp, topUp.PaymentMethod, PaymentMethodAntom)
-		TryGrantFirstTopUpReward(topUp.UserId, topUp.Amount)
-		TryGrantAffCommission(topUp.UserId, quotaToAdd, topUp.Amount)
+	if alreadyDone {
+		return true, nil
 	}
+	syncCreditUserQuotaCache(topUp.UserId, quotaToAdd, common.LogText("antom topup"))
 
-	return nil
+	RecordTopupLog(topUp.UserId, common.NewMessage("{{provider}} top-up succeeded, amount added: {{quota}}, payment amount: {{amount}}", map[string]any{"provider": "Antom", "quota": logger.FormatQuota(quotaToAdd), "amount": fmt.Sprintf("%.2f", topUp.Money)}), callerIp, topUp.PaymentMethod, PaymentMethodAntom)
+	TryGrantFirstTopUpReward(topUp.UserId, topUp.Amount)
+	TryGrantAffCommission(topUp.UserId, quotaToAdd, topUp.Amount)
+
+	return false, nil
 }
 
 func ExpirePendingTopUps(minutes int) {

@@ -452,6 +452,33 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 		option.Value = normalized
+	case "AntomPaymentMethods":
+		rawMethods := strings.TrimSpace(option.Value.(string))
+		if rawMethods != "" {
+			var methods []setting.AntomPaymentMethod
+			if err = common.UnmarshalJsonStr(rawMethods, &methods); err != nil {
+				common.ApiErrorT(c, "Invalid parameters")
+				return
+			}
+			for _, method := range methods {
+				if method.UnitPrice < 0 || method.ExchangeRate < 0 {
+					common.ApiErrorT(c, "Invalid parameters")
+					return
+				}
+			}
+		}
+	case "AntomUnitPrice":
+		unitPrice, parseErr := strconv.ParseFloat(strings.TrimSpace(option.Value.(string)), 64)
+		if parseErr != nil || !isFinitePositive(unitPrice) {
+			common.ApiErrorT(c, "Invalid parameters")
+			return
+		}
+	case "AntomMinTopUp":
+		minTopUp, parseErr := strconv.Atoi(strings.TrimSpace(option.Value.(string)))
+		if parseErr != nil || minTopUp < 1 {
+			common.ApiErrorT(c, "Invalid parameters")
+			return
+		}
 	}
 	if model.IsPasskeyDomainOption(option.Key) {
 		change, updateErr := model.UpdatePasskeyDomainOptions(map[string]string{option.Key: option.Value.(string)}, false, "")

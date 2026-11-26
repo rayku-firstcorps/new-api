@@ -1,6 +1,8 @@
 package setting
 
 import (
+	"math"
+	"slices"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -56,6 +58,12 @@ func GetAntomPaymentMethods() []AntomPaymentMethod {
 		method.Type = strings.TrimSpace(method.Type)
 		method.Name = strings.TrimSpace(method.Name)
 		method.Currency = strings.ToUpper(strings.TrimSpace(method.Currency))
+		if math.IsNaN(method.UnitPrice) || math.IsInf(method.UnitPrice, 0) || method.UnitPrice < 0 {
+			method.UnitPrice = 0
+		}
+		if math.IsNaN(method.ExchangeRate) || math.IsInf(method.ExchangeRate, 0) || method.ExchangeRate < 0 {
+			method.ExchangeRate = 0
+		}
 		if method.Type == "" {
 			continue
 		}
@@ -69,17 +77,14 @@ func GetAntomPaymentMethods() []AntomPaymentMethod {
 
 func IsAntomPaymentMethodAllowed(paymentMethod string) bool {
 	paymentMethod = strings.TrimSpace(paymentMethod)
+	methods := GetAntomPaymentMethods()
+	if len(methods) == 0 {
+		return paymentMethod == ""
+	}
 	if paymentMethod == "" {
 		return false
 	}
-	methods := GetAntomPaymentMethods()
-	if len(methods) == 0 {
-		return true
-	}
-	for _, method := range methods {
-		if method.Type == paymentMethod {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(methods, func(method AntomPaymentMethod) bool {
+		return method.Type == paymentMethod
+	})
 }
