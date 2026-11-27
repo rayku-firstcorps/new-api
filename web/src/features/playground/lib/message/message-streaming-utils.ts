@@ -30,6 +30,7 @@ import {
   getCurrentVersion,
   hasMessageContent,
   hasMessageImages,
+  moveInlineImagesToMessage,
   updateCurrentVersionContent,
 } from './message-utils'
 
@@ -105,7 +106,9 @@ export function applyStreamingChunk(
 
   const currentVersion = getCurrentVersion(message)
   const appendableChunk = getAppendableChunk(currentVersion.content, chunk)
-  const contentMessage = processStreamingContent(message, appendableChunk)
+  const contentMessage = moveInlineImagesToMessage(
+    processStreamingContent(message, appendableChunk)
+  )
 
   return {
     ...(contentMessage.isReasoningStreaming
@@ -136,7 +139,9 @@ export function finalizeMessage(
     ''
 
   const finalized = {
-    ...updateCurrentVersionContent(message, visibleContent),
+    ...moveInlineImagesToMessage(
+      updateCurrentVersionContent(message, visibleContent)
+    ),
     reasoning: finalReasoning
       ? {
           ...startReasoningTiming(message),

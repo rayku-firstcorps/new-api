@@ -250,6 +250,19 @@ if [[ "$TARGET" == "all" || "$TARGET" == "playground-claude-messages" ]]; then
   fi
 fi
 
+if [[ "$TARGET" == "all" || "$TARGET" == "playground-inline-base64-images" ]]; then
+  echo ""
+  echo "── playground-inline-base64-images ──"
+  check "流式与完成路径提取 base64 Markdown 图片"     "grep -c 'moveInlineImagesToMessage' web/src/features/playground/lib/message/message-streaming-utils.ts | grep -q '^[3-9]'"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "Playground lint 通过" "(cd web && bunx oxlint -c .oxlintrc.json src/features/playground)"
+    check "Playground 测试通过" "(cd web && bunx vitest run src/features/playground)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
 # ── 汇总 ─────────────────────────────────────────────
 echo ""
 echo "================================================"

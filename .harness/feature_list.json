@@ -531,6 +531,19 @@
         "解析 Messages 流式 text_delta/thinking_delta/error 与非流式 content[]，错误按 Claude 格式展示",
         "go test 相关包、vitest、typecheck、lint 通过"
       ]
+    },
+    {
+      "id": "playground-inline-base64-images",
+      "title": "Playground 正文中的 base64 Markdown 图片渲染为图片（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求：chat/completions 返回的 ![image](data:image/...;base64,...)（如 Gemini 生图）超过 Markdown 解析上限后显示为原始 base64 文本",
+      "scope": ["web/src/features/playground/"],
+      "acceptance": [
+        "流式与非流式助手正文中完整的 base64 Markdown 图片移入 message.images，用现有图片组件渲染，正文去掉对应文本",
+        "未写完的图片 Markdown 保持原样，后续分片补全后再提取；非图片 data URI 不处理",
+        "图片 base64 不写入 localStorage、不随下一轮请求作为文本发回（复用现有 images 逻辑）",
+        "vitest、typecheck、Playground lint 与 Harness 验证通过"
+      ]
     }
   ],
   "out_of_scope": [

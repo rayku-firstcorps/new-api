@@ -127,3 +127,88 @@ describe('chat completion reasoning', () => {
     ])
   })
 })
+
+describe('inline base64 images in content', () => {
+  const pngData = 'iVBORw0KGgoAAAANSUhEUg=='
+  const pngMarkdown = `![image](data:image/png;base64,${pngData})`
+
+  function imagesOf(message: ReturnType<typeof createLoadingAssistantMessage>) {
+    return (message.images ?? []).map(({ mediaType, base64 }) => ({
+      mediaType,
+      base64,
+    }))
+  }
+
+  test('streamed image markdown moves to images and leaves the text', () => {
+    let message = createLoadingAssistantMessage(0)
+    message = applyStreamingChunk(message, 'content', 'Here it is:\n\n')
+    message = applyStreamingChunk(message, 'content', pngMarkdown)
+
+    expect(message.versions[0].content).toBe('Here it is:')
+    expect(imagesOf(message)).toEqual([
+      { mediaType: 'image/png', base64: pngData },
+    ])
+  })
+
+  test('an image split across chunks is extracted once it is complete', () => {
+    const splitAt = pngMarkdown.length - 6
+    let message = createLoadingAssistantMessage(0)
+    message = applyStreamingChunk(
+      message,
+      'content',
+      pngMarkdown.slice(0, splitAt)
+    )
+
+    expect(message.images).toBeUndefined()
+
+    message = applyStreamingChunk(
+      message,
+      'content',
+      pngMarkdown.slice(splitAt)
+    )
+
+    expect(message.versions[0].content).toBe('')
+    expect(imagesOf(message)).toEqual([
+      { mediaType: 'image/png', base64: pngData },
+    ])
+  })
+
+  test('non-streaming content with several images keeps their order', () => {
+    const completed = applyChatCompletionResponse(
+      createLoadingAssistantMessage(0),
+      {
+        id: 'chatcmpl-test',
+        object: 'chat.completion',
+        created: 0,
+        model: 'gemini-image',
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: `Two cats\n\n${pngMarkdown}\n\n![image](data:image/jpeg;base64,/9j/4AAQ)`,
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }
+    )
+
+    expect(completed?.versions[0].content).toBe('Two cats')
+    expect(completed && imagesOf(completed)).toEqual([
+      { mediaType: 'image/png', base64: pngData },
+      { mediaType: 'image/jpeg', base64: '/9j/4AAQ' },
+    ])
+  })
+
+  test('non-image data URIs and remote images stay in the text', () => {
+    const content =
+      '[media](data:audio/wav;base64,UklGRg==) ![cat](https://example.com/cat.png)'
+    const completed = completeAssistantMessage(
+      applyStreamingChunk(createLoadingAssistantMessage(0), 'content', content)
+    )
+
+    expect(completed.versions[0].content).toBe(content)
+    expect(completed.images).toBeUndefined()
+  })
+})

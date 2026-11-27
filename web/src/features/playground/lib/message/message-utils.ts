@@ -84,6 +84,42 @@ export function upsertMessageImage(
   return { ...message, images: nextImages }
 }
 
+// A complete Markdown image whose URL is a base64 image data URI, the way
+// gateways render inline image parts in chat completions (Gemini image
+// models, for example). Partial images from an unfinished chunk do not match.
+const INLINE_BASE64_IMAGE_PATTERN =
+  /!\[[^\]\n]*\]\(data:(image\/[\w.+-]+);base64,([A-Za-z0-9+/=]+)\)/g
+
+/**
+ * Move complete base64 Markdown images out of the current version content
+ * into message.images. They are megabytes long, so the Markdown renderer
+ * would show them as raw text; as images they render, are not stored in
+ * localStorage, and are not sent back as text in the next request.
+ */
+export function moveInlineImagesToMessage(message: Message): Message {
+  const content = getMessageContent(message)
+  if (!content.includes('](data:image/')) {
+    return message
+  }
+
+  const extracted: GeneratedImage[] = []
+  const remaining = content.replace(
+    INLINE_BASE64_IMAGE_PATTERN,
+    (_match, mediaType: string, base64: string) => {
+      extracted.push({ id: nanoid(), mediaType, base64 })
+      return ''
+    }
+  )
+  if (extracted.length === 0) {
+    return message
+  }
+
+  return {
+    ...updateCurrentVersionContent(message, remaining.trim()),
+    images: [...(message.images ?? []), ...extracted],
+  }
+}
+
 /**
  * Update current version content in message
  */
