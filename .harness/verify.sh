@@ -90,7 +90,7 @@ if [[ "$TARGET" == "all" || "$TARGET" == "promotion-frontend-capture" ]]; then
   echo "── promotion-frontend-capture ──"
   if command -v bun &>/dev/null; then
     check "前端 typecheck 通过" \
-      "cd web/default && bun run typecheck 2>&1 | grep -c 'error TS' | grep -q '^0$'"
+      "(cd web/default && bun run typecheck 2>&1 | grep -c 'error TS' | grep -q '^0$')"
     check "注册 API 携带 promotion_code" \
       "grep -q 'promotion_code' web/default/src/features/auth/api.ts 2>/dev/null || \
        grep -rq 'promotion_code' web/default/src/features/auth/ 2>/dev/null"
@@ -111,9 +111,142 @@ if [[ "$TARGET" == "all" || "$TARGET" == "promotion-frontend-admin" ]]; then
     "test -f web/default/src/features/promotions/types.ts"
   if command -v bun &>/dev/null; then
     check "前端构建通过" \
-      "cd web/default && bun run build 2>&1 | grep -v 'warning' | grep -qv 'error'"
+      "(cd web/default && bun run build 2>&1 | grep -v 'warning' | grep -qv 'error')"
   else
     skip "前端构建验证（Bun 未安装）"
+  fi
+fi
+
+# ── Stage 3：用户引导（First Setup）─────────────────
+onboarding_frontend_checks() {
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "前端测试通过" "(cd web && bun run test)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+}
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-new-user-quota-switch" ]]; then
+  echo ""
+  echo "── onboarding-new-user-quota-switch ──"
+  check "quota_setting 含 new_user_quota_enabled" \
+    "grep -q 'new_user_quota_enabled' setting/operation_setting/quota_setting.go"
+  check "quota_setting 含 new_user_quota_require_email" \
+    "grep -q 'new_user_quota_require_email' setting/operation_setting/quota_setting.go"
+  check "TryGrantNewUserQuota 保留行锁" \
+    "grep -A40 'func TryGrantNewUserQuota' model/user.go | grep -q 'lockForUpdate'"
+  check "后端构建通过" "go build ./..."
+  check "后端相关测试通过" "go test ./model/... ./controller/... ./setting/..."
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-setting-and-state" ]]; then
+  echo ""
+  echo "── onboarding-setting-and-state ──"
+  check "onboarding_setting.go 存在" "test -f setting/operation_setting/onboarding_setting.go"
+  check "/api/status 暴露 onboarding_enabled" "grep -q 'onboarding_enabled' controller/misc.go"
+  check "/api/status 暴露 new_user_quota_amount" "grep -q 'new_user_quota_amount' controller/misc.go"
+  check "UserSetting 含引导状态字段" "grep -q 'onboarding_completed' relaykit/dto/user_settings.go"
+  check "后端构建通过" "go build ./..."
+  check "relaykit 独立构建通过" "(cd relaykit && GOWORK=off go build ./...)"
+  check "后端相关测试通过" "go test ./model/... ./controller/... ./setting/..."
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-admin-settings-ui" ]]; then
+  echo ""
+  echo "── onboarding-admin-settings-ui ──"
+  check "额度设置含注册赠送开关" \
+    "grep -q 'new_user_quota_enabled' web/src/features/system-settings/general/quota-settings-section.tsx"
+  check "OnboardingSettingsSection 已注册" \
+    "grep -rq 'onboarding' web/src/features/system-settings/operations/section-registry.tsx"
+  onboarding_frontend_checks
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-wizard-shell" ]]; then
+  echo ""
+  echo "── onboarding-wizard-shell ──"
+  check "WizardShell 存在" "test -f web/src/components/wizard/wizard-shell.tsx"
+  check "/setup 使用 WizardShell" "grep -rq 'WizardShell' web/src/features/setup/"
+  check "/setup 完成后跳 /sign-in?from=setup" "grep -rq 'from=setup\\|from: .setup.' web/src/features/setup/"
+  onboarding_frontend_checks
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-user-wizard-core" ]]; then
+  echo ""
+  echo "── onboarding-user-wizard-core ──"
+  check "onboarding feature 目录存在" "test -d web/src/features/onboarding"
+  check "/onboarding 路由存在" "test -f web/src/routes/_authenticated/onboarding/index.tsx"
+  check "onboarding 不把完整 Key 写入 localStorage" \
+    "! grep -rn 'localStorage.setItem' web/src/features/onboarding/ | grep -qi 'key\\b.*sk-\\|fullKey\\|tokenKey'"
+  onboarding_frontend_checks
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-user-wizard-connect" ]]; then
+  echo ""
+  echo "── onboarding-user-wizard-connect ──"
+  check "onboarding 引用 CC Switch 组件" "grep -rqi 'ccswitch\\|cc-switch\\|CCSwitch' web/src/features/onboarding/"
+  onboarding_frontend_checks
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-admin-first-setup" ]]; then
+  echo ""
+  echo "── onboarding-admin-first-setup ──"
+  check "onboarding 含管理员引导" "grep -rqi 'admin' web/src/features/onboarding/"
+  onboarding_frontend_checks
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "onboarding-overview-refine" ]]; then
+  echo ""
+  echo "── onboarding-overview-refine ──"
+  check "Summary 卡片含 Not topped up yet" \
+    "grep -rq 'Not topped up yet' web/src/features/dashboard/components/overview/"
+  check "RequestPreview 不再 truncate 代码行" \
+    "! grep -q 'truncate' web/src/features/dashboard/components/overview/request-preview.tsx"
+  onboarding_frontend_checks
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "playground-responses-image" ]]; then
+  echo ""
+  echo "── playground-responses-image ──"
+  check "注册 POST /pg/responses" \
+    "grep -q 'playgroundRouter.POST(\"/responses\"' router/relay-router.go"
+  check "/pg/responses 映射为 RelayModeResponses" \
+    "grep -q '/pg/responses' relay/constant/relay_mode.go"
+  check "后端构建通过" "go build ./..."
+  check "后端相关测试通过" \
+    "go test ./relay/constant/ ./middleware/ -run 'TestPath2RelayMode|TestGetModelRequestReadsPlaygroundGroupForEveryPlaygroundRoute'"
+  check "前端按 image-generation 端点切换 Responses" \
+    "grep -q 'IMAGE_GENERATION_ENDPOINT_TYPE' web/src/features/playground/hooks/use-playground-options.ts"
+  check "保存消息时丢弃图片 base64" \
+    "grep -q 'store only their placeholders' web/src/features/playground/lib/storage/storage.ts"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "Playground 测试通过" "(cd web && bunx vitest run src/features/playground)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "playground-claude-messages" ]]; then
+  echo ""
+  echo "── playground-claude-messages ──"
+  check "注册 POST /pg/messages" \
+    "grep -q 'playgroundRouter.POST(\"/messages\"' router/relay-router.go"
+  check "/pg/messages 声明会话访问规则" \
+    "grep -q 'POST /pg/messages' middleware/access_token_routes.go"
+  check "前端按 anthropic 端点与 claude 名称切换 Messages" \
+    "grep -q 'ANTHROPIC_ENDPOINT_TYPE' web/src/features/playground/lib/options/playground-option-utils.ts"
+  check "后端构建通过" "go build ./..."
+  check "透传渠道收到的 Playground 请求体不含 group" \
+    "go test ./controller/ -run TestPlaygroundMessagesPassThroughOmitsGroup -count=1"
+  check "Playground 路由读取分组" \
+    "go test ./middleware/ -run TestGetModelRequestReadsPlaygroundGroupForEveryPlaygroundRoute -count=1"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "Playground lint 通过" "(cd web && bunx oxlint -c .oxlintrc.json src/features/playground)"
+    check "Playground 测试通过" "(cd web && bunx vitest run src/features/playground)"
+  else
+    skip "前端验证（Bun 未安装）"
   fi
 fi
 

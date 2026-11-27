@@ -17,11 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { MESSAGE_ROLES, MESSAGE_STATUS } from '../../constants'
-import type { Message } from '../../types'
+import type { GeneratedImage, Message } from '../../types'
 import { parseThinkTags } from './message-reasoning-utils'
 
 type MessageContentStateBase = {
   displayContent: string
+  images: GeneratedImage[]
+  showText: boolean
   hasSources: boolean
   isAssistant: boolean
   showLoader: boolean
@@ -44,11 +46,13 @@ type MessageContentState = MessageContentStateBase &
 function shouldShowMessageLoader(
   message: Message,
   isAssistant: boolean,
-  versionContent: string
+  versionContent: string,
+  hasImages: boolean
 ): boolean {
   return (
     isAssistant &&
     !message.isReasoningStreaming &&
+    !hasImages &&
     (message.status === MESSAGE_STATUS.LOADING ||
       (message.status === MESSAGE_STATUS.STREAMING && !versionContent))
   )
@@ -56,11 +60,12 @@ function shouldShowMessageLoader(
 
 function shouldShowMessageContent(
   message: Message,
-  versionContent: string
+  versionContent: string,
+  hasImages: boolean
 ): boolean {
   return (
     (message.from === MESSAGE_ROLES.USER || !message.isReasoningStreaming) &&
-    versionContent.length > 0
+    (versionContent.length > 0 || hasImages)
   )
 }
 
@@ -83,15 +88,24 @@ export function getMessageContentState(
   const isAssistant = message.from === MESSAGE_ROLES.ASSISTANT
   const sources = message.sources ?? []
   const reasoningContent = isAssistant ? message.reasoning?.content : undefined
+  const images = message.images ?? []
+  const hasImages = images.length > 0
   const showLoader = shouldShowMessageLoader(
     message,
     isAssistant,
-    versionContent
+    versionContent,
+    hasImages
   )
-  const showMessageContent = shouldShowMessageContent(message, versionContent)
+  const showMessageContent = shouldShowMessageContent(
+    message,
+    versionContent,
+    hasImages
+  )
 
   const baseState: MessageContentStateBase = {
     displayContent: getDisplayContent(message, versionContent),
+    images,
+    showText: versionContent.length > 0,
     hasSources: sources.length > 0,
     isAssistant,
     showLoader,

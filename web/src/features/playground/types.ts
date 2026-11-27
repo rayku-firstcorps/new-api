@@ -28,6 +28,16 @@ export interface MessageVersion {
   content: string
 }
 
+/**
+ * An image returned by a Responses image_generation_call. base64 is kept in
+ * memory only; stored messages drop it, so a reloaded image has no base64.
+ */
+export interface GeneratedImage {
+  id: string
+  mediaType: string
+  base64?: string
+}
+
 export interface Message {
   key: string
   from: MessageRole
@@ -49,6 +59,7 @@ export interface Message {
   isContentComplete?: boolean
   status?: MessageStatus
   errorCode?: string | null
+  images?: GeneratedImage[]
 }
 
 // API payload types
@@ -77,6 +88,51 @@ export interface ChatCompletionRequest {
   presence_penalty?: number
   seed?: number
 }
+
+// Image generation models stream through the Responses API instead, and
+// Claude models use the native Anthropic Messages API.
+export type PlaygroundRequestFormat = 'chat' | 'responses' | 'messages'
+
+export interface MessagesRequestMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface MessagesRequest {
+  model: string
+  group?: string
+  system?: string
+  messages: MessagesRequestMessage[]
+  max_tokens: number
+  stream: boolean
+  temperature?: number
+  top_p?: number
+}
+
+export interface MessagesResponse {
+  content?: Array<{
+    type: string
+    text?: string
+    thinking?: string
+  }>
+}
+
+export interface ResponsesInputMessage {
+  role: MessageRole
+  content: string
+}
+
+export interface ResponsesRequest {
+  model: string
+  group?: string
+  input: ResponsesInputMessage[]
+  stream: true
+}
+
+export type PlaygroundStreamRequest =
+  | { format: 'chat'; payload: ChatCompletionRequest }
+  | { format: 'responses'; payload: ResponsesRequest }
+  | { format: 'messages'; payload: MessagesRequest }
 
 export interface ChatCompletionChunk {
   id: string

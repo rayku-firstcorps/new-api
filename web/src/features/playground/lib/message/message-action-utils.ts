@@ -18,11 +18,16 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { MESSAGE_ROLES, MESSAGE_STATUS } from '../../constants'
 import type { Message } from '../../types'
-import { getMessageContent, hasMessageContent } from './message-utils'
+import {
+  getMessageContent,
+  hasMessageContent,
+  hasMessageImages,
+} from './message-utils'
 
 type MessageActionState = {
   content: string
   hasContent: boolean
+  hasImages: boolean
   isAssistant: boolean
   isLoading: boolean
   isUser: boolean
@@ -32,6 +37,7 @@ export function getMessageActionState(message: Message): MessageActionState {
   return {
     content: getMessageContent(message),
     hasContent: hasMessageContent(message),
+    hasImages: hasMessageImages(message),
     isAssistant: message.from === MESSAGE_ROLES.ASSISTANT,
     isUser: message.from === MESSAGE_ROLES.USER,
     isLoading:

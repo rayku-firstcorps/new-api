@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useEffect } from 'react'
+
 import { PlaygroundChat } from './components/chat/playground-chat'
 import { PlaygroundInput } from './components/input/playground-input'
 import {
@@ -25,7 +27,7 @@ import {
   usePlaygroundState,
 } from './hooks'
 
-export function Playground() {
+export function Playground(props: { initialModel?: string }) {
   const {
     config,
     parameterEnabled,
@@ -41,9 +43,23 @@ export function Playground() {
     clearMessages,
   } = usePlaygroundState()
 
+  const initialModel = props.initialModel
+  useEffect(() => {
+    if (initialModel) updateConfig('model', initialModel)
+  }, [initialModel, updateConfig])
+
+  const { isLoadingModels, requestFormat } = usePlaygroundOptions({
+    currentGroup: config.group,
+    currentModel: config.model,
+    setGroups,
+    setModels,
+    updateConfig,
+  })
+
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
     config,
     parameterEnabled,
+    requestFormat,
     onMessageUpdate: updateMessages,
   })
 
@@ -65,14 +81,6 @@ export function Playground() {
     handleEditOpenChange(false)
     clearMessages()
   }
-
-  const { isLoadingModels } = usePlaygroundOptions({
-    currentGroup: config.group,
-    currentModel: config.model,
-    setGroups,
-    setModels,
-    updateConfig,
-  })
 
   return (
     <div className='relative flex size-full min-h-0 flex-col overflow-hidden'>

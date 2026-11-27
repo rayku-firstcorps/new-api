@@ -35,9 +35,18 @@ export const MESSAGE_STATUS = {
 // API endpoints
 export const API_ENDPOINTS = {
   CHAT_COMPLETIONS: '/pg/chat/completions',
+  RESPONSES: '/pg/responses',
+  MESSAGES: '/pg/messages',
   USER_MODELS: '/api/user/models',
   USER_GROUPS: '/api/user/self/groups',
 } as const
+
+// Models whose catalog endpoints include this type stream via /pg/responses
+export const IMAGE_GENERATION_ENDPOINT_TYPE = 'image-generation'
+
+// Claude models whose catalog endpoints include this type use /pg/messages,
+// so pass-through Anthropic channels receive their native request body
+export const ANTHROPIC_ENDPOINT_TYPE = 'anthropic'
 
 // Default group — uses 'default' as the safe fallback; auto-group is
 // only selected when the backend confirms it is available for the user.

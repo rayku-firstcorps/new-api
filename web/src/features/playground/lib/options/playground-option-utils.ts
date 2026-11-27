@@ -16,7 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import type { GroupOption, ModelOption } from '../../types'
+import {
+  ANTHROPIC_ENDPOINT_TYPE,
+  IMAGE_GENERATION_ENDPOINT_TYPE,
+} from '../../constants'
+import type {
+  GroupOption,
+  ModelOption,
+  PlaygroundRequestFormat,
+} from '../../types'
 
 export function getModelFallback(
   models: ModelOption[],
@@ -62,4 +70,30 @@ export function getOptionLoadErrorMessage(
   fallbackMessage: string
 ): string {
   return error instanceof Error ? error.message : fallbackMessage
+}
+
+/**
+ * Pick the playground request API from the model catalog endpoints. Image
+ * generation models use Responses. Claude models with an Anthropic endpoint
+ * use Messages, so pass-through Anthropic channels receive a native body;
+ * the name check keeps non-Claude models on gateways that list every
+ * endpoint (New API, Sub2API) on chat completions. Without catalog data
+ * every model uses chat completions.
+ */
+export function getPlaygroundRequestFormat(
+  supportedEndpointTypes: readonly string[] | undefined,
+  model: string
+): PlaygroundRequestFormat {
+  if (supportedEndpointTypes?.includes(IMAGE_GENERATION_ENDPOINT_TYPE)) {
+    return 'responses'
+  }
+
+  if (
+    supportedEndpointTypes?.includes(ANTHROPIC_ENDPOINT_TYPE) &&
+    /claude/i.test(model)
+  ) {
+    return 'messages'
+  }
+
+  return 'chat'
 }

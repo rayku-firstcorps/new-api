@@ -313,6 +313,23 @@ func TestGetModelRequestAssignsDeepSeekToolRoutingNames(t *testing.T) {
 	}
 }
 
+// Playground routes take the model and group from the body; the group becomes
+// the token group that the distributor then checks against the user's groups.
+func TestGetModelRequestReadsPlaygroundGroupForEveryPlaygroundRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, path := range []string{"/pg/chat/completions", "/pg/responses", "/pg/messages"} {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Request = httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"model":"gpt-image-2","group":"vip","input":"a cat","stream":true}`))
+		c.Request.Header.Set("Content-Type", "application/json")
+		modelRequest, shouldSelectChannel, err := getModelRequest(c)
+		require.NoError(t, err, path)
+		assert.True(t, shouldSelectChannel, path)
+		assert.Equal(t, "gpt-image-2", modelRequest.Model, path)
+		assert.Equal(t, "vip", modelRequest.Group, path)
+		assert.Equal(t, "vip", common.GetContextKeyString(c, constant.ContextKeyTokenGroup), path)
+	}
+}
+
 func TestTokenModelLimitAllowsExemptAtNameByFullName(t *testing.T) {
 	settings := model_setting.GetGlobalSettings()
 	original := append([]string(nil), settings.ThinkingModelBlacklist...)

@@ -35,9 +35,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { getPricing } from '@/features/pricing/api'
 import { handleServerError } from '@/lib/handle-server-error'
 import { requireServerSuccess } from '@/lib/server-error-message'
 
@@ -46,9 +47,15 @@ import {
   getGroupFallback,
   getModelFallback,
   getOptionLoadErrorMessage,
+  getPlaygroundRequestFormat,
   shouldClearModelForGroup,
 } from '../lib'
-import type { GroupOption, ModelOption, PlaygroundConfig } from '../types'
+import type {
+  GroupOption,
+  ModelOption,
+  PlaygroundConfig,
+  PlaygroundRequestFormat,
+} from '../types'
 
 type UsePlaygroundOptionsParams = {
   currentGroup: string
@@ -90,6 +97,26 @@ export function usePlaygroundOptions({
     queryKey: ['playground-groups'],
     queryFn: async () => requireServerSuccess(await getUserGroups()),
   })
+
+  // The model catalog tells which models generate images. Without it (the
+  // pricing page can be disabled) every model keeps using chat completions.
+  const { data: pricingData } = useQuery({
+    queryKey: ['pricing'],
+    queryFn: async () => requireServerSuccess(await getPricing()),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    meta: { errorToast: false },
+  })
+
+  const requestFormat = useMemo<PlaygroundRequestFormat>(() => {
+    const catalogModel = pricingData?.data?.find(
+      (model) => model.model_name === currentModel
+    )
+    return getPlaygroundRequestFormat(
+      catalogModel?.supported_endpoint_types,
+      currentModel
+    )
+  }, [pricingData, currentModel])
 
   useEffect(() => {
     if (!isModelsError) return
@@ -144,5 +171,6 @@ export function usePlaygroundOptions({
 
   return {
     isLoadingModels,
+    requestFormat,
   }
 }

@@ -391,7 +391,19 @@ export function loadMessages(): Message[] | null {
  */
 export function saveMessages(messages: Message[]): void {
   try {
-    const trimmed = trimMessages(messages)
+    // Generated images are megabytes of base64; store only their placeholders
+    // so the conversation stays within the localStorage budget.
+    const trimmed = trimMessages(messages).map((message) =>
+      message.images
+        ? {
+            ...message,
+            images: message.images.map((image) => ({
+              id: image.id,
+              mediaType: image.mediaType,
+            })),
+          }
+        : message
+    )
     const parsed = messagesSchema.parse(trimmed) as Message[]
     writeStoredValue(STORAGE_KEYS.MESSAGES, parsed)
   } catch (error) {

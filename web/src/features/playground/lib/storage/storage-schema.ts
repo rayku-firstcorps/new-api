@@ -71,6 +71,12 @@ const reasoningSchema = z.object({
   durationMs: z.number().optional(),
 })
 
+const generatedImageSchema = z.object({
+  id: z.string(),
+  mediaType: z.string(),
+  base64: z.string().optional(),
+})
+
 const messageSchema = z.object({
   key: z.string(),
   from: messageRoleSchema,
@@ -86,6 +92,7 @@ const messageSchema = z.object({
   isContentComplete: z.boolean().optional(),
   status: messageStatusSchema.optional(),
   errorCode: z.string().nullable().optional(),
+  images: z.array(generatedImageSchema).optional(),
 })
 
 export const messagesSchema = z.array(messageSchema)

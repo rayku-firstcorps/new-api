@@ -87,7 +87,7 @@ export function MessageActions({
   const { copiedText, copyToClipboard } = useCopyToClipboard()
   const { guardAction } = useMessageActionGuard(isGenerating)
 
-  const { content, hasContent, isAssistant, isLoading, isUser } =
+  const { content, hasContent, hasImages, isAssistant, isLoading, isUser } =
     getMessageActionState(message)
   const isCopied = copiedText === content
 
@@ -129,7 +129,12 @@ export function MessageActions({
     })
   }
 
-  if ((isAssistant || isUser) && hasContent && !isLoading && onRegenerate) {
+  if (
+    (isAssistant || isUser) &&
+    (hasContent || hasImages) &&
+    !isLoading &&
+    onRegenerate
+  ) {
     actions.push({
       disabled: isGenerating,
       icon: RefreshCw,

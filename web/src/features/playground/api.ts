@@ -23,6 +23,8 @@ import { API_ENDPOINTS } from './constants'
 import type {
   ChatCompletionRequest,
   ChatCompletionResponse,
+  MessagesRequest,
+  MessagesResponse,
   ModelOption,
   GroupOption,
 } from './types'
@@ -35,6 +37,20 @@ export async function sendChatCompletion(
   signal?: AbortSignal
 ): Promise<ChatCompletionResponse> {
   const res = await api.post(API_ENDPOINTS.CHAT_COMPLETIONS, payload, {
+    signal,
+    skipErrorHandler: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+/**
+ * Send an Anthropic Messages request (non-streaming)
+ */
+export async function sendMessages(
+  payload: MessagesRequest,
+  signal?: AbortSignal
+): Promise<MessagesResponse> {
+  const res = await api.post(API_ENDPOINTS.MESSAGES, payload, {
     signal,
     skipErrorHandler: true,
   } as Record<string, unknown>)

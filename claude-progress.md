@@ -5,6 +5,12 @@
 
 ## 当前 Stage
 
+**Stage 3** — 用户引导 First Setup 与注册赠送配置（stage3-user-onboarding，2026-11-27 用户决定开启）
+
+目标：按 `docs/prd/user-onboarding-first-setup-plan.md` 与 `docs/prd/user-onboarding-first-setup-prompts.md`（P1–P9）实现；本 Stage 允许后端改动。out_of_scope 以 `.harness/feature_list.json` 为准。Stage 2 原 out_of_scope（后端任何改动；删除或精简原有功能；KuCode 原型独有功能；首页定价区）仍适用于未完成的 kucode-* 项，本 Stage 不收尾 kucode-* 项。
+
+以下为 Stage 2 说明（保留）：
+
 **Stage 2** — KuCode 前端换肤（stage2-kucode-skin）
 
 目标：参考 KuCode 原型（`C:\Users\Administrator\Desktop\kucode-landing-page`，计划见其 `prompts/new-api-rebuild-plan.md`）只改布局和样式；new-api 功能不删减、不新增，后端零改动，变更只在 `web/`。旧 Stage 1 推广链接的待办已按用户要求移除。
@@ -45,8 +51,40 @@
 | kucode-billing | in_progress | 钱包 KuCode 布局，所有支付流程不变（含 Antom Safari 预开窗口）；需沙箱验证 |
 | kucode-docs | in_progress | /docs 按用户决定（D17）只保留 CC Switch 指南（模型 claude-opus-5-5），单页正文 + 本页目录；深/浅插画随主题；深浅主题 1440/1920/768/390 已截图核对，键盘待人工验收 |
 | kucode-restyle-t4 | in_progress | 其余页面仅换样式（继承 token/基础组件）；渠道/系统设置区块框架等细化待办 |
+| onboarding-new-user-quota-switch | done | 2026-11-27 新增 quota_setting.new_user_quota_enabled（默认 false）/ new_user_quota_require_email（默认 true），operation_setting.IsNewUserQuotaEnabled()/IsNewUserQuotaRequireEmail()；TryGrantNewUserQuota 按开关与邮箱前置判定，改用 lockForUpdate + NewUserQuotaRewarded 幂等；触发点 Register、FinalizeOAuthUserCreation、WeChat 新建、EmailBind；model.InitNewUserQuotaSwitchOption 启动时 OnConflict DoNothing 持久化一次（QuotaForNewUser>0 则启用，管理员关闭不被覆盖）；QuotaForNewUser 保存校验 0..MaxWalletQuota；七语言 2 个 key；SQLite / MySQL 5.7.44 / PostgreSQL 9.6.24 测试通过，verify.sh 7/7。未做“最新发布版数据库升级”实测 |
+| onboarding-setting-and-state | done | 2026-11-27 新增 onboarding_setting（enabled/auto_open_on_first_login/allow_inline_test_request/show_cc_switch/admin_guide_enabled，默认 true，GetOnboardingSetting()）；/api/status 增加 onboarding_* 与 new_user_quota_enabled/amount/require_email（auto_open 未与 enabled 预先合并，前端需同时判断）；UserSetting 增加 onboarding_completed/dismissed/use_case；新增 PUT /api/user/onboarding（UserAuth，部分更新白名单字段）；/api/user/self 返回 new_user_quota_rewarded（setting 为 JSON 字符串需前端解析）；SQLite/MySQL 5.7/PostgreSQL 9.6 通过，verify.sh 9/9 |
+| onboarding-admin-settings-ui | done | 2026-11-27 额度设置新增注册赠送总开关（关闭时金额置灰保留）与仅邮箱后发放开关（关闭需 ConfirmDialog 并持续显示风险 Alert）；新增 /system-settings/operations/onboarding（OnboardingSettingsSection，总开关 + 4 子开关）；类型 OnboardingStatusFields/UserOnboardingSetting/UpdateOnboardingRequest/SelfResponseOnboardingFields 在 features/auth/types.ts；七语言 19 key；system-settings 26 文件/303 测试、typecheck、verify.sh 6/6 通过。编排者修正：P2 的 "Invalid onboarding use case" 误放在 locale 顶层，已移入 translation，i18n:sync missing/extras 0 |
+| onboarding-wizard-shell | done | 2026-11-27 抽离 `web/src/components/wizard/`（WizardShell + StepNavigation，新增 submitLabel/submittingLabel）；/setup 改用壳且行为不变，初始化后跳 /sign-in?from=setup（sign-in search schema 增加 from）；新增 WizardShell 4 例、SetupWizard 2 例测试；typecheck、全量 vitest 264 文件/3084 例、build:check、verify.sh 7/7 通过。UsageModeStep 绑定 SetupFormValues 未移动，P5 需自建卡片单选 |
+| onboarding-user-wizard-core | done | 2026-11-27 新增 features/onboarding/ 与 /onboarding 路由：Step 1 自建场景卡片单选；Step 2 额度区块（自用模式/余额/绑邮箱领取（内联 EmailBindDialog）/0 余额）+ 原地建 Key 或预选已启用 Key（完整 Key 仅内存）；Step 3 占位（components/connect-step.tsx，props useCase/selectedKey）；自动触发在 Overview 首屏 useOnboardingAutoOpen（判定集中于 lib/availability.ts，管理员一律不进入）；跳过/完成写 PUT /api/user/onboarding 与 onboarding_progress:u_<id>；Overview 顶栏 Quick start 入口；注册页赠送提示；七语言 37 key；全量 vitest 267 文件/3111 例、typecheck、build:check、verify.sh 7/7 通过。未在登录态下人工点测 |
+| onboarding-user-wizard-connect | done | 2026-11-27 Step 3 按场景：coding 内嵌 CCSwitchPanel（features/keys/components/cc-switch-panel.tsx，CCSwitchDialog 改为外壳）+ 手动配置；api 为 CodeSnippetTabs（components/code-snippet-tabs.tsx）+ buildConnectSnippets（lib/connect-snippets.ts）四语言，展示脱敏 Key、复制完整 Key，inline_test 开启时同源 fetch /v1/chat/completions（Bearer 用户 Key、credentials omit、max_tokens 16）并映射 401/402/404/429/网络错误；playground 带 ?model= 跳转（范围扩展至 playground 路由，只接受模型名）；完整 Key 仅内存；七语言 32 key；全量 vitest 269 文件/3127 例、typecheck、build:check、verify.sh 5/5 通过 |
+| onboarding-admin-first-setup | done | 2026-11-27 管理员向导（admin-onboarding-wizard.tsx）：总开关+auto_open+admin_guide 开启、role>=ADMIN、未完成/跳过且渠道数为 0（getChannels total，失败不阻塞）时 Overview 自动进入；三步：厂商卡片跳 /channels?onboarding=channel（ChannelsReturnBanner 打开新建抽屉并可返回 /onboarding?step=1）→ 渠道/模型数与修复指引 → 复用 ApiKeyBlock/ModelField/TestRequestBlock；完成记 use_case=api；范围扩展 channels 路由与 features/channels/index.tsx；provider 参数仅透传（抽屉无预设 API）；七语言 36 key；verify.sh 5/5 |
+| onboarding-overview-refine | done | 2026-11-27 引导未完成隐藏 Recommended actions、首个未完成步骤高亮+CTA、弹窗内复用 ApiKeyBlock 建 Key；自用模式去掉 Add credits；RequestPreview 改 CC Switch/curl/Python Tab、不截断、Playground 与 /docs 入口；SummaryCards 新用户显示 Not topped up yet；折叠状态 dashboard_overview_setup_guide_expanded:u_<id>（旧全局 key 首个账号一次性迁移）；挂载/聚焦刷新 /api/user/self；AuthUser 增加 new_user_quota_rewarded；12 例新测试。编排者全量复核：verify.sh 全部 onboarding 检查 41/41 通过（4 个失败为 Stage 1 promotion 旧检查指向已移除的 web/default）、build:check 通过、改动文件 oxlint 无 error、i18n:sync missing/extras 0 |
+| playground-responses-image | done | 2026-11-27 用户明确批准的 Stage 3 外独立需求。后端：新增 POST /pg/responses（controller.Playground 增加 relayFormat 参数，临时 token/分组校验/计费与 /pg/chat/completions 一致），distributor 两处 /pg/chat/completions 判断放宽为 /pg/，Path2RelayMode 把 /pg/responses 映射为 RelayModeResponses，access token 规则补 POST /pg/responses。前端：/api/pricing 中 supported_endpoint_types 含 image-generation 的模型自动走 /pg/responses 流式（总是流式、不发采样参数），解析 output_text/reasoning delta、output_item.done(image_generation_call.result)、partial_image、completed/failed/error；sse.js 按 event 名分发，故逐个监听 Responses 事件；图片存 Message.images 用 ai-elements Image 渲染（Image 的 uint8Array 改为可选），保存 localStorage 时丢弃 base64，刷新后显示占位；七语言 1 key。真实上游探测 1 次确认事件格式；假上游 + 工作区构建 + 无头 Chrome 走查通过（图片显示、计费日志 playground-default、越权分组 403、刷新占位）；全量 vitest 3163 例、typecheck、改动文件 oxlint/oxfmt、i18n:sync missing/extras 0、verify.sh 10/10 |
+| playground-claude-messages | done | 2026-11-27 用户明确批准的 Stage 3 内独立需求，解决透传渠道收到 OpenAI 格式 Playground 请求失败。后端：新增 POST /pg/messages（controller.Playground(c, RelayFormatClaude)），access token 规则补 POST /pg/messages；controller.Playground 在转发前从请求体移除 group（Distribute 已用完；DTO 无该字段，只影响透传，修复所有 /pg/* 在透传渠道上把 group 发往上游）。前端：getPlaygroundRequestFormat —— 端点含 image-generation 走 responses，含 anthropic 且模型名含 claude（不区分大小写）走 messages，其余 chat；buildMessagesPayload（system 合并为顶层 system、max_tokens 必发、temperature 优先于 top_p 只发其一、不发 penalty/seed）；解析 content_block_delta 的 text_delta/thinking_delta 与 message_stop；非流式 sendMessages + getMessagesResponseChoice；非流式错误补读 error.message。无新增文案。controller/playground_test.go 假 Anthropic 透传上游端到端验证上游 body 不含 group（去掉修复时失败）；Playground vitest 6 文件/53 例、typecheck、playground oxlint/oxfmt、verify.sh 11/11 |
 
 ## 上次停在哪里
+
+2026-11-27 追加 playground-claude-messages（用户明确批准），已 done、未提交：
+- Claude 模型挂在开启透传的 OpenAI 类型渠道上时，Messages 格式依然会失败；需要时再加「/pg/* 选渠道跳过透传渠道」过滤。
+- 未在真实 Anthropic 上游与浏览器中实测；SystemPerformanceCheck 对 /pg/messages 仍返回 OpenAI 错误格式（前端两种格式都能解析）。
+- 遗留（与本 feature 无关，仍未修）：router TestAccessTokenRouteRulesCoverEveryDashboardRoute 因 PUT /api/user/onboarding 缺 access token 规则失败。
+
+2026-11-27 追加 playground-responses-image（用户明确批准，作为 Stage 3 内独立 feature，不改 out_of_scope 其他约束），已 done、未提交：
+- 生图模型判断依赖 /api/pricing 的 supported_endpoint_types（common.IsImageGenerationModel 名称规则：dall-e、gpt-image-、qwen-image、wan* 等）；只支持 /images/generations 的上游（如 dall-e-3、wan、qwen-image）在 Playground 里也会被发到 /responses 而失败，需要时再加例外或改为可切换。
+- 定价页模块被关闭时 /api/pricing 不可用，所有模型回退 chat/completions（不报错）。
+- 多轮只回传文本，不回传历史图片；不支持图片编辑。
+- 遗留（与本 feature 无关）：router TestAccessTokenRouteRulesCoverEveryDashboardRoute 失败，PUT /api/user/onboarding 缺 access token 规则（来自 onboarding-setting-and-state 未提交改动）；relay/channel TestUpstreamGetBody_HTTP2RetryAfterGracefulGoAway_PassThrough 偶发失败，重跑通过。
+- 本次重写 .harness/feature_list.json 时 JSON 重新序列化，部分数组格式变化（内容不变）。
+
+2026-11-27 Stage 3 用户引导 First Setup（stage3-user-onboarding）由编排者按 `docs/prd/user-onboarding-first-setup-prompts.md` P0–P9 分派子代理完成，8 个 onboarding-* feature 均为 done，全部未提交：
+- 后端：注册赠送开关/邮箱前置/升级兼容（P1）、onboarding_setting + /api/status + PUT /api/user/onboarding（P2）；三库（SQLite / MySQL 5.7.44 / PostgreSQL 9.6.24）测试通过。
+- 前端：后台设置（P3）、WizardShell（P4）、/onboarding 用户向导（P5/P6）、管理员向导（P7）、Overview 兜底（P8）。
+- P9 验收：真实应用（工作区构建 + 临时 SQLite）无头 Chrome 走查全部通过；rc.51 源码建库 → 工作区构建启动两次的升级测试通过（开关只启用一次、数据完好、管理员关闭后不被覆盖、新库为 false）。修复 1 个缺陷：自用模式下测试请求额度不足仍提示充值（TestRequestBlock 新增 selfUseMode，补测试）。截图在 D:	mpp9shots。
+- 验证：verify.sh 全部 onboarding 检查通过（4 个 Stage 1 promotion 旧检查仍指向已移除的 web/default）；全量 vitest 271 文件/3155 例、typecheck、build:check、i18n:sync missing/extras 0。
+- 遗留：未在浏览器复测 P9 修复后的构建；Step 3 测试请求成功路径未端到端实测（上游为假渠道）；升级测试只在 SQLite 上做；TestManageUserQuotaMiddlewareKeepsOneOperationPerRequest 在 -run 过滤下顺序相关失败（HEAD 已存在，与本次无关）；渠道抽屉无厂商预设，provider 参数仅透传；关闭邮箱前置的风险提示为 UI 提示，不强制 Turnstile。
+- 下一步：用户确认后提交（建议从 main 切分支并按 AGENTS.md PR 规则准备 PR）；视需要清理 verify.sh 中 Stage 1 promotion 旧检查。
+
+以下为 Stage 2 最后记录：
 
 2026-11-26 登录注册页对齐 KuCode（`kucode-auth-pages`，用户要求「newapi 登录注册页与本项目设计不一致, 需要修正」）。与 KuCode `/login/` `/register/` 截图逐项对比后只改样式与布局，认证逻辑（提交、Turnstile、Passkey、OAuth、微信、法律同意、2FA、重置）零改动：
 - 标题：新增 `features/auth/components/auth-page-heading.tsx`（`AuthPageHeading` 两段色 h1 + 副标题，`AuthSwitchPrompt`/`AuthInlineLink`）；登录「Sign in to {systemName}」、注册「Create your account」、忘记密码「Reset your password」，OTP/重置确认同样式。「没有账号？注册」等切换链接移到表单下方居中（显示条件不变）。`MixedHeading` 的 `as` 增加 `p`。
@@ -358,4 +396,4 @@
 
 ---
 
-*最后更新：2026-10-27 按用户授权提交并推送首页 LinuxDo 优惠入口到 origin/main；待部署前后端并填写实际链接。Stage 1 后续仍从 `promotion-backend-model` 开始。*
+*最后更新：2026-11-27 Stage 3 用户引导 First Setup 8 个 feature 完成并通过 P9 验收，待用户确认提交。*

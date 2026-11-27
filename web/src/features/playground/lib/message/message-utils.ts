@@ -24,6 +24,7 @@ import type {
   MessageVersion,
   ChatCompletionMessage,
   ContentPart,
+  GeneratedImage,
 } from '../../types'
 
 /**
@@ -55,6 +56,32 @@ export function getMessageContent(message: Message): string {
  */
 export function hasMessageContent(message: Message): boolean {
   return getMessageContent(message).trim() !== ''
+}
+
+/**
+ * Check whether a message carries generated images.
+ */
+export function hasMessageImages(message: Message): boolean {
+  return (message.images?.length ?? 0) > 0
+}
+
+/**
+ * Add a generated image, replacing an earlier image with the same id so a
+ * final image takes the place of its partial previews.
+ */
+export function upsertMessageImage(
+  message: Message,
+  image: GeneratedImage
+): Message {
+  const images = message.images ?? []
+  const index = images.findIndex((existing) => existing.id === image.id)
+  if (index === -1) {
+    return { ...message, images: [...images, image] }
+  }
+
+  const nextImages = [...images]
+  nextImages[index] = image
+  return { ...message, images: nextImages }
 }
 
 /**

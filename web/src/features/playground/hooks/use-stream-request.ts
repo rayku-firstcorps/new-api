@@ -26,10 +26,15 @@ import {
   getStreamReadyStateError,
   isStreamClosedReadyState,
   isStreamDoneMessage,
+  MESSAGES_STREAM_EVENT_TYPES,
+  parseMessagesStreamEvent,
+  parseResponsesStreamEvent,
   parseStreamErrorDetails,
+  RESPONSES_STREAM_EVENT_TYPES,
   parseStreamMessageUpdates,
+  type ResponsesStreamEvent,
 } from '../lib'
-import type { ChatCompletionRequest } from '../types'
+import type { GeneratedImage, PlaygroundStreamRequest } from '../types'
 
 interface StreamEventSource {
   readyState?: number
@@ -43,14 +48,42 @@ interface StreamEventSource {
 
 interface StreamRequestCallbacks {
   onUpdate: (type: 'reasoning' | 'content', chunk: string) => void
+  onImage: (image: GeneratedImage) => void
   onComplete: () => void
   onError: (error: string, errorCode?: string) => void
+}
+
+function parseStreamEvent(
+  format: PlaygroundStreamRequest['format'],
+  data: string
+): ResponsesStreamEvent {
+  if (isStreamDoneMessage(data)) return { kind: 'done' }
+  if (format === 'responses') return parseResponsesStreamEvent(data)
+  if (format === 'messages') return parseMessagesStreamEvent(data)
+  return { kind: 'updates', updates: parseStreamMessageUpdates(data) }
+}
+
+const STREAM_ENDPOINTS: Record<PlaygroundStreamRequest['format'], string> = {
+  chat: API_ENDPOINTS.CHAT_COMPLETIONS,
+  responses: API_ENDPOINTS.RESPONSES,
+  messages: API_ENDPOINTS.MESSAGES,
+}
+
+// sse.js dispatches named events ("event: response.completed") under their
+// own type, so Responses and Messages streams listen to each event they use.
+const NAMED_STREAM_EVENT_TYPES: Record<
+  PlaygroundStreamRequest['format'],
+  readonly string[]
+> = {
+  chat: [],
+  responses: RESPONSES_STREAM_EVENT_TYPES,
+  messages: MESSAGES_STREAM_EVENT_TYPES,
 }
 
 interface StreamRequestControllerRuntime {
   getHeaders: () => Promise<Record<string, string>>
   createSource: (
-    payload: ChatCompletionRequest,
+    request: PlaygroundStreamRequest,
     headers: Record<string, string>
   ) => StreamEventSource
   setStreaming: (streaming: boolean) => void
@@ -71,7 +104,7 @@ export function createStreamRequestController(
   }
 
   const send = async (
-    payload: ChatCompletionRequest,
+    request: PlaygroundStreamRequest,
     callbacks: StreamRequestCallbacks
   ) => {
     const requestGeneration = generation + 1
@@ -95,7 +128,7 @@ export function createStreamRequestController(
     }
     if (generation !== requestGeneration) return
 
-    const nextSource = runtime.createSource(payload, headers)
+    const nextSource = runtime.createSource(request, headers)
     source = nextSource
     runtime.setStreaming(true)
     let completed = false
@@ -110,28 +143,41 @@ export function createStreamRequestController(
       closeActiveSource(nextSource)
     }
 
-    nextSource.addEventListener('message', (event) => {
+    const handleMessage = (event: Event & { data?: string }) => {
       if (!isCurrent() || completed) return
-      const data = event.data ?? ''
-      if (isStreamDoneMessage(data)) {
-        completed = true
-        closeActiveSource(nextSource)
-        callbacks.onComplete()
-        return
-      }
-
+      let streamEvent: ResponsesStreamEvent
       try {
-        const updates = parseStreamMessageUpdates(data)
-
-        for (const update of updates) {
-          callbacks.onUpdate(update.type, update.chunk)
-        }
+        streamEvent = parseStreamEvent(request.format, event.data ?? '')
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to parse SSE message:', error)
         handleError(ERROR_MESSAGES.PARSE_ERROR)
+        return
       }
-    })
+
+      switch (streamEvent.kind) {
+        case 'done':
+          completed = true
+          closeActiveSource(nextSource)
+          callbacks.onComplete()
+          return
+        case 'error':
+          handleError(streamEvent.errorMessage, streamEvent.errorCode)
+          return
+        case 'image':
+          callbacks.onImage(streamEvent.image)
+          return
+        case 'updates':
+          for (const update of streamEvent.updates) {
+            callbacks.onUpdate(update.type, update.chunk)
+          }
+      }
+    }
+
+    nextSource.addEventListener('message', handleMessage)
+    for (const type of NAMED_STREAM_EVENT_TYPES[request.format]) {
+      nextSource.addEventListener(type, handleMessage)
+    }
 
     nextSource.addEventListener('error', (event) => {
       if (!isCurrent() || completed) return
@@ -191,28 +237,19 @@ export function useStreamRequest() {
   if (!controllerRef.current) {
     controllerRef.current = createStreamRequestController({
       getHeaders: getFreshAuthHeaders,
-      createSource: (payload, headers) =>
-        new SSE(API_ENDPOINTS.CHAT_COMPLETIONS, {
+      createSource: (request, headers) =>
+        new SSE(STREAM_ENDPOINTS[request.format], {
           headers,
           method: 'POST',
-          payload: JSON.stringify(payload),
+          payload: JSON.stringify(request.payload),
         }) as StreamEventSource,
       setStreaming: setIsStreaming,
     })
   }
 
   const sendStreamRequest = useCallback(
-    (
-      payload: ChatCompletionRequest,
-      onUpdate: (type: 'reasoning' | 'content', chunk: string) => void,
-      onComplete: () => void,
-      onError: (error: string, errorCode?: string) => void
-    ) =>
-      controllerRef.current?.send(payload, {
-        onUpdate,
-        onComplete,
-        onError,
-      }),
+    (request: PlaygroundStreamRequest, callbacks: StreamRequestCallbacks) =>
+      controllerRef.current?.send(request, callbacks),
     []
   )
 

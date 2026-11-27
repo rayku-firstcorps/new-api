@@ -20,7 +20,10 @@ import type { Experimental_GeneratedImage } from 'ai'
 
 import { cn } from '@/lib/utils'
 
-export type ImageProps = Experimental_GeneratedImage & {
+// uint8Array is not used for rendering, so callers holding only base64 may
+// omit it.
+export type ImageProps = Omit<Experimental_GeneratedImage, 'uint8Array'> & {
+  uint8Array?: Uint8Array
   className?: string
   alt?: string
 }

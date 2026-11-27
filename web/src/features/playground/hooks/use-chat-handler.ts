@@ -21,26 +21,39 @@ import { useTranslation } from 'react-i18next'
 
 import { handleServerError } from '@/lib/handle-server-error'
 
-import { sendChatCompletion } from '../api'
-import { ERROR_MESSAGES } from '../constants'
+import { sendChatCompletion, sendMessages } from '../api'
+import { ERROR_MESSAGES, MESSAGE_STATUS } from '../constants'
 import {
   applyStreamingChunk,
   buildChatCompletionPayload,
+  buildMessagesPayload,
+  buildResponsesPayload,
+  getMessagesResponseChoice,
   updateAssistantMessageWithError,
   updateLastAssistantMessage,
   parseRequestErrorDetails,
-  applyChatCompletionResponse,
+  applyChatCompletionChoice,
   completeAssistantMessage,
-  hasChatCompletionChoice,
   isAssistantMessageFinal,
   isAssistantMessagePending,
+  upsertMessageImage,
+  type ChatCompletionChoice,
 } from '../lib'
-import type { Message, PlaygroundConfig, ParameterEnabled } from '../types'
+import type {
+  GeneratedImage,
+  Message,
+  PlaygroundConfig,
+  PlaygroundRequestFormat,
+  PlaygroundStreamRequest,
+  ParameterEnabled,
+} from '../types'
 import { useStreamRequest } from './use-stream-request'
 
 interface UseChatHandlerOptions {
   config: PlaygroundConfig
   parameterEnabled: ParameterEnabled
+  // 'responses' always streams, whatever config.stream says
+  requestFormat: PlaygroundRequestFormat
   onMessageUpdate: (updater: (prev: Message[]) => Message[]) => void
 }
 
@@ -70,6 +83,7 @@ function mergePendingStreamChunk(
 export function useChatHandler({
   config,
   parameterEnabled,
+  requestFormat,
   onMessageUpdate,
 }: UseChatHandlerOptions) {
   const { t } = useTranslation()
@@ -201,6 +215,23 @@ export function useChatHandler({
     [scheduleStreamFlush]
   )
 
+  // Images are applied at once: each one is a complete (or partial) picture,
+  // not a delta that benefits from batching.
+  const handleStreamImage = useCallback(
+    (generation: number, image: GeneratedImage) => {
+      if (generation !== requestGenerationRef.current) return
+      flushStreamUpdates(generation)
+      onMessageUpdate((prev) => {
+        if (generation !== requestGenerationRef.current) return prev
+        return updateLastAssistantMessage(prev, (message) => ({
+          ...upsertMessageImage(message, image),
+          status: MESSAGE_STATUS.STREAMING,
+        }))
+      })
+    },
+    [flushStreamUpdates, onMessageUpdate]
+  )
+
   // Handle stream complete
   const handleStreamComplete = useCallback(
     (generation: number) => {
@@ -250,24 +281,43 @@ export function useChatHandler({
       abortControllerRef.current = null
       discardPendingStreamUpdates(generation)
       setIsRequesting(true)
-      const payload = buildChatCompletionPayload(
-        messages,
-        config,
-        parameterEnabled
-      )
-      void sendStreamRequest(
-        payload,
-        (type, chunk) => handleStreamUpdate(generation, type, chunk),
-        () => handleStreamComplete(generation),
-        (error, errorCode) => handleStreamError(generation, error, errorCode)
-      )
+      let request: PlaygroundStreamRequest
+      if (requestFormat === 'responses') {
+        request = {
+          format: 'responses',
+          payload: buildResponsesPayload(messages, config),
+        }
+      } else if (requestFormat === 'messages') {
+        request = {
+          format: 'messages',
+          payload: buildMessagesPayload(messages, config, parameterEnabled),
+        }
+      } else {
+        request = {
+          format: 'chat',
+          payload: buildChatCompletionPayload(
+            messages,
+            config,
+            parameterEnabled
+          ),
+        }
+      }
+      void sendStreamRequest(request, {
+        onUpdate: (type, chunk) => handleStreamUpdate(generation, type, chunk),
+        onImage: (image) => handleStreamImage(generation, image),
+        onComplete: () => handleStreamComplete(generation),
+        onError: (error, errorCode) =>
+          handleStreamError(generation, error, errorCode),
+      })
     },
     [
       config,
       parameterEnabled,
+      requestFormat,
       sendStreamRequest,
       discardPendingStreamUpdates,
       handleStreamUpdate,
+      handleStreamImage,
       handleStreamComplete,
       handleStreamError,
     ]
@@ -276,11 +326,6 @@ export function useChatHandler({
   // Send non-streaming chat request
   const sendNonStreamingChat = useCallback(
     async (messages: Message[]) => {
-      const payload = buildChatCompletionPayload(
-        messages,
-        config,
-        parameterEnabled
-      )
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
 
@@ -292,10 +337,20 @@ export function useChatHandler({
 
       try {
         setIsRequesting(true)
-        const response = await sendChatCompletion(
-          payload,
-          abortController.signal
-        )
+        let choice: ChatCompletionChoice | null
+        if (requestFormat === 'messages') {
+          const response = await sendMessages(
+            buildMessagesPayload(messages, config, parameterEnabled),
+            abortController.signal
+          )
+          choice = getMessagesResponseChoice(response)
+        } else {
+          const response = await sendChatCompletion(
+            buildChatCompletionPayload(messages, config, parameterEnabled),
+            abortController.signal
+          )
+          choice = response.choices?.[0] ?? null
+        }
         if (
           abortController.signal.aborted ||
           requestGenerationRef.current !== generation
@@ -303,21 +358,17 @@ export function useChatHandler({
           return
         }
 
-        if (!hasChatCompletionChoice(response)) {
+        if (!choice) {
           handleStreamError(generation, ERROR_MESSAGES.API_REQUEST_ERROR)
           return
         }
 
+        const completedChoice = choice
         onMessageUpdate((prev) => {
           if (requestGenerationRef.current !== generation) return prev
-          return updateLastAssistantMessage(prev, (message) => {
-            const updatedMessage = applyChatCompletionResponse(
-              message,
-              response
-            )
-
-            return updatedMessage ?? message
-          })
+          return updateLastAssistantMessage(prev, (message) =>
+            applyChatCompletionChoice(message, completedChoice)
+          )
         })
       } catch (error: unknown) {
         if (
@@ -339,6 +390,7 @@ export function useChatHandler({
     [
       config,
       parameterEnabled,
+      requestFormat,
       stopStream,
       discardPendingStreamUpdates,
       onMessageUpdate,
@@ -349,13 +401,14 @@ export function useChatHandler({
   // Send chat request (stream or non-stream based on config)
   const sendChat = useCallback(
     (messages: Message[]) => {
-      if (config.stream) {
+      // 'responses' always streams; 'messages' follows config.stream like chat
+      if (config.stream || requestFormat === 'responses') {
         sendStreamingChat(messages)
       } else {
         sendNonStreamingChat(messages)
       }
     },
-    [config.stream, sendStreamingChat, sendNonStreamingChat]
+    [config.stream, requestFormat, sendStreamingChat, sendNonStreamingChat]
   )
 
   // Stop generation

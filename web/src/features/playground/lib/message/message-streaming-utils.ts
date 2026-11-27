@@ -29,6 +29,7 @@ import {
 import {
   getCurrentVersion,
   hasMessageContent,
+  hasMessageImages,
   updateCurrentVersionContent,
 } from './message-utils'
 
@@ -176,7 +177,7 @@ export function isPendingAssistantMessage(message?: Message): boolean {
   )
 }
 
-type ChatCompletionChoice = ChatCompletionResponse['choices'][number]
+export type ChatCompletionChoice = ChatCompletionResponse['choices'][number]
 
 export function hasChatCompletionChoice(
   response: ChatCompletionResponse
@@ -233,7 +234,7 @@ export function sanitizeMessagesOnLoad(messages: Message[]): Message[] {
   const hasReasoning = finalized.reasoning?.content?.trim()
 
   const sanitized: Message =
-    hasContent || hasReasoning
+    hasContent || hasReasoning || hasMessageImages(finalized)
       ? completeAssistantTiming({
           ...finalized,
           status: MESSAGE_STATUS.COMPLETE,

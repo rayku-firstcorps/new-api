@@ -107,3 +107,20 @@ test('storage calls without a signed-in user do not persist shared data', () => 
   expect(loadParameterEnabled()).toEqual({})
   expect(localStorage.length).toBe(0)
 })
+
+test('saving messages drops generated image data and keeps the image placeholder', () => {
+  useAuthStore.getState().auth.setUser({ id: 1, username: 'A', role: 1 })
+  const imageMessage: Message = {
+    key: 'image-reply',
+    from: 'assistant',
+    versions: [{ id: 'image-version', content: '' }],
+    status: 'complete',
+    images: [{ id: 'ig_1', mediaType: 'image/png', base64: 'iVBORw0KGgo' }],
+  }
+
+  saveMessages([imageMessage])
+
+  expect(loadMessages()).toEqual([
+    { ...imageMessage, images: [{ id: 'ig_1', mediaType: 'image/png' }] },
+  ])
+})

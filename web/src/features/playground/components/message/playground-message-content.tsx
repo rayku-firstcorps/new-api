@@ -23,6 +23,7 @@ import {
   CodeBlock,
   CodeBlockCopyButton,
 } from '@/components/ai-elements/code-block'
+import { Image } from '@/components/ai-elements/image'
 import { Loader } from '@/components/ai-elements/loader'
 import { MessageContent } from '@/components/ai-elements/message'
 import {
@@ -74,9 +75,11 @@ export function PlaygroundMessageContent({
     displayContent,
     hasReasoning,
     hasSources,
+    images,
     reasoningContent,
     showLoader,
     showMessageContent,
+    showText,
     sources,
   } = getMessageContentState(message, versionContent)
   const isError = isErrorMessage(message)
@@ -155,7 +158,31 @@ export function PlaygroundMessageContent({
               variant='flat'
               className={cn(getMessageContentStyles())}
             >
-              <Response final={isMessageFinal}>{displayContent}</Response>
+              {showText && (
+                <Response final={isMessageFinal}>{displayContent}</Response>
+              )}
+              {images.length > 0 && (
+                <div className='flex flex-wrap gap-2'>
+                  {images.map((image) =>
+                    image.base64 ? (
+                      <Image
+                        alt={t('Generated image')}
+                        base64={image.base64}
+                        className='max-h-[32rem] w-auto'
+                        key={image.id}
+                        mediaType={image.mediaType}
+                      />
+                    ) : (
+                      <p
+                        className='text-muted-foreground rounded-md border border-dashed px-3 py-2 text-sm'
+                        key={image.id}
+                      >
+                        {t('Generated images are not kept after a reload')}
+                      </p>
+                    )
+                  )}
+                </div>
+              )}
             </MessageContent>
           )}
           <MessageMetadata alignment={alignment} message={message} />

@@ -1,7 +1,7 @@
 {
   "project": "new-api",
   "schema_version": "1.0",
-  "current_stage": "stage2-kucode-skin",
+  "current_stage": "stage3-user-onboarding",
   "features": [
     {
       "id": "homepage-linuxdo-offers",
@@ -31,13 +31,7 @@
       "id": "homepage-cta-model-cards",
       "title": "首页 CTA 参考模型卡片样式展示热门模型三卡",
       "status": "done",
-      "scope": [
-        "web/src/features/home/components/sections/cta.tsx",
-        "web/src/features/home/hooks/use-popular-model.ts",
-        "web/src/styles/home.css",
-        "web/src/i18n/locales/",
-        "web/src/features/home/__tests__/"
-      ],
+      "scope": ["web/src/features/home/components/sections/cta.tsx", "web/src/features/home/hooks/use-popular-model.ts", "web/src/styles/home.css", "web/src/i18n/locales/", "web/src/features/home/__tests__/"],
       "acceptance": [
         "CTA 展示近 24 小时调用量靠前、且仍在模型广场展示的至多三个模型卡片，沿用服务端排序，不公开具体调用次数",
         "卡片展示供应商、模型名称、标签、输入/输出价格与上下文长度；后端未提供的字段不展示、不编造",
@@ -147,10 +141,7 @@
       "id": "antom-safari-popup-plan",
       "title": "Antom Safari 支付弹窗优化实施计划",
       "status": "done",
-      "scope": [
-        "docs/prd/antom-safari-popup-optimization-plan.md",
-        "docs/prd/INDEX.md"
-      ],
+      "scope": ["docs/prd/antom-safari-popup-optimization-plan.md", "docs/prd/INDEX.md"],
       "acceptance": [
         "说明 Safari 拦截 Antom 支付弹窗的根因和现有调用链",
         "给出可直接实施的前端改造步骤、异常降级和安全约束",
@@ -162,11 +153,10 @@
       "id": "antom-safari-popup-fix",
       "title": "修复 Safari 拦截 Antom 支付弹窗",
       "status": "done",
-      "depends_on": ["antom-safari-popup-plan"],
-      "scope": [
-        "web/default/src/features/wallet/hooks/use-payment.ts",
-        "docs/prd/antom-safari-popup-optimization-plan.md"
+      "depends_on": [
+        "antom-safari-popup-plan"
       ],
+      "scope": ["web/default/src/features/wallet/hooks/use-payment.ts", "docs/prd/antom-safari-popup-optimization-plan.md"],
       "acceptance": [
         "Antom 在异步下单前同步预开支付窗口",
         "下单失败或支付链接缺失时关闭预开窗口",
@@ -179,15 +169,7 @@
       "id": "seo-technical-optimization",
       "title": "站点技术 SEO 优化",
       "status": "done",
-      "scope": [
-        "controller/seo.go",
-        "controller/seo_test.go",
-        "router/web-router.go",
-        "web/index.html",
-        "web/src/lib/seo.ts",
-        "web/src/lib/__tests__/seo.test.ts",
-        "web/src/routes/__root.tsx"
-      ],
+      "scope": ["controller/seo.go", "controller/seo_test.go", "router/web-router.go", "web/index.html", "web/src/lib/seo.ts", "web/src/lib/__tests__/seo.test.ts", "web/src/routes/__root.tsx"],
       "acceptance": [
         "保留 new-api 与 QuantumNous 的受保护名称、品牌和归属信息",
         "首页基础元数据包含 canonical、Open Graph 和 Twitter Card",
@@ -421,12 +403,142 @@
         "待办：渠道/系统设置区块框架与保存栏、筛选 chip、空状态的细化",
         "浏览器视觉验收（375/768/1280/1920、深浅主题）待人工完成"
       ]
+    },
+    {
+      "id": "onboarding-new-user-quota-switch",
+      "title": "注册赠送独立开关、邮箱前置开关与升级兼容（后端）",
+      "status": "done",
+      "scope": ["setting/operation_setting/quota_setting.go", "model/user.go", "controller/user.go", "controller/email_binding.go", "controller/oauth*.go", "controller/option.go", "web/src/i18n/locales/"],
+      "acceptance": [
+        "新增 quota_setting.new_user_quota_enabled（默认 false）与 new_user_quota_require_email（默认 true），沿用 GlobalConfig.Register",
+        "开关关闭时注册/绑定邮箱均不发放，QuotaForNewUser 原值保留；require_email=false 时注册完成即发放",
+        "TryGrantNewUserQuota 保留 lockForUpdate + NewUserQuotaRewarded 幂等，每人终身最多一次",
+        "历史站点 QuotaForNewUser>0 且无 enabled 键时启动自动启用，管理员显式关闭后不被覆盖",
+        "保存 QuotaForNewUser 校验 >=0 且不超上限；go test 与三库验证（如涉及）通过"
+      ]
+    },
+    {
+      "id": "onboarding-setting-and-state",
+      "title": "onboarding_setting 配置、/api/status 公开字段与用户引导状态（后端）",
+      "status": "done",
+      "scope": ["setting/operation_setting/onboarding_setting.go", "controller/misc.go", "relaykit/dto/user_settings.go", "controller/user.go", "router/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "新增 onboarding_setting 五项开关，默认全部开启",
+        "/api/status 返回 onboarding_* 与 new_user_quota_* 字段，new_user_quota_amount 仅在启用且金额>0 时为正",
+        "UserSetting 新增 onboarding_completed / onboarding_dismissed / onboarding_use_case（omitempty）",
+        "用户更新引导状态只改白名单字段，不覆盖其他 UserSetting；非法 use_case 被拒",
+        "go test 与 relaykit GOWORK=off go build 通过"
+      ]
+    },
+    {
+      "id": "onboarding-admin-settings-ui",
+      "title": "后台注册赠送开关与新手引导设置页（前端）",
+      "status": "done",
+      "scope": ["web/src/features/system-settings/general/quota-settings-section.tsx", "web/src/features/system-settings/operations/", "web/src/features/system-settings/__tests__/", "web/src/lib/", "web/src/types/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "额度设置新增注册赠送总开关与仅邮箱后发放开关；总开关关闭时金额置灰且保留原值；关闭邮箱前置有风险提示",
+        "新增 OnboardingSettingsSection 并注册到 operations section-registry，五项开关，总开关关闭时禁用子开关",
+        "status 类型包含新增字段；七语言 i18n 同步",
+        "typecheck、相关测试、lint、i18n:sync 通过"
+      ]
+    },
+    {
+      "id": "onboarding-wizard-shell",
+      "title": "从 SetupWizard 抽离公共 WizardShell，/setup 完成后跳 /sign-in?from=setup（前端）",
+      "status": "done",
+      "scope": ["web/src/components/wizard/", "web/src/features/setup/"],
+      "acceptance": [
+        "新增 web/src/components/wizard/wizard-shell.tsx 纯展示向导壳",
+        "/setup 改用 WizardShell，4 步校验、提交、视觉与无障碍行为不变，原有测试通过",
+        "/setup 提交成功后跳转 /sign-in?from=setup",
+        "typecheck、测试、build:check 通过"
+      ]
+    },
+    {
+      "id": "onboarding-user-wizard-core",
+      "title": "用户 First Setup 路由、Step 1/2、自动触发、跳过持久化、重开入口与注册页赠送提示（前端）",
+      "status": "done",
+      "scope": ["web/src/features/onboarding/", "web/src/routes/_authenticated/onboarding/", "web/src/features/auth/", "web/src/components/layout/", "web/src/features/dashboard/components/overview/overview-dashboard.tsx", "web/src/i18n/locales/"],
+      "acceptance": [
+        "/onboarding 受保护路由使用 WizardShell；Step 1 三场景单选，cc_switch 关闭时文案调整",
+        "Step 2 额度区块按自用模式/余额/注册赠送待领三态展示，无阻塞式充值提示；原地一键建 Key 并可复制完整 Key，已有 Key 自动预选",
+        "仅在 onboarding_enabled && auto_open 时，满足条件的普通用户登录后自动进入；跳过/完成写入后端与按 user.id 隔离的本地缓存，刷新不再跳回",
+        "侧边栏或 Overview 提供重开入口，总开关关闭时隐藏；注册页按配置展示赠送提示",
+        "完整明文 Key 不写入 localStorage/URL；typecheck、测试、lint、build:check、i18n:sync 通过"
+      ]
+    },
+    {
+      "id": "onboarding-user-wizard-connect",
+      "title": "用户 First Setup Step 3：CC Switch 内嵌、多语言代码、Playground 与一键测试请求（前端）",
+      "status": "done",
+      "scope": ["web/src/features/onboarding/", "web/src/features/keys/components/dialogs/cc-switch-dialog.tsx", "web/src/features/playground/index.tsx", "web/src/routes/_authenticated/playground/index.tsx", "web/src/components/code-snippet-tabs.tsx", "web/src/lib/connect-snippets.ts", "web/src/features/keys/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "CCSwitchDialog 核心配置抽为可内嵌组件，/keys 原有行为不变",
+        "coding 场景内嵌 CC Switch 一键导入与手动配置；api 场景 curl/Python/Anthropic/Node 多 Tab 不截断且可复制；playground 场景带默认模型跳转",
+        "inline_test 开启时一键测试请求走现有 /v1/chat/completions 计费链路，展示成功/失败与耗时，成功后标记完成",
+        "typecheck、测试、lint、build:check、i18n:sync 通过"
+      ]
+    },
+    {
+      "id": "onboarding-admin-first-setup",
+      "title": "管理员无渠道首启引导（前端）",
+      "status": "done",
+      "scope": ["web/src/routes/_authenticated/channels/index.tsx", "web/src/features/channels/index.tsx", "web/src/features/onboarding/", "web/src/routes/_authenticated/onboarding/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "开关满足且管理员渠道数为 0、未完成/未跳过时进入管理员向导；/sign-in?from=setup 登录自然衔接",
+        "三步：添加渠道（跳 /channels 可返回继续）→ 检查模型与连通性 → 复用建 Key 与测试请求",
+        "admin_guide_enabled 关闭或已有渠道时不进入；普通用户不进入管理员向导",
+        "typecheck、测试、lint、build:check、i18n:sync 通过"
+      ]
+    },
+    {
+      "id": "onboarding-overview-refine",
+      "title": "Overview 总览页兜底改造（前端）",
+      "status": "done",
+      "scope": ["web/src/stores/auth-store.ts", "web/src/features/dashboard/components/overview/", "web/src/features/dashboard/lib/setup-guide.ts", "web/src/i18n/locales/"],
+      "acceptance": [
+        "引导未完成时隐藏重复 Recommended actions，高亮当前步骤并可原地建 Key；自用模式移除添加额度步骤",
+        "RequestPreview 不截断，新增 CC Switch/curl/Python Tab、/docs 与 Playground 入口",
+        "0 用量新用户显示中性 Not topped up yet，老用户余额耗尽仍为 Balance depleted",
+        "折叠/跳过状态按 user.id 隔离；typecheck、测试、lint、build:check、i18n:sync 通过"
+      ]
+    },
+    {
+      "id": "playground-responses-image",
+      "title": "Playground 生图模型走 Responses 流式并展示图片（前后端）",
+      "status": "done",
+      "note": "2026-11-27 用户明确批准：不属于 user-onboarding-first-setup-plan.md，作为 Stage 3 内独立 feature 加入，不改变 Stage 3 out_of_scope 的其余约束",
+      "scope": ["router/relay-router.go", "controller/playground.go", "middleware/distributor.go", "middleware/access_token_routes.go", "relay/constant/relay_mode.go", "web/src/features/playground/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "新增 POST /pg/responses（UserAuth + Distribute），分组校验、临时 token、/pg→/v1 改写与 Playground 计费分支与 /pg/chat/completions 一致",
+        "模型 supported_endpoint_types 含 image-generation 时 Playground 自动改用 /pg/responses 流式；其他模型仍走 chat/completions",
+        "解析 response.output_text.delta、response.output_item.done(image_generation_call.result)、response.completed/failed/error；图片在消息中展示",
+        "base64 图片不写入 localStorage，刷新后显示占位文案；七语言新增 key",
+        "go test 相关包、vitest、typecheck、lint、i18n:sync 通过"
+      ]
+    },
+    {
+      "id": "playground-claude-messages",
+      "title": "Playground Claude 模型走 Anthropic Messages（/pg/messages）（前后端）",
+      "status": "done",
+      "note": "2026-11-27 用户明确批准：解决透传渠道收到 OpenAI 格式 Playground 请求失败的问题，作为 Stage 3 内独立 feature 加入，不改变 Stage 3 out_of_scope 的其余约束",
+      "scope": ["router/relay-router.go", "controller/playground.go", "controller/playground_test.go", "middleware/access_token_routes.go", "middleware/distributor_test.go", ".harness/verify.sh", "web/src/features/playground/"],
+      "acceptance": [
+        "新增 POST /pg/messages（UserAuth + Distribute），分组校验、临时 token、/pg→/v1 改写与 Playground 计费分支与 /pg/chat/completions 一致",
+        "所有 /pg/* 请求转发前从请求体移除 group，透传渠道不再把 group 发往上游",
+        "模型 supported_endpoint_types 含 anthropic 且模型名含 claude（不区分大小写）时 Playground 改走 /pg/messages；生图模型仍走 /pg/responses，其余走 chat/completions",
+        "Messages 请求：system 消息合并为顶层 system，max_tokens 必填（未启用时用配置值），temperature 与 top_p 只发其一，不发 penalty/seed（Playground 消息为纯文本，无图片转换）",
+        "解析 Messages 流式 text_delta/thinking_delta/error 与非流式 content[]，错误按 Claude 格式展示",
+        "go test 相关包、vitest、typecheck、lint 通过"
+      ]
     }
   ],
   "out_of_scope": [
-    "后端任何改动（Go、迁移、配置项、接口）",
+    "新增数据库表或列（引导状态复用 users.setting JSON 列）",
+    "新增后端代理测试请求接口（测试请求走现有中继与计费链路）",
     "删除或精简 new-api 原有功能",
-    "KuCode 原型独有功能（Key 轮换、保存银行卡、记住我、SLA 错误预算、审计改动对比与导出等）",
-    "首页定价区"
+    "修改受保护的项目标识",
+    "stage2 KuCode 换肤 in_progress 项的收尾与视觉验收",
+    "方案 user-onboarding-first-setup-plan.md 以外的新需求"
   ]
 }
