@@ -527,7 +527,7 @@
         "新增 POST /pg/messages（UserAuth + Distribute），分组校验、临时 token、/pg→/v1 改写与 Playground 计费分支与 /pg/chat/completions 一致",
         "所有 /pg/* 请求转发前从请求体移除 group，透传渠道不再把 group 发往上游",
         "模型 supported_endpoint_types 含 anthropic 且模型名含 claude（不区分大小写）时 Playground 改走 /pg/messages；生图模型仍走 /pg/responses，其余走 chat/completions",
-        "Messages 请求：system 消息合并为顶层 system，max_tokens 必填（未启用时用配置值），temperature 与 top_p 只发其一，不发 penalty/seed（Playground 消息为纯文本，无图片转换）",
+        "Messages 请求：system 消息合并为顶层 system，max_tokens 必填（未启用时用配置值），不发 temperature/top_p（当前 Claude 模型 400：Sampling parameters are not supported，2026-11-27 修正）与 penalty/seed（Playground 消息为纯文本，无图片转换）",
         "解析 Messages 流式 text_delta/thinking_delta/error 与非流式 content[]，错误按 Claude 格式展示",
         "go test 相关包、vitest、typecheck、lint 通过"
       ]

@@ -105,8 +105,6 @@ export interface MessagesRequest {
   messages: MessagesRequestMessage[]
   max_tokens: number
   stream: boolean
-  temperature?: number
-  top_p?: number
 }
 
 export interface MessagesResponse {

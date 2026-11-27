@@ -81,13 +81,13 @@ export function buildChatCompletionPayload(
 /**
  * Build an Anthropic Messages payload. System messages become the top-level
  * system prompt. max_tokens is required by the API, so it is always sent.
- * Claude rejects temperature together with top_p, so temperature wins when
- * both are enabled; penalties and seed have no Messages equivalent.
+ * Sampling parameters (temperature, top_p) are never sent: current Claude
+ * models reject them with a 400, and pass-through channels forward the body
+ * unchanged. Penalties and seed have no Messages equivalent.
  */
 export function buildMessagesPayload(
   messages: Message[],
-  config: PlaygroundConfig,
-  parameterEnabled: ParameterEnabled
+  config: PlaygroundConfig
 ): MessagesRequest {
   const validMessages = messages.filter(isValidMessage)
   const system = validMessages
@@ -112,12 +112,6 @@ export function buildMessagesPayload(
 
   if (system) {
     payload.system = system
-  }
-
-  if (parameterEnabled.temperature) {
-    payload.temperature = config.temperature
-  } else if (parameterEnabled.top_p) {
-    payload.top_p = config.top_p
   }
 
   return payload

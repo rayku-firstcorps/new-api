@@ -290,7 +290,7 @@ export function useChatHandler({
       } else if (requestFormat === 'messages') {
         request = {
           format: 'messages',
-          payload: buildMessagesPayload(messages, config, parameterEnabled),
+          payload: buildMessagesPayload(messages, config),
         }
       } else {
         request = {
@@ -340,7 +340,7 @@ export function useChatHandler({
         let choice: ChatCompletionChoice | null
         if (requestFormat === 'messages') {
           const response = await sendMessages(
-            buildMessagesPayload(messages, config, parameterEnabled),
+            buildMessagesPayload(messages, config),
             abortController.signal
           )
           choice = getMessagesResponseChoice(response)

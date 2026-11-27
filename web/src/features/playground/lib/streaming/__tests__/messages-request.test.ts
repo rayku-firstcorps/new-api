@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { describe, expect, test } from 'vitest'
 
-import { DEFAULT_CONFIG, DEFAULT_PARAMETER_ENABLED } from '../../../constants'
-import type { Message, ParameterEnabled } from '../../../types'
+import { DEFAULT_CONFIG } from '../../../constants'
+import type { Message } from '../../../types'
 import { getPlaygroundRequestFormat } from '../../options/playground-option-utils'
 import { buildMessagesPayload } from '../payload-builder'
 import { getMessagesResponseChoice } from '../stream-utils'
@@ -82,8 +82,7 @@ describe('messages payload', () => {
         message('assistant', 'Hello'),
         message('user', 'Again'),
       ],
-      config,
-      DEFAULT_PARAMETER_ENABLED
+      config
     )
 
     expect(payload.system).toBe('Be brief')
@@ -94,63 +93,31 @@ describe('messages payload', () => {
     ])
   })
 
-  test('always sends max_tokens even when the parameter is disabled', () => {
-    const payload = buildMessagesPayload(
-      [message('user', 'Hi')],
-      { ...config, max_tokens: 2048 },
-      { ...DEFAULT_PARAMETER_ENABLED, max_tokens: false }
-    )
+  test('always sends max_tokens and omits an empty system prompt', () => {
+    const payload = buildMessagesPayload([message('user', 'Hi')], {
+      ...config,
+      max_tokens: 2048,
+    })
 
     expect(payload.max_tokens).toBe(2048)
-    expect(payload.system).toBeUndefined()
+    expect(payload).not.toHaveProperty('system')
   })
 
-  test('sends only temperature when temperature and top_p are enabled', () => {
-    const payload = buildMessagesPayload([message('user', 'Hi')], config, {
-      ...DEFAULT_PARAMETER_ENABLED,
-      temperature: true,
-      top_p: true,
+  // Current Claude models answer temperature or top_p with "Sampling
+  // parameters are not supported on this model", and pass-through channels
+  // forward the body unchanged.
+  test('never sends sampling, penalty or seed parameters', () => {
+    const payload = buildMessagesPayload([message('user', 'Hi')], {
+      ...config,
+      temperature: 0.2,
+      top_p: 0.9,
+      frequency_penalty: 0.5,
+      presence_penalty: 0.5,
+      seed: 42,
     })
-
-    expect(payload.temperature).toBe(config.temperature)
-    expect(payload).not.toHaveProperty('top_p')
-  })
-
-  test('sends top_p when temperature is disabled', () => {
-    const payload = buildMessagesPayload([message('user', 'Hi')], config, {
-      ...DEFAULT_PARAMETER_ENABLED,
-      temperature: false,
-      top_p: true,
-    })
-
-    expect(payload.top_p).toBe(config.top_p)
-    expect(payload).not.toHaveProperty('temperature')
-  })
-
-  test('drops parameters that Messages does not accept', () => {
-    const enabled: ParameterEnabled = {
-      temperature: true,
-      top_p: true,
-      max_tokens: true,
-      frequency_penalty: true,
-      presence_penalty: true,
-      seed: true,
-    }
-    const payload = buildMessagesPayload(
-      [message('user', 'Hi')],
-      { ...config, seed: 42 },
-      enabled
-    )
 
     expect(Object.keys(payload).sort()).toEqual(
-      [
-        'group',
-        'max_tokens',
-        'messages',
-        'model',
-        'stream',
-        'temperature',
-      ].sort()
+      ['group', 'max_tokens', 'messages', 'model', 'stream'].sort()
     )
   })
 })
