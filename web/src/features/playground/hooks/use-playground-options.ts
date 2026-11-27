@@ -46,12 +46,14 @@ import { getUserGroups, getUserModels } from '../api'
 import {
   getGroupFallback,
   getModelFallback,
+  getHostedToolsRoute,
   getOptionLoadErrorMessage,
   getPlaygroundRequestFormat,
   shouldClearModelForGroup,
 } from '../lib'
 import type {
   GroupOption,
+  HostedToolsRoute,
   ModelOption,
   PlaygroundConfig,
   PlaygroundRequestFormat,
@@ -108,14 +110,17 @@ export function usePlaygroundOptions({
     meta: { errorToast: false },
   })
 
-  const requestFormat = useMemo<PlaygroundRequestFormat>(() => {
-    const catalogModel = pricingData?.data?.find(
+  const { requestFormat, hostedToolsRoute } = useMemo<{
+    requestFormat: PlaygroundRequestFormat
+    hostedToolsRoute: HostedToolsRoute
+  }>(() => {
+    const endpointTypes = pricingData?.data?.find(
       (model) => model.model_name === currentModel
-    )
-    return getPlaygroundRequestFormat(
-      catalogModel?.supported_endpoint_types,
-      currentModel
-    )
+    )?.supported_endpoint_types
+    return {
+      requestFormat: getPlaygroundRequestFormat(endpointTypes, currentModel),
+      hostedToolsRoute: getHostedToolsRoute(endpointTypes, currentModel),
+    }
   }, [pricingData, currentModel])
 
   useEffect(() => {
@@ -170,6 +175,7 @@ export function usePlaygroundOptions({
   }, [groupsData, currentGroup, setGroups, updateConfig])
 
   return {
+    hostedToolsRoute,
     isLoadingModels,
     requestFormat,
   }

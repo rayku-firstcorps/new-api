@@ -6367,7 +6367,6 @@
     "Search colors...": "搜尋顏色...",
     "Search conflicting models or fields": "搜尋衝突的模型或欄位",
     "Search deployments...": "搜尋部署...",
-    "Search feature in development": "搜尋功能開發中",
     "Search group names...": "搜尋分組名稱...",
     "Search groups by name or description": "搜尋分組名稱或描述",
     "Search groups...": "搜尋分組...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "用於對話和 Claude 模型的函式定義，每個工具的結果需要你手動填寫。",
     "Awaiting Approval": "等待核准",
     "Responded": "已回應",
-    "Denied": "已拒絕"
+    "Denied": "已拒絕",
+    "Search the web and cite the pages used": "搜尋網路並引用所用網頁",
+    "Web fetch": "擷取網頁",
+    "Read pages whose URLs appear in the conversation": "讀取對話中出現的網址所對應的頁面",
+    "Code execution": "程式碼執行",
+    "Run code in the provider sandbox": "在模型供應商的沙箱中執行程式碼",
+    "Hosted tools": "託管工具",
+    "Run by the model provider. Web search and code execution may be billed per use.": "由模型供應商執行。網路搜尋與程式碼執行可能按次額外計費。",
+    "Not available for this model": "目前模型不支援",
+    "Web search: off": "網路搜尋：關閉",
+    "Web search: on": "網路搜尋：開啟",
+    "Web search is not available for this model": "目前模型不支援網路搜尋",
+    "The tool returned an error: {{code}}": "工具回傳錯誤：{{code}}",
+    "Exit code: {{code}}": "結束代碼：{{code}}",
+    "No results": "無結果",
+    "Not finished": "未完成"
   }
 }

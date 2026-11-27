@@ -31,9 +31,12 @@ import { MESSAGE_STATUS } from '../../constants'
 import {
   getChatMessageRenderState,
   getEditingMessageContent,
+  getHostedToolActivities,
   getMessageAlignment,
+  getResponsesHostedActivities,
   getPreviousUserMessage,
   hasPendingToolCalls,
+  isAssistantMessagePending,
   isErrorMessage,
 } from '../../lib'
 import type {
@@ -42,6 +45,7 @@ import type {
 } from '../../types'
 import { MessageActions } from '../message/message-actions'
 import { MessageErrorActions } from '../message/message-error-actions'
+import { MessageHostedTools } from '../message/message-hosted-tools'
 import { MessageToolCalls } from '../message/message-tool-calls'
 import { PlaygroundMessageContent } from '../message/playground-message-content'
 import { PlaygroundMessageEditor } from '../message/playground-message-editor'
@@ -139,6 +143,10 @@ export function PlaygroundChat({
       !isGenerating &&
       message.status === MESSAGE_STATUS.COMPLETE &&
       hasPendingToolCalls(message)
+    const hostedToolActivities = [
+      ...getHostedToolActivities(message.messagesBlocks),
+      ...getResponsesHostedActivities(message.responsesItems),
+    ]
 
     return (
       <Message
@@ -176,6 +184,14 @@ export function PlaygroundChat({
               }
               isSourceVisible={isSourceVisible}
               message={message}
+              hostedTools={
+                hostedToolActivities.length > 0 ? (
+                  <MessageHostedTools
+                    activities={hostedToolActivities}
+                    isPending={isAssistantMessagePending(message)}
+                  />
+                ) : undefined
+              }
               toolCalls={
                 message.toolCalls?.length ? (
                   <MessageToolCalls

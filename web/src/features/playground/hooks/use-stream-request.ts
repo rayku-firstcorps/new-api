@@ -36,6 +36,7 @@ import {
 } from '../lib'
 import type {
   GeneratedImage,
+  MessageSource,
   MessagesBlockEvent,
   PlaygroundStreamRequest,
   ToolCallDelta,
@@ -56,6 +57,8 @@ interface StreamRequestCallbacks {
   onImage: (image: GeneratedImage) => void
   onToolCalls?: (deltas: ToolCallDelta[]) => void
   onMessagesBlock?: (event: MessagesBlockEvent) => void
+  onSources?: (sources: MessageSource[]) => void
+  onResponsesItem?: (item: Record<string, unknown>) => void
   onComplete: () => void
   onError: (error: string, errorCode?: string) => void
 }
@@ -183,6 +186,12 @@ export function createStreamRequestController(
           }
           if (streamEvent.toolCalls?.length) {
             callbacks.onToolCalls?.(streamEvent.toolCalls)
+          }
+          if (streamEvent.sources?.length) {
+            callbacks.onSources?.(streamEvent.sources)
+          }
+          if (streamEvent.responsesItem) {
+            callbacks.onResponsesItem?.(streamEvent.responsesItem)
           }
       }
     }

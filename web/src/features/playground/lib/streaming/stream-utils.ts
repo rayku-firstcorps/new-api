@@ -18,13 +18,19 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { ERROR_MESSAGES } from '../../constants'
 import type {
+  ChatCompletionAnnotation,
   ChatCompletionChunk,
   GeneratedImage,
+  MessageSource,
   MessagesBlockEvent,
   MessagesResponse,
   ToolCallDelta,
 } from '../../types'
 import type { ChatCompletionChoice } from '../message/message-streaming-utils'
+import {
+  getAnnotationSources,
+  isResponsesHostedItem,
+} from '../tools/hosted-tools'
 
 const STREAM_DONE_MESSAGE = '[DONE]'
 const STREAM_CLOSED_READY_STATE = 2
@@ -82,19 +88,21 @@ export function parseStreamErrorDetails(data?: string): StreamErrorDetails {
 }
 
 /**
- * Map one chat completions chunk to text updates and tool call fragments.
+ * Map one chat completions chunk to text updates, tool call fragments and
+ * the pages hosted web search cites (url_citation annotations).
  * Fragments carry tool_calls[].index (position in the list when an upstream
  * leaves it out), so later fragments of the same call append its arguments.
  */
 export function parseChatCompletionChunk(data: string): {
   updates: StreamMessageUpdate[]
   toolCalls: ToolCallDelta[]
+  sources: MessageSource[]
 } {
   const chunk = JSON.parse(data) as ChatCompletionChunk
   const delta = chunk.choices?.[0]?.delta
 
   if (!delta) {
-    return { updates: [], toolCalls: [] }
+    return { updates: [], toolCalls: [], sources: [] }
   }
 
   const updates: StreamMessageUpdate[] = []
@@ -117,7 +125,11 @@ export function parseChatCompletionChunk(data: string): {
     })
   )
 
-  return { updates, toolCalls }
+  return {
+    updates,
+    toolCalls,
+    sources: getAnnotationSources(delta.annotations),
+  }
 }
 
 export function parseStreamMessageUpdates(data: string): StreamMessageUpdate[] {
@@ -128,13 +140,18 @@ type ResponsesStreamPayload = {
   type?: string
   delta?: string
   item_id?: string
+  output_index?: number
   partial_image_b64?: string
   output_format?: string
+  annotation?: ChatCompletionAnnotation
   item?: {
     type?: string
     id?: string
+    call_id?: string
+    name?: string
     result?: string
     output_format?: string
+    [key: string]: unknown
   }
   response?: {
     error?: { code?: string; message?: string } | null
@@ -148,6 +165,9 @@ type ResponsesStreamPayload = {
 // routes it to the stream error listener, which parses the same payload.
 export const RESPONSES_STREAM_EVENT_TYPES = [
   'response.output_text.delta',
+  'response.output_text.annotation.added',
+  'response.output_item.added',
+  'response.function_call_arguments.delta',
   'response.reasoning_summary_text.delta',
   'response.reasoning_text.delta',
   'response.image_generation_call.partial_image',
@@ -166,6 +186,10 @@ export type ResponsesStreamEvent =
       toolCalls?: ToolCallDelta[]
       // Content block change to keep for replay (Messages)
       block?: MessagesBlockEvent
+      // Pages cited by hosted web search (chat completions, Responses)
+      sources?: MessageSource[]
+      // Hosted tool call item to keep, by id (Responses)
+      responsesItem?: Record<string, unknown>
     }
   | { kind: 'image'; image: GeneratedImage }
   | { kind: 'done' }
@@ -179,12 +203,53 @@ function getImageMediaType(outputFormat?: string): string {
  * Map one Responses API stream event to a playground update. Final images
  * come from response.output_item.done; partial images share the item id so
  * the final image replaces them. Images repeated in response.completed are
- * ignored. Unknown event types produce no update.
+ * ignored. A function_call item starts a tool call at its output index and
+ * its argument deltas append to it; hosted call items (web search, code
+ * interpreter) are kept as their latest copy; url_citation annotations are
+ * sources. Unknown event types produce no update.
  */
 export function parseResponsesStreamEvent(data: string): ResponsesStreamEvent {
   const event = JSON.parse(data) as ResponsesStreamPayload
+  const outputIndex = event.output_index ?? 0
+
+  if (
+    (event.type === 'response.output_item.added' ||
+      event.type === 'response.output_item.done') &&
+    event.item &&
+    isResponsesHostedItem(event.item)
+  ) {
+    return { kind: 'updates', updates: [], responsesItem: event.item }
+  }
 
   switch (event.type) {
+    case 'response.output_item.added':
+      if (event.item?.type !== 'function_call') break
+      return {
+        kind: 'updates',
+        updates: [],
+        toolCalls: [
+          {
+            index: outputIndex,
+            id: event.item.call_id || event.item.id || undefined,
+            name: event.item.name || undefined,
+          },
+        ],
+      }
+    case 'response.function_call_arguments.delta':
+      if (!event.delta) break
+      return {
+        kind: 'updates',
+        updates: [],
+        toolCalls: [{ index: outputIndex, arguments: event.delta }],
+      }
+    case 'response.output_text.annotation.added':
+      return {
+        kind: 'updates',
+        updates: [],
+        sources: getAnnotationSources(
+          event.annotation ? [event.annotation] : []
+        ),
+      }
     case 'response.output_text.delta':
       return {
         kind: 'updates',
@@ -255,6 +320,7 @@ type MessagesStreamPayload = {
     thinking?: string
     signature?: string
     partial_json?: string
+    citation?: Record<string, unknown>
   }
 }
 
@@ -269,9 +335,10 @@ export const MESSAGES_STREAM_EVENT_TYPES = [
 /**
  * Map one Anthropic Messages stream event to a playground update. Text and
  * thinking deltas update the message; a tool_use block start and its
- * input_json_delta fragments build a tool call; every block change is also
- * kept for replay. message_stop ends the stream; other events (message_start,
- * ping, ...) produce no update.
+ * input_json_delta fragments build a tool call (server_tool_use input
+ * fragments start none); every block change, hosted tool calls, their
+ * results and citations included, is also kept for replay. message_stop
+ * ends the stream; other events (message_start, ping, ...) produce no update.
  */
 export function parseMessagesStreamEvent(data: string): ResponsesStreamEvent {
   const event = JSON.parse(data) as MessagesStreamPayload
@@ -327,8 +394,8 @@ export function parseMessagesStreamEvent(data: string): ResponsesStreamEvent {
 /**
  * Read a non-streaming Messages response as a chat completion choice: text
  * blocks form the content, thinking blocks the reasoning and tool_use blocks
- * the tool calls. Returns null
- * when the response carries no content array.
+ * the tool calls (server_tool_use blocks are hosted, not client calls).
+ * Returns null when the response carries no content array.
  */
 export function getMessagesResponseChoice(
   response: MessagesResponse

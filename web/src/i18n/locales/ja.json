@@ -6367,7 +6367,6 @@
     "Search colors...": "色を検索...",
     "Search conflicting models or fields": "競合するモデルまたはフィールドを検索",
     "Search deployments...": "デプロイを検索...",
-    "Search feature in development": "検索機能は開発中です",
     "Search group names...": "グループ名を検索...",
     "Search groups by name or description": "グループ名または説明で検索",
     "Search groups...": "グループを検索...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "チャットモデルと Claude モデル用の関数定義です。各ツールの結果はご自身で入力します。",
     "Awaiting Approval": "承認待ち",
     "Responded": "応答済み",
-    "Denied": "拒否済み"
+    "Denied": "拒否済み",
+    "Search the web and cite the pages used": "Web を検索し、使用したページを引用します",
+    "Web fetch": "Web ページ取得",
+    "Read pages whose URLs appear in the conversation": "会話に含まれる URL のページを読み込みます",
+    "Code execution": "コード実行",
+    "Run code in the provider sandbox": "プロバイダーのサンドボックスでコードを実行します",
+    "Hosted tools": "ホスト型ツール",
+    "Run by the model provider. Web search and code execution may be billed per use.": "モデルプロバイダーが実行します。Web 検索とコード実行は利用ごとに課金される場合があります。",
+    "Not available for this model": "このモデルでは利用できません",
+    "Web search: off": "Web 検索：オフ",
+    "Web search: on": "Web 検索：オン",
+    "Web search is not available for this model": "このモデルでは Web 検索を利用できません",
+    "The tool returned an error: {{code}}": "ツールがエラーを返しました：{{code}}",
+    "Exit code: {{code}}": "終了コード：{{code}}",
+    "No results": "結果なし",
+    "Not finished": "未完了"
   }
 }

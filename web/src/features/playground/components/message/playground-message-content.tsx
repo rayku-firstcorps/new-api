@@ -59,6 +59,9 @@ type PlaygroundMessageContentProps = {
   errorActions?: ReactNode
   isSourceVisible?: boolean
   message: Message
+  // Hosted tool calls of the turn, rendered before its text: the search or
+  // code run happens before the answer
+  hostedTools?: ReactNode
   // Tool calls of the turn, rendered after its text and images
   toolCalls?: ReactNode
   versionContent: string
@@ -68,6 +71,7 @@ export function PlaygroundMessageContent({
   actions,
   alignment,
   errorActions,
+  hostedTools,
   isSourceVisible = false,
   message,
   toolCalls,
@@ -161,6 +165,7 @@ export function PlaygroundMessageContent({
               variant='flat'
               className={cn(getMessageContentStyles())}
             >
+              {hostedTools}
               {showText && (
                 <Response final={isMessageFinal}>{displayContent}</Response>
               )}

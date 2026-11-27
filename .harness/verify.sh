@@ -279,6 +279,39 @@ if [[ "$TARGET" == "all" || "$TARGET" == "playground-function-calling" ]]; then
   fi
 fi
 
+if [[ "$TARGET" == "all" || "$TARGET" == "playground-hosted-tools" ]]; then
+  echo ""
+  echo "── playground-hosted-tools ──"
+  check "参数面板含托管工具开关"     "grep -q 'PlaygroundHostedToolsEditor' web/src/features/playground/components/input/playground-parameter-panel.tsx"
+  check "Messages 发送服务端工具、chat 发送 web_search_options"     "grep -q 'toMessagesServerTools' web/src/features/playground/lib/streaming/payload-builder.ts && grep -q 'web_search_options' web/src/features/playground/lib/streaming/payload-builder.ts"
+  check "回传保留服务端工具块与 citations"     "grep -q \"'server_tool_result'\" web/src/features/playground/lib/streaming/messages-blocks.ts && grep -q 'citations_delta' web/src/features/playground/lib/streaming/messages-blocks.ts"
+  check "存储保存托管工具开关与服务端工具块"     "grep -q 'hosted_tools' web/src/features/playground/lib/storage/storage-schema.ts && grep -q \"z.literal('server_tool_use')\" web/src/features/playground/lib/storage/storage-schema.ts"
+  check "七语言含托管工具文案"     "for f in en zh zh-TW fr ru ja vi; do grep -q '\"Hosted tools\"' web/src/i18n/locales/\$f.json || exit 1; done"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "Playground lint 通过" "(cd web && bunx oxlint -c .oxlintrc.json src/features/playground)"
+    check "Playground 测试通过" "(cd web && bunx vitest run src/features/playground)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "playground-openai-hosted-tools" ]]; then
+  echo ""
+  echo "── playground-openai-hosted-tools ──"
+  check "托管工具按目录端点路由（openai-response / anthropic）"     "grep -q 'OPENAI_RESPONSES_ENDPOINT_TYPE' web/src/features/playground/lib/options/playground-option-utils.ts && grep -q 'getTurnRequestFormat' web/src/features/playground/hooks/use-chat-handler.ts"
+  check "Responses 请求携带 web_search / code_interpreter 与 include"     "grep -q \"type: 'code_interpreter'\" web/src/features/playground/lib/tools/hosted-tools.ts && grep -q 'RESPONSES_HOSTED_TOOL_INCLUDE' web/src/features/playground/lib/streaming/payload-builder.ts"
+  check "Responses 流解析函数调用与托管调用项"     "grep -q \"'response.function_call_arguments.delta'\" web/src/features/playground/lib/streaming/stream-utils.ts && grep -q 'responsesItem' web/src/features/playground/lib/streaming/stream-utils.ts"
+  check "存储保存 Responses 托管调用项"     "grep -q 'responsesItems: z.array' web/src/features/playground/lib/storage/storage-schema.ts"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "Playground lint 通过" "(cd web && bunx oxlint -c .oxlintrc.json src/features/playground)"
+    check "Playground 测试通过" "(cd web && bunx vitest run src/features/playground)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
 # ── 汇总 ─────────────────────────────────────────────
 echo ""
 echo "================================================"

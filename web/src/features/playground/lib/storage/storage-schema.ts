@@ -35,6 +35,9 @@ export const playgroundConfigSchema = z.object({
   seed: z.number().nullable().optional(),
   stream: z.boolean().optional(),
   tools: z.string().optional(),
+  hosted_tools: z
+    .array(z.enum(['web_search', 'web_fetch', 'code_execution']))
+    .optional(),
 })
 
 export const parameterEnabledSchema = z.object({
@@ -94,12 +97,26 @@ const messagesReplayBlockSchema = z.discriminatedUnion('type', [
     signature: z.string(),
   }),
   z.object({ type: z.literal('redacted_thinking'), data: z.string() }),
-  z.object({ type: z.literal('text'), text: z.string() }),
+  z.object({
+    type: z.literal('text'),
+    text: z.string(),
+    citations: z.array(z.record(z.string(), z.unknown())).optional(),
+  }),
   z.object({
     type: z.literal('tool_use'),
     id: z.string(),
     name: z.string(),
     input: z.string(),
+  }),
+  z.object({
+    type: z.literal('server_tool_use'),
+    id: z.string(),
+    name: z.string(),
+    input: z.string(),
+  }),
+  z.object({
+    type: z.literal('server_tool_result'),
+    block: z.record(z.string(), z.unknown()),
   }),
 ])
 
@@ -121,6 +138,7 @@ const messageSchema = z.object({
   images: z.array(generatedImageSchema).optional(),
   toolCalls: z.array(toolCallSchema).optional(),
   messagesBlocks: z.array(messagesReplayBlockSchema).optional(),
+  responsesItems: z.array(z.record(z.string(), z.unknown())).optional(),
 })
 
 export const messagesSchema = z.array(messageSchema)

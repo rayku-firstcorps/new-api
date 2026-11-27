@@ -32,6 +32,7 @@ import type {
   GroupOption,
   ParameterEnabled,
   PlaygroundConfig,
+  HostedToolsRoute,
 } from '../../types'
 import { PlaygroundInputControls } from './playground-input-controls'
 import { PlaygroundInputTools } from './playground-input-tools'
@@ -60,6 +61,7 @@ interface PlaygroundInputProps {
     value: boolean
   ) => void
   parameterEnabled: ParameterEnabled
+  hostedToolsRoute: HostedToolsRoute
 }
 
 export function PlaygroundInput({
@@ -80,6 +82,7 @@ export function PlaygroundInput({
   onClearMessages,
   onParameterEnabledChange,
   parameterEnabled,
+  hostedToolsRoute,
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -133,6 +136,7 @@ export function PlaygroundInput({
                 onClearMessages={onClearMessages}
                 onParameterEnabledChange={onParameterEnabledChange}
                 parameterEnabled={parameterEnabled}
+                hostedToolsRoute={hostedToolsRoute}
               />
             }
           />

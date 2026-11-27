@@ -6367,7 +6367,6 @@
     "Search colors...": "Поиск цветов...",
     "Search conflicting models or fields": "Поиск конфликтующих моделей или полей",
     "Search deployments...": "Поиск развертываний...",
-    "Search feature in development": "Функция поиска в разработке",
     "Search group names...": "Поиск названий групп...",
     "Search groups by name or description": "Поиск по названию или описанию",
     "Search groups...": "Поиск групп...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "Определения функций для чат-моделей и Claude. Результат каждого инструмента вы вводите сами.",
     "Awaiting Approval": "Ожидает подтверждения",
     "Responded": "Получен ответ",
-    "Denied": "Отклонено"
+    "Denied": "Отклонено",
+    "Search the web and cite the pages used": "Искать в интернете и ссылаться на использованные страницы",
+    "Web fetch": "Загрузка страниц",
+    "Read pages whose URLs appear in the conversation": "Читать страницы, URL которых есть в диалоге",
+    "Code execution": "Выполнение кода",
+    "Run code in the provider sandbox": "Запускать код в песочнице провайдера",
+    "Hosted tools": "Встроенные инструменты провайдера",
+    "Run by the model provider. Web search and code execution may be billed per use.": "Выполняются провайдером модели. Веб-поиск и выполнение кода могут оплачиваться за каждое использование.",
+    "Not available for this model": "Недоступно для этой модели",
+    "Web search: off": "Веб-поиск: выкл.",
+    "Web search: on": "Веб-поиск: вкл.",
+    "Web search is not available for this model": "Веб-поиск недоступен для этой модели",
+    "The tool returned an error: {{code}}": "Инструмент вернул ошибку: {{code}}",
+    "Exit code: {{code}}": "Код выхода: {{code}}",
+    "No results": "Нет результатов",
+    "Not finished": "Не завершено"
   }
 }

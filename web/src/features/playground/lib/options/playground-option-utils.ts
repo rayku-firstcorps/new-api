@@ -19,9 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   ANTHROPIC_ENDPOINT_TYPE,
   IMAGE_GENERATION_ENDPOINT_TYPE,
+  OPENAI_RESPONSES_ENDPOINT_TYPE,
 } from '../../constants'
 import type {
   GroupOption,
+  HostedToolsRoute,
   ModelOption,
   PlaygroundRequestFormat,
 } from '../../types'
@@ -95,5 +97,27 @@ export function getPlaygroundRequestFormat(
     return 'messages'
   }
 
+  return 'chat'
+}
+
+/**
+ * Where the model's hosted tools go. Image models take none; a model that
+ * uses Messages keeps it. Any other model goes to the native endpoint its
+ * catalog lists, OpenAI Responses before Anthropic Messages; without one,
+ * chat completions carries web search as web_search_options.
+ */
+export function getHostedToolsRoute(
+  supportedEndpointTypes: readonly string[] | undefined,
+  model: string
+): HostedToolsRoute {
+  const format = getPlaygroundRequestFormat(supportedEndpointTypes, model)
+  if (format === 'responses') return 'none'
+  if (format === 'messages') return 'messages'
+  if (supportedEndpointTypes?.includes(OPENAI_RESPONSES_ENDPOINT_TYPE)) {
+    return 'responses'
+  }
+  if (supportedEndpointTypes?.includes(ANTHROPIC_ENDPOINT_TYPE)) {
+    return 'messages'
+  }
   return 'chat'
 }

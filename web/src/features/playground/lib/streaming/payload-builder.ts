@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { DEFAULT_CONFIG } from '../../constants'
 import type {
   ChatCompletionMessage,
+  HostedToolKey,
   ChatCompletionRequest,
   Message,
   MessagesContentBlock,
@@ -26,6 +27,7 @@ import type {
   MessagesRequestMessage,
   PlaygroundConfig,
   ParameterEnabled,
+  ResponsesInputItem,
   ResponsesRequest,
   ToolDefinition,
 } from '../../types'
@@ -34,6 +36,11 @@ import {
   getMessageContent,
   isValidMessage,
 } from '../message/message-utils'
+import {
+  RESPONSES_HOSTED_TOOL_INCLUDE,
+  toMessagesServerTools,
+  toResponsesHostedTools,
+} from '../tools/hosted-tools'
 import {
   getToolCallId,
   hasAnsweredToolCalls,
@@ -48,12 +55,15 @@ import { toMessagesReplayContent } from './messages-blocks'
  * Build API request payload from messages and config. An assistant turn
  * whose tool calls the user answered goes back as assistant.tool_calls
  * followed by one tool message per result; unanswered calls are left out.
+ * Hosted web search is chat completions' web_search_options, which the
+ * gateway converts for upstreams with their own search tool.
  */
 export function buildChatCompletionPayload(
   messages: Message[],
   config: PlaygroundConfig,
   parameterEnabled: ParameterEnabled,
-  tools: ToolDefinition[] = []
+  tools: ToolDefinition[] = [],
+  hostedTools: readonly HostedToolKey[] = []
 ): ChatCompletionRequest {
   const processedMessages = messages
     .filter(isValidMessage)
@@ -86,6 +96,10 @@ export function buildChatCompletionPayload(
 
   if (tools.length > 0) {
     payload.tools = toChatCompletionTools(tools)
+  }
+
+  if (hostedTools.includes('web_search')) {
+    payload.web_search_options = {}
   }
 
   if (parameterEnabled.temperature) {
@@ -125,11 +139,13 @@ export function buildChatCompletionPayload(
  * Assistant turns replay their kept content blocks, thinking blocks
  * unchanged, as Claude requires within a tool round. A turn whose tool calls
  * the user answered is followed by a user turn of tool_result blocks.
+ * Hosted tools go after the function tools as Anthropic server tools.
  */
 export function buildMessagesPayload(
   messages: Message[],
   config: PlaygroundConfig,
-  tools: ToolDefinition[] = []
+  tools: ToolDefinition[] = [],
+  hostedTools: readonly HostedToolKey[] = []
 ): MessagesRequest {
   const validMessages = messages.filter(isValidMessage)
   const system = validMessages
@@ -189,29 +205,84 @@ export function buildMessagesPayload(
     payload.system = system
   }
 
-  if (tools.length > 0) {
-    payload.tools = toMessagesTools(tools)
+  if (tools.length > 0 || hostedTools.length > 0) {
+    payload.tools = [
+      ...toMessagesTools(tools),
+      ...toMessagesServerTools(hostedTools),
+    ]
   }
 
   return payload
 }
 
 /**
- * Build a streaming Responses payload for image generation models. Sampling
- * parameters are left out because image models do not accept them; earlier
- * generated images are not sent back, only the text of each turn.
+ * Build a streaming Responses payload: image generation models, and OpenAI
+ * chat models with hosted tools on. Sampling parameters are left out because
+ * image and reasoning models reject them. Earlier generated images and
+ * hosted calls are not sent back, only the text of each turn; a turn whose
+ * function calls the user answered is followed by its function_call and
+ * function_call_output items. Function tools go flat, then the hosted tools,
+ * with the include entries that return search sources and code logs.
  */
 export function buildResponsesPayload(
   messages: Message[],
-  config: PlaygroundConfig
+  config: PlaygroundConfig,
+  tools: ToolDefinition[] = [],
+  hostedTools: readonly HostedToolKey[] = []
 ): ResponsesRequest {
-  return {
+  const input = messages
+    .filter(isValidMessage)
+    .flatMap((message): ResponsesInputItem[] => {
+      const content = getMessageContent(message)
+      const items: ResponsesInputItem[] = []
+      if (content || !hasAnsweredToolCalls(message)) {
+        items.push({ role: message.from, content })
+      }
+      if (!hasAnsweredToolCalls(message)) return items
+
+      for (const call of message.toolCalls ?? []) {
+        items.push({
+          type: 'function_call',
+          call_id: getToolCallId(call),
+          name: call.name,
+          arguments: call.arguments || '{}',
+        })
+        items.push({
+          type: 'function_call_output',
+          call_id: getToolCallId(call),
+          output: call.result ?? '',
+        })
+      }
+      return items
+    })
+
+  const payload: ResponsesRequest = {
     model: config.model,
     group: config.group,
-    input: messages.filter(isValidMessage).map((message) => ({
-      role: message.from,
-      content: getMessageContent(message),
-    })),
+    input,
     stream: true,
   }
+
+  const allTools = [
+    ...tools.map((tool) => ({
+      type: 'function' as const,
+      name: tool.name,
+      ...(tool.description ? { description: tool.description } : {}),
+      parameters: tool.parameters,
+    })),
+    ...toResponsesHostedTools(hostedTools),
+  ]
+  if (allTools.length > 0) {
+    payload.tools = allTools
+  }
+
+  const include = hostedTools.flatMap((key) => {
+    const entry = RESPONSES_HOSTED_TOOL_INCLUDE[key]
+    return entry ? [entry] : []
+  })
+  if (include.length > 0) {
+    payload.include = include
+  }
+
+  return payload
 }

@@ -51,7 +51,13 @@ import {
   PLAYGROUND_PARAMETER_PANEL_SCROLL_CLASS,
   type PlaygroundParameterKey,
 } from '../../lib/parameters/playground-parameters'
-import type { ParameterEnabled, PlaygroundConfig } from '../../types'
+import { getActiveHostedTools } from '../../lib/tools/hosted-tools'
+import type {
+  ParameterEnabled,
+  PlaygroundConfig,
+  HostedToolsRoute,
+} from '../../types'
+import { PlaygroundHostedToolsEditor } from './playground-hosted-tools-editor'
 import { PlaygroundToolsEditor } from './playground-tools-editor'
 
 type PlaygroundParameterPanelProps = {
@@ -66,6 +72,7 @@ type PlaygroundParameterPanelProps = {
     value: boolean
   ) => void
   parameterEnabled: ParameterEnabled
+  hostedToolsRoute: HostedToolsRoute
 }
 
 type PlaygroundParameterContentProps = PlaygroundParameterPanelProps & {
@@ -79,6 +86,7 @@ function PlaygroundParameterContent({
   onConfigChange,
   onParameterEnabledChange,
   parameterEnabled,
+  hostedToolsRoute,
 }: PlaygroundParameterContentProps) {
   const { t } = useTranslation()
 
@@ -202,6 +210,13 @@ function PlaygroundParameterContent({
         onValueChange={(value) => onConfigChange('tools', value)}
         value={config.tools}
       />
+
+      <PlaygroundHostedToolsEditor
+        disabled={disabled}
+        onChange={(value) => onConfigChange('hosted_tools', value)}
+        hostedToolsRoute={hostedToolsRoute}
+        value={config.hosted_tools}
+      />
     </div>
   )
 }
@@ -212,7 +227,10 @@ export function PlaygroundParameterPanel(props: PlaygroundParameterPanelProps) {
   const activeCount =
     PLAYGROUND_PARAMETER_CONTROLS.filter(
       (control) => props.parameterEnabled[control.key]
-    ).length + (props.parameterEnabled.tools ? 1 : 0)
+    ).length +
+    (props.parameterEnabled.tools ? 1 : 0) +
+    getActiveHostedTools(props.config.hosted_tools, props.hostedToolsRoute)
+      .length
 
   const trigger = (
     <PromptInputButton

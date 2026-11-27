@@ -37,13 +37,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 import {
   ATTACHMENT_ACTIONS,
   getAttachmentActionNotice,
-  getSearchActionNotice,
+  getSupportedHostedTools,
 } from '../../lib'
-import type { ParameterEnabled, PlaygroundConfig } from '../../types'
+import type {
+  ParameterEnabled,
+  PlaygroundConfig,
+  HostedToolsRoute,
+} from '../../types'
 import { PlaygroundParameterPanel } from './playground-parameter-panel'
 
 type PlaygroundInputToolsProps = {
@@ -60,6 +65,7 @@ type PlaygroundInputToolsProps = {
     value: boolean
   ) => void
   parameterEnabled: ParameterEnabled
+  hostedToolsRoute: HostedToolsRoute
 }
 
 export function PlaygroundInputTools({
@@ -70,6 +76,7 @@ export function PlaygroundInputTools({
   onConfigChange,
   onParameterEnabledChange,
   parameterEnabled,
+  hostedToolsRoute,
 }: PlaygroundInputToolsProps) {
   const { t } = useTranslation()
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
@@ -81,9 +88,23 @@ export function PlaygroundInputTools({
     })
   }
 
-  const handleSearchAction = () => {
-    const notice = getSearchActionNotice()
-    toast.info(t(notice.title))
+  // The globe button is the web search switch of the hosted tools
+  const canSearch =
+    getSupportedHostedTools(hostedToolsRoute).includes('web_search')
+  const isSearchOn = canSearch && config.hosted_tools.includes('web_search')
+  let searchLabel = t('Web search: off')
+  if (!canSearch) {
+    searchLabel = t('Web search is not available for this model')
+  } else if (isSearchOn) {
+    searchLabel = t('Web search: on')
+  }
+
+  const handleSearchToggle = () => {
+    const others = config.hosted_tools.filter((key) => key !== 'web_search')
+    onConfigChange(
+      'hosted_tools',
+      isSearchOn ? others : [...others, 'web_search']
+    )
   }
 
   const handleClearMessages = () => {
@@ -134,10 +155,15 @@ export function PlaygroundInputTools({
           <TooltipTrigger
             render={
               <PromptInputButton
-                aria-label={t('Search')}
-                className='text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium'
-                disabled={disabled}
-                onClick={handleSearchAction}
+                aria-label={t('Web search')}
+                aria-pressed={isSearchOn}
+                className={cn(
+                  'text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium',
+                  isSearchOn &&
+                    'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
+                )}
+                disabled={disabled || !canSearch}
+                onClick={handleSearchToggle}
                 variant='ghost'
               >
                 <GlobeIcon size={16} />
@@ -145,7 +171,7 @@ export function PlaygroundInputTools({
             }
           />
           <TooltipContent>
-            <p>{t('Search')}</p>
+            <p>{searchLabel}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -155,6 +181,7 @@ export function PlaygroundInputTools({
           onConfigChange={onConfigChange}
           onParameterEnabledChange={onParameterEnabledChange}
           parameterEnabled={parameterEnabled}
+          hostedToolsRoute={hostedToolsRoute}
         />
 
         <Tooltip>

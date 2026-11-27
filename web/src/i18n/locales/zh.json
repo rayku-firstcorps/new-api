@@ -6367,7 +6367,6 @@
     "Search colors...": "搜索颜色...",
     "Search conflicting models or fields": "搜索冲突的模型或字段",
     "Search deployments...": "搜索部署...",
-    "Search feature in development": "搜索功能开发中",
     "Search group names...": "搜索分组名称...",
     "Search groups by name or description": "搜索分组名称或描述",
     "Search groups...": "搜索分组...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "用于对话和 Claude 模型的函数定义，每个工具的结果需要你手动填写。",
     "Awaiting Approval": "等待批准",
     "Responded": "已响应",
-    "Denied": "已拒绝"
+    "Denied": "已拒绝",
+    "Search the web and cite the pages used": "搜索网络并引用所用网页",
+    "Web fetch": "抓取网页",
+    "Read pages whose URLs appear in the conversation": "读取对话中出现的网址对应的页面",
+    "Code execution": "代码执行",
+    "Run code in the provider sandbox": "在模型厂商的沙箱中运行代码",
+    "Hosted tools": "托管工具",
+    "Run by the model provider. Web search and code execution may be billed per use.": "由模型厂商执行。网络搜索和代码执行可能按次额外计费。",
+    "Not available for this model": "当前模型不支持",
+    "Web search: off": "网络搜索：关闭",
+    "Web search: on": "网络搜索：开启",
+    "Web search is not available for this model": "当前模型不支持网络搜索",
+    "The tool returned an error: {{code}}": "工具返回错误：{{code}}",
+    "Exit code: {{code}}": "退出码：{{code}}",
+    "No results": "无结果",
+    "Not finished": "未完成"
   }
 }

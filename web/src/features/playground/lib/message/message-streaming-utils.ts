@@ -20,6 +20,7 @@ import { t } from 'i18next'
 
 import { ERROR_MESSAGES, MESSAGE_ROLES, MESSAGE_STATUS } from '../../constants'
 import type { ChatCompletionResponse, Message, ToolCall } from '../../types'
+import { getAnnotationSources } from '../tools/hosted-tools'
 import { parseThinkTags } from './message-reasoning-utils'
 import {
   completeAssistantTiming,
@@ -203,12 +204,15 @@ export function applyChatCompletionChoice(
     })
   )
 
+  const sources = getAnnotationSources(choice.message?.annotations)
+
   return completeAssistantTiming({
     ...finalizeMessage(
       updateCurrentVersionContent(message, choice.message?.content || ''),
       choice.message?.reasoning_content ?? choice.message?.reasoning
     ),
     ...(toolCalls.length > 0 ? { toolCalls } : {}),
+    ...(sources.length > 0 ? { sources } : {}),
     status: MESSAGE_STATUS.COMPLETE,
   })
 }

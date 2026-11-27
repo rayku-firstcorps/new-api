@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { MESSAGE_ROLES, MESSAGE_STATUS } from '../../constants'
 import type { GeneratedImage, Message } from '../../types'
+import { hasHostedToolActivity } from '../tools/hosted-tools'
 import { parseThinkTags } from './message-reasoning-utils'
 
 type MessageContentStateBase = {
@@ -90,7 +91,10 @@ export function getMessageContentState(
   const reasoningContent = isAssistant ? message.reasoning?.content : undefined
   const images = message.images ?? []
   // Images and tool calls render without text, so they end the loader too
-  const hasImages = images.length > 0 || (message.toolCalls?.length ?? 0) > 0
+  const hasImages =
+    images.length > 0 ||
+    (message.toolCalls?.length ?? 0) > 0 ||
+    hasHostedToolActivity(message)
   const showLoader = shouldShowMessageLoader(
     message,
     isAssistant,

@@ -46,7 +46,7 @@ export interface Message {
   startedAt?: number
   completedAt?: number
   durationMs?: number
-  sources?: { href: string; title: string }[]
+  sources?: MessageSource[]
   reasoning?: {
     content: string
     duration: number
@@ -64,18 +64,24 @@ export interface Message {
   // Anthropic Messages turns keep their content blocks as received so the
   // history replays thinking blocks unchanged; an edit drops them.
   messagesBlocks?: MessagesReplayBlock[]
+  // Hosted tool calls of a Responses turn (web_search_call,
+  // code_interpreter_call) as received, the latest copy of each item
+  responsesItems?: Record<string, unknown>[]
 }
 
 /**
  * An assistant content block from a Messages response, kept for replay.
- * tool_use input is JSON text (partial while streaming); other block types
- * (server tools, citations) are not kept.
+ * tool_use and server_tool_use input is JSON text (partial while streaming).
+ * Hosted tool results (web_search_tool_result, ...) arrive complete and are
+ * kept as received under block; text keeps its citations.
  */
 export type MessagesReplayBlock =
   | { type: 'thinking'; thinking: string; signature: string }
   | { type: 'redacted_thinking'; data: string }
-  | { type: 'text'; text: string }
+  | { type: 'text'; text: string; citations?: Record<string, unknown>[] }
   | { type: 'tool_use'; id: string; name: string; input: string }
+  | { type: 'server_tool_use'; id: string; name: string; input: string }
+  | { type: 'server_tool_result'; block: Record<string, unknown> }
 
 /** A Messages stream event that changes the content block at index. */
 export type MessagesBlockEvent =
@@ -89,6 +95,7 @@ export type MessagesBlockEvent =
         thinking?: string
         signature?: string
         partial_json?: string
+        citation?: Record<string, unknown>
       }
     }
 
@@ -113,6 +120,18 @@ export interface ToolCallDelta {
   id?: string
   name?: string
   arguments?: string
+}
+
+/**
+ * A tool the upstream runs itself (Anthropic server tools, OpenAI chat
+ * web_search_options); the playground only switches it on.
+ */
+export type HostedToolKey = 'web_search' | 'web_fetch' | 'code_execution'
+
+/** A web page the answer cites or a hosted tool fetched. */
+export interface MessageSource {
+  href: string
+  title: string
 }
 
 /** A tool definition normalized from the playground tools JSON. */
@@ -161,18 +180,33 @@ export interface ChatCompletionRequest {
   presence_penalty?: number
   seed?: number
   tools?: ChatCompletionTool[]
+  web_search_options?: Record<string, never>
 }
 
 // Image generation models stream through the Responses API instead, and
 // Claude models use the native Anthropic Messages API.
 export type PlaygroundRequestFormat = 'chat' | 'responses' | 'messages'
 
+/**
+ * Where a model's hosted tools go, from its catalog endpoints: a native
+ * Messages or Responses endpoint, chat completions' web_search_options, or
+ * nowhere (image models).
+ */
+export type HostedToolsRoute = 'messages' | 'responses' | 'chat' | 'none'
+
 export type MessagesContentBlock =
-  | { type: 'text'; text: string }
+  | { type: 'text'; text: string; citations?: Record<string, unknown>[] }
   | { type: 'thinking'; thinking: string; signature: string }
   | { type: 'redacted_thinking'; data: string }
   | { type: 'tool_use'; id: string; name: string; input: unknown }
+  | { type: 'server_tool_use'; id: string; name: string; input: unknown }
   | { type: 'tool_result'; tool_use_id: string; content: string }
+  // A hosted tool result replayed as received (web_search_tool_result, ...)
+  | HostedToolResultBlock
+
+export type HostedToolResultBlock = Record<string, unknown> & {
+  type: `${string}_tool_result`
+}
 
 export interface MessagesRequestMessage {
   role: 'user' | 'assistant'
@@ -185,6 +219,13 @@ export interface MessagesTool {
   input_schema: Record<string, unknown>
 }
 
+/** An Anthropic server tool definition (web_search_20250305, ...). */
+export interface MessagesServerTool {
+  type: string
+  name: string
+  max_uses?: number
+}
+
 export interface MessagesRequest {
   model: string
   group?: string
@@ -192,7 +233,7 @@ export interface MessagesRequest {
   messages: MessagesRequestMessage[]
   max_tokens: number
   stream: boolean
-  tools?: MessagesTool[]
+  tools?: Array<MessagesTool | MessagesServerTool>
 }
 
 export interface MessagesResponse {
@@ -205,6 +246,8 @@ export interface MessagesResponse {
     id?: string
     name?: string
     input?: unknown
+    citations?: Record<string, unknown>[]
+    [key: string]: unknown
   }>
 }
 
@@ -213,17 +256,41 @@ export interface ResponsesInputMessage {
   content: string
 }
 
+/** A function call and its result replayed in a Responses input. */
+export type ResponsesInputItem =
+  | ResponsesInputMessage
+  | { type: 'function_call'; call_id: string; name: string; arguments: string }
+  | { type: 'function_call_output'; call_id: string; output: string }
+
+/** A function tool in the Responses API, flat rather than nested. */
+export interface ResponsesFunctionTool {
+  type: 'function'
+  name: string
+  description?: string
+  parameters: Record<string, unknown>
+}
+
 export interface ResponsesRequest {
   model: string
   group?: string
-  input: ResponsesInputMessage[]
+  input: ResponsesInputItem[]
   stream: true
+  tools?: Array<ResponsesFunctionTool | Record<string, unknown>>
+  include?: string[]
 }
 
 export type PlaygroundStreamRequest =
   | { format: 'chat'; payload: ChatCompletionRequest }
   | { format: 'responses'; payload: ResponsesRequest }
   | { format: 'messages'; payload: MessagesRequest }
+
+/** A chat completions url_citation annotation of hosted web search. */
+export interface ChatCompletionAnnotation {
+  type?: string
+  url_citation?: { url?: string; title?: string }
+  url?: string
+  title?: string
+}
 
 export interface ChatCompletionChunk {
   id: string
@@ -237,6 +304,7 @@ export interface ChatCompletionChunk {
       content?: string
       reasoning_content?: string | null
       reasoning?: string | null
+      annotations?: ChatCompletionAnnotation[]
       tool_calls?: Array<{
         index?: number
         id?: string
@@ -260,6 +328,7 @@ export interface ChatCompletionResponse {
       content: string | null
       reasoning_content?: string | null
       reasoning?: string | null
+      annotations?: ChatCompletionAnnotation[]
       tool_calls?: ChatCompletionToolCall[]
     }
     finish_reason: string
@@ -284,6 +353,8 @@ export interface PlaygroundConfig {
   stream: boolean
   // Tool definitions as JSON text, sent when parameterEnabled.tools is on
   tools: string
+  // Hosted tools switched on; each format sends the ones it supports
+  hosted_tools: HostedToolKey[]
 }
 
 export interface ParameterEnabled {

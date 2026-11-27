@@ -143,7 +143,9 @@ export function toMessagesTools(tools: ToolDefinition[]): MessagesTool[] {
 
 /**
  * Merge stream fragments into the message's tool calls: a fragment with a
- * new index starts a call, later ones append to its arguments.
+ * new index starts a call, later ones append to its arguments. A fragment
+ * for an unknown index without an id or name starts nothing: in Messages it
+ * is the input of a hosted (server) tool, which the upstream runs itself.
  */
 export function applyToolCallDeltas(
   message: Message,
@@ -157,6 +159,7 @@ export function applyToolCallDeltas(
   for (const delta of deltas) {
     const position = toolCalls.findIndex((call) => call.index === delta.index)
     if (position === -1) {
+      if (!delta.id && !delta.name) continue
       toolCalls.push({
         index: delta.index,
         id: delta.id ?? '',
@@ -173,6 +176,10 @@ export function applyToolCallDeltas(
       name: current.name || delta.name || '',
       arguments: current.arguments + (delta.arguments ?? ''),
     }
+  }
+
+  if (toolCalls.length === 0) {
+    return message
   }
 
   return { ...message, toolCalls }

@@ -6367,7 +6367,6 @@
     "Search colors...": "Rechercher des couleurs...",
     "Search conflicting models or fields": "Rechercher des modèles ou champs en conflit",
     "Search deployments...": "Rechercher des déploiements...",
-    "Search feature in development": "Fonctionnalité de recherche en développement",
     "Search group names...": "Rechercher des noms de groupe...",
     "Search groups by name or description": "Rechercher par nom ou description",
     "Search groups...": "Rechercher des groupes...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "Définitions de fonctions pour les modèles de chat et Claude. Vous saisissez vous-même le résultat de chaque outil.",
     "Awaiting Approval": "En attente d’approbation",
     "Responded": "Répondu",
-    "Denied": "Refusé"
+    "Denied": "Refusé",
+    "Search the web and cite the pages used": "Rechercher sur le web et citer les pages utilisées",
+    "Web fetch": "Récupération web",
+    "Read pages whose URLs appear in the conversation": "Lire les pages dont l’URL figure dans la conversation",
+    "Code execution": "Exécution de code",
+    "Run code in the provider sandbox": "Exécuter du code dans le bac à sable du fournisseur",
+    "Hosted tools": "Outils hébergés",
+    "Run by the model provider. Web search and code execution may be billed per use.": "Exécutés par le fournisseur du modèle. La recherche web et l’exécution de code peuvent être facturées à l’usage.",
+    "Not available for this model": "Non disponible pour ce modèle",
+    "Web search: off": "Recherche web : désactivée",
+    "Web search: on": "Recherche web : activée",
+    "Web search is not available for this model": "La recherche web n’est pas disponible pour ce modèle",
+    "The tool returned an error: {{code}}": "L’outil a renvoyé une erreur : {{code}}",
+    "Exit code: {{code}}": "Code de sortie : {{code}}",
+    "No results": "Aucun résultat",
+    "Not finished": "Non terminé"
   }
 }

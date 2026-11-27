@@ -171,3 +171,59 @@ test('tool calls, results and Messages blocks survive a reload', () => {
     { type: 'tool_use', id: 'toolu_1', name: 'get_weather', input: '{}' },
   ])
 })
+
+test('hosted tool switches, hosted calls, results and citations survive a reload', () => {
+  useAuthStore.getState().auth.setUser({ id: 1, username: 'A', role: 1 })
+  const result = {
+    type: 'web_search_tool_result',
+    tool_use_id: 'srvtoolu_1',
+    content: [{ type: 'web_search_result', url: 'https://example.com' }],
+  }
+  const blocks: NonNullable<Message['messagesBlocks']> = [
+    {
+      type: 'server_tool_use',
+      id: 'srvtoolu_1',
+      name: 'web_search',
+      input: '{"query":"news"}',
+    },
+    { type: 'server_tool_result', block: result },
+    {
+      type: 'text',
+      text: 'News.',
+      citations: [
+        { type: 'web_search_result_location', url: 'https://example.com' },
+      ],
+    },
+  ]
+  const responsesItems = [
+    {
+      type: 'web_search_call',
+      id: 'ws_1',
+      status: 'completed',
+      action: { type: 'search', query: 'news' },
+    },
+  ]
+  saveConfig({ hosted_tools: ['web_search', 'code_execution'] })
+  saveMessages([
+    {
+      key: 'search-turn',
+      from: 'assistant',
+      versions: [{ id: 'v', content: 'News.' }],
+      status: 'complete',
+      messagesBlocks: blocks,
+    },
+    {
+      key: 'responses-turn',
+      from: 'assistant',
+      versions: [{ id: 'v2', content: 'More news.' }],
+      status: 'complete',
+      responsesItems,
+    },
+  ])
+
+  const [loaded, loadedResponses] = loadMessages() ?? []
+
+  expect(loadConfig().hosted_tools).toEqual(['web_search', 'code_execution'])
+  expect(loaded.messagesBlocks).toEqual(blocks)
+  expect(loadedResponses.responsesItems).toEqual(responsesItems)
+})

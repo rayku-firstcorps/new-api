@@ -48,6 +48,10 @@ export const IMAGE_GENERATION_ENDPOINT_TYPE = 'image-generation'
 // so pass-through Anthropic channels receive their native request body
 export const ANTHROPIC_ENDPOINT_TYPE = 'anthropic'
 
+// Models whose catalog endpoints include this type take OpenAI hosted tools
+// through /pg/responses
+export const OPENAI_RESPONSES_ENDPOINT_TYPE = 'openai-response'
+
 // Default group — uses 'default' as the safe fallback; auto-group is
 // only selected when the backend confirms it is available for the user.
 export const DEFAULT_GROUP = 'default' as const
@@ -64,6 +68,7 @@ export const DEFAULT_CONFIG: PlaygroundConfig = {
   seed: null,
   stream: true,
   tools: '',
+  hosted_tools: [],
 }
 
 export const DEFAULT_PARAMETER_ENABLED: ParameterEnabled = {

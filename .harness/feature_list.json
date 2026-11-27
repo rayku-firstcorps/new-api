@@ -558,6 +558,46 @@
         "工具调用与结果随对话保存到 localStorage；生图（Responses）模型不发送工具",
         "七语言新增文案；vitest、typecheck、Playground lint 与 Harness 验证通过"
       ]
+    },
+    {
+      "id": "playground-hosted-tools",
+      "title": "Playground 托管工具开关：联网搜索、抓取网页、代码执行（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求，选择由上游托管执行的方案。网关已支持各协议托管搜索的转换与计费，不改后端与计费",
+      "scope": ["web/src/features/playground/", "web/src/i18n/locales/", "web/src/i18n/static-keys.ts", ".harness/verify.sh"],
+      "acceptance": [
+        "参数面板新增联网搜索、抓取网页、代码执行开关，随配置保存；当前模型格式不支持的开关置灰并说明原因",
+        "Messages（Claude）请求附带 web_search / web_fetch / code_execution 服务端工具（限制 max_uses）；chat 请求开启联网搜索时发送 web_search_options；生图（Responses）不发送",
+        "解析流式与非流式 server_tool_use 及各类 *_tool_result 块，助手消息展示搜索词/网址/代码及结果（搜索结果、抓取页面、stdout/stderr/返回码、错误码）",
+        "Messages 文本引用（citations）与 chat 的 url_citation 注解进入现有 Sources 展示；server_tool_use 的 input_json_delta 不生成客户端工具调用",
+        "Messages 多轮回传原样保留服务端工具块与文本 citations，随对话保存到 localStorage",
+        "七语言新增文案；vitest、typecheck、Playground lint 与 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "playground-openai-hosted-tools",
+      "title": "Playground 按模型原生端点路由托管工具：Responses / Messages（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求「openai接口也要支持」，并明确按端点判断：模型目录 supported_endpoint_types 含 openai-response 的模型开启托管工具时改走 /pg/responses，含 anthropic 的改走 /pg/messages（两者都有优先 Responses），都没有仍用 web_search_options；不按模型名判断；不改后端与计费",
+      "scope": ["web/src/features/playground/", "web/src/i18n/locales/", ".harness/verify.sh"],
+      "acceptance": [
+        "支持 openai-response 端点的模型：托管工具支持网络搜索与代码执行（抓取网页置灰），开启任一时该轮请求走 /pg/responses 流式，tools 为 web_search / code_interpreter，并 include 搜索来源与代码输出；支持 anthropic 端点（无 openai-response）的模型开启托管工具时该轮走 /pg/messages，三个工具都可用；未开启时仍走 chat",
+        "Responses 请求携带函数工具（扁平 function 定义），解析 output_item.added(function_call) 与 function_call_arguments.delta 生成可回填的工具调用；回传历史为 function_call + function_call_output",
+        "解析 web_search_call / code_interpreter_call 输出项并以现有托管工具卡片展示（搜索词、来源、代码与日志、失败状态）；output_text.annotation.added 的 url_citation 进入 Sources",
+        "Responses 托管调用项随对话保存到 localStorage；生图模型请求体不变",
+        "vitest、typecheck、Playground lint 与 Harness 验证通过"
+      ]
+    },
+    {
+      "id": "playground-browser-tools",
+      "title": "Playground 浏览器内自动执行自定义工具（前端）",
+      "status": "pending",
+      "note": "2026-11-27 用户要求，排在 playground-hosted-tools 之后单独实现",
+      "scope": ["web/src/features/playground/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "工具定义可附带在浏览器内运行的实现，模型调用后自动执行并回填结果继续对话",
+        "执行隔离、超时与失败回填 is_error，用户可随时停止自动循环"
+      ]
     }
   ],
   "out_of_scope": [

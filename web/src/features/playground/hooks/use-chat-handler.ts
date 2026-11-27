@@ -30,6 +30,9 @@ import {
   buildChatCompletionPayload,
   buildMessagesPayload,
   buildResponsesPayload,
+  getActiveHostedTools,
+  getMessagesBlockSources,
+  getTurnRequestFormat,
   getMessagesResponseBlocks,
   getMessagesResponseChoice,
   parseToolDefinitions,
@@ -40,12 +43,17 @@ import {
   completeAssistantMessage,
   isAssistantMessageFinal,
   isAssistantMessagePending,
+  mergeSources,
   upsertMessageImage,
+  upsertResponsesItem,
   type ChatCompletionChoice,
 } from '../lib'
 import type {
   GeneratedImage,
+  HostedToolKey,
+  HostedToolsRoute,
   Message,
+  MessageSource,
   MessagesBlockEvent,
   PlaygroundConfig,
   PlaygroundRequestFormat,
@@ -58,6 +66,8 @@ import { useStreamRequest } from './use-stream-request'
 
 interface UseChatHandlerOptions {
   config: PlaygroundConfig
+  // Where hosted tools go; with one on, a chat turn may use another format
+  hostedToolsRoute: HostedToolsRoute
   parameterEnabled: ParameterEnabled
   // 'responses' always streams, whatever config.stream says
   requestFormat: PlaygroundRequestFormat
@@ -74,6 +84,8 @@ type PendingStreamChunks = {
   reasoning: string
   toolCalls: ToolCallDelta[]
   blocks: MessagesBlockEvent[]
+  sources: MessageSource[]
+  responsesItems: Record<string, unknown>[]
 }
 
 function mergePendingStreamChunk(
@@ -92,6 +104,7 @@ function mergePendingStreamChunk(
  */
 export function useChatHandler({
   config,
+  hostedToolsRoute,
   parameterEnabled,
   requestFormat,
   onMessageUpdate,
@@ -107,6 +120,8 @@ export function useChatHandler({
     reasoning: '',
     toolCalls: [],
     blocks: [],
+    sources: [],
+    responsesItems: [],
   })
   const streamFlushTimerRef = useRef<number | null>(null)
 
@@ -121,6 +136,8 @@ export function useChatHandler({
       reasoning: '',
       toolCalls: [],
       blocks: [],
+      sources: [],
+      responsesItems: [],
     }
   }, [])
 
@@ -138,7 +155,9 @@ export function useChatHandler({
         !pendingChunks.reasoning &&
         !pendingChunks.content &&
         pendingChunks.toolCalls.length === 0 &&
-        pendingChunks.blocks.length === 0
+        pendingChunks.blocks.length === 0 &&
+        pendingChunks.sources.length === 0 &&
+        pendingChunks.responsesItems.length === 0
       ) {
         return
       }
@@ -149,6 +168,8 @@ export function useChatHandler({
         reasoning: '',
         toolCalls: [],
         blocks: [],
+        sources: [],
+        responsesItems: [],
       }
       onMessageUpdate((prev) => {
         if (generation !== requestGenerationRef.current) return prev
@@ -158,6 +179,37 @@ export function useChatHandler({
 
           for (const event of pendingChunks.blocks) {
             updatedMessage = applyMessagesBlockEvent(updatedMessage, event)
+          }
+
+          // Messages sources follow the blocks: cited and fetched pages
+          if (pendingChunks.blocks.length > 0) {
+            const blockSources = getMessagesBlockSources(
+              updatedMessage.messagesBlocks
+            )
+            if (blockSources.length > 0) {
+              updatedMessage = { ...updatedMessage, sources: blockSources }
+            }
+          }
+
+          for (const item of pendingChunks.responsesItems) {
+            updatedMessage = {
+              ...updatedMessage,
+              responsesItems: upsertResponsesItem(
+                updatedMessage.responsesItems,
+                item
+              ),
+              status: MESSAGE_STATUS.STREAMING,
+            }
+          }
+
+          if (pendingChunks.sources.length > 0) {
+            updatedMessage = {
+              ...updatedMessage,
+              sources: mergeSources(
+                updatedMessage.sources,
+                pendingChunks.sources
+              ),
+            }
           }
 
           if (pendingChunks.toolCalls.length > 0) {
@@ -270,6 +322,26 @@ export function useChatHandler({
     [scheduleStreamFlush]
   )
 
+  const handleStreamSources = useCallback(
+    (generation: number, sources: MessageSource[]) => {
+      if (generation !== requestGenerationRef.current) return
+      if (pendingStreamChunksRef.current.generation !== generation) return
+      pendingStreamChunksRef.current.sources.push(...sources)
+      scheduleStreamFlush(generation)
+    },
+    [scheduleStreamFlush]
+  )
+
+  const handleResponsesItem = useCallback(
+    (generation: number, item: Record<string, unknown>) => {
+      if (generation !== requestGenerationRef.current) return
+      if (pendingStreamChunksRef.current.generation !== generation) return
+      pendingStreamChunksRef.current.responsesItems.push(item)
+      scheduleStreamFlush(generation)
+    },
+    [scheduleStreamFlush]
+  )
+
   // Images are applied at once: each one is a complete (or partial) picture,
   // not a delta that benefits from batching.
   const handleStreamImage = useCallback(
@@ -327,9 +399,14 @@ export function useChatHandler({
     [flushStreamUpdates, getDisplayError, onMessageUpdate, t]
   )
 
-  // Send streaming chat request
+  // Send streaming chat request in the turn's format (see sendChat)
   const sendStreamingChat = useCallback(
-    (messages: Message[], tools: ToolDefinition[]) => {
+    (
+      messages: Message[],
+      tools: ToolDefinition[],
+      hostedTools: HostedToolKey[],
+      turnFormat: PlaygroundRequestFormat
+    ) => {
       const generation = requestGenerationRef.current + 1
       requestGenerationRef.current = generation
       abortControllerRef.current?.abort()
@@ -337,15 +414,15 @@ export function useChatHandler({
       discardPendingStreamUpdates(generation)
       setIsRequesting(true)
       let request: PlaygroundStreamRequest
-      if (requestFormat === 'responses') {
+      if (turnFormat === 'responses') {
         request = {
           format: 'responses',
-          payload: buildResponsesPayload(messages, config),
+          payload: buildResponsesPayload(messages, config, tools, hostedTools),
         }
-      } else if (requestFormat === 'messages') {
+      } else if (turnFormat === 'messages') {
         request = {
           format: 'messages',
-          payload: buildMessagesPayload(messages, config, tools),
+          payload: buildMessagesPayload(messages, config, tools, hostedTools),
         }
       } else {
         request = {
@@ -354,7 +431,8 @@ export function useChatHandler({
             messages,
             config,
             parameterEnabled,
-            tools
+            tools,
+            hostedTools
           ),
         }
       }
@@ -363,6 +441,8 @@ export function useChatHandler({
         onImage: (image) => handleStreamImage(generation, image),
         onToolCalls: (deltas) => handleStreamToolCalls(generation, deltas),
         onMessagesBlock: (event) => handleMessagesBlock(generation, event),
+        onSources: (sources) => handleStreamSources(generation, sources),
+        onResponsesItem: (item) => handleResponsesItem(generation, item),
         onComplete: () => handleStreamComplete(generation),
         onError: (error, errorCode) =>
           handleStreamError(generation, error, errorCode),
@@ -371,12 +451,13 @@ export function useChatHandler({
     [
       config,
       parameterEnabled,
-      requestFormat,
       sendStreamRequest,
       discardPendingStreamUpdates,
       handleStreamUpdate,
       handleStreamToolCalls,
       handleMessagesBlock,
+      handleStreamSources,
+      handleResponsesItem,
       handleStreamImage,
       handleStreamComplete,
       handleStreamError,
@@ -385,7 +466,11 @@ export function useChatHandler({
 
   // Send non-streaming chat request
   const sendNonStreamingChat = useCallback(
-    async (messages: Message[], tools: ToolDefinition[]) => {
+    async (
+      messages: Message[],
+      tools: ToolDefinition[],
+      hostedTools: HostedToolKey[]
+    ) => {
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
 
@@ -401,7 +486,7 @@ export function useChatHandler({
         let messagesBlocks: Message['messagesBlocks']
         if (requestFormat === 'messages') {
           const response = await sendMessages(
-            buildMessagesPayload(messages, config, tools),
+            buildMessagesPayload(messages, config, tools, hostedTools),
             abortController.signal
           )
           choice = getMessagesResponseChoice(response)
@@ -412,7 +497,8 @@ export function useChatHandler({
               messages,
               config,
               parameterEnabled,
-              tools
+              tools,
+              hostedTools
             ),
             abortController.signal
           )
@@ -431,11 +517,13 @@ export function useChatHandler({
         }
 
         const completedChoice = choice
+        const blockSources = getMessagesBlockSources(messagesBlocks)
         onMessageUpdate((prev) => {
           if (requestGenerationRef.current !== generation) return prev
           return updateLastAssistantMessage(prev, (message) => ({
             ...applyChatCompletionChoice(message, completedChoice),
             ...(messagesBlocks?.length ? { messagesBlocks } : {}),
+            ...(blockSources.length > 0 ? { sources: blockSources } : {}),
           }))
         })
       } catch (error: unknown) {
@@ -468,7 +556,9 @@ export function useChatHandler({
 
   // Send chat request (stream or non-stream based on config). Tools go with
   // chat and Messages requests; image models (Responses) take none. Invalid
-  // tools JSON fails the turn before anything is sent.
+  // tools JSON fails the turn before anything is sent. Hosted tools are the
+  // switched-on ones the model supports; with one on, an OpenAI chat model
+  // sends the turn through Responses, which always streams.
   const sendChat = useCallback(
     (messages: Message[]) => {
       let tools: ToolDefinition[] = []
@@ -486,14 +576,26 @@ export function useChatHandler({
         tools = parsed.tools
       }
 
+      const hostedTools = getActiveHostedTools(
+        config.hosted_tools,
+        hostedToolsRoute
+      )
+      const turnFormat = getTurnRequestFormat(
+        requestFormat,
+        hostedToolsRoute,
+        hostedTools
+      )
+
       // 'responses' always streams; 'messages' follows config.stream like chat
-      if (config.stream || requestFormat === 'responses') {
-        sendStreamingChat(messages, tools)
+      if (config.stream || turnFormat === 'responses') {
+        sendStreamingChat(messages, tools, hostedTools, turnFormat)
       } else {
-        void sendNonStreamingChat(messages, tools)
+        void sendNonStreamingChat(messages, tools, hostedTools)
       }
     },
     [
+      config.hosted_tools,
+      hostedToolsRoute,
       config.stream,
       config.tools,
       parameterEnabled.tools,

@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type {
+  HostedToolResultBlock,
   Message,
   MessagesBlockEvent,
   MessagesContentBlock,
@@ -26,7 +27,7 @@ import type {
 import { parseToolCallInput } from '../tools/tool-calling'
 
 // Blocks are kept by stream index; indexes of blocks that are not kept
-// (server tools, ...) stay empty and are skipped on replay.
+// (unknown block types) stay empty and are skipped on replay.
 type IndexedBlocks = Array<MessagesReplayBlock | undefined>
 
 function stringField(block: Record<string, unknown>, key: string): string {
@@ -34,10 +35,22 @@ function stringField(block: Record<string, unknown>, key: string): string {
   return typeof value === 'string' ? value : ''
 }
 
+function citationsField(
+  block: Record<string, unknown>
+): Record<string, unknown>[] | undefined {
+  const citations = block.citations
+  if (!Array.isArray(citations) || citations.length === 0) return undefined
+  return citations.filter(
+    (citation): citation is Record<string, unknown> =>
+      typeof citation === 'object' && citation !== null
+  )
+}
+
 /**
  * Turn the block of a content_block_start event (or of a non-streaming
- * response) into a replay block. tool_use input arrives as JSON deltas when
- * streaming, so a start block's empty input object is not serialized.
+ * response) into a replay block. tool_use and server_tool_use input arrives
+ * as JSON deltas when streaming, so a start block's empty input object is
+ * not serialized. Hosted tool results arrive whole and are kept as received.
  */
 function toReplayBlock(
   block: Record<string, unknown>,
@@ -52,23 +65,34 @@ function toReplayBlock(
       }
     case 'redacted_thinking':
       return { type: 'redacted_thinking', data: stringField(block, 'data') }
-    case 'text':
-      return { type: 'text', text: stringField(block, 'text') }
-    case 'tool_use':
+    case 'text': {
+      const citations = citationsField(block)
       return {
-        type: 'tool_use',
+        type: 'text',
+        text: stringField(block, 'text'),
+        ...(citations ? { citations } : {}),
+      }
+    }
+    case 'tool_use':
+    case 'server_tool_use':
+      return {
+        type: block.type,
         id: stringField(block, 'id'),
         name: stringField(block, 'name'),
         input: streaming ? '' : JSON.stringify(block.input ?? {}),
       }
+  }
+  const type = stringField(block, 'type')
+  if (type.endsWith('_tool_result') && type !== 'tool_result') {
+    return { type: 'server_tool_result', block }
   }
   return undefined
 }
 
 /**
  * Apply one Messages stream event to the assistant turn's content blocks:
- * a start event opens the block at its index, deltas append text, thinking,
- * the signature, or tool input JSON to it.
+ * a start event opens the block at its index, deltas append text, a
+ * citation, thinking, the signature, or tool input JSON to it.
  */
 export function applyMessagesBlockEvent(
   message: Message,
@@ -90,11 +114,23 @@ export function applyMessagesBlockEvent(
   let next: MessagesReplayBlock = block
   if (block.type === 'text' && delta.type === 'text_delta') {
     next = { ...block, text: block.text + (delta.text ?? '') }
+  } else if (
+    block.type === 'text' &&
+    delta.type === 'citations_delta' &&
+    delta.citation
+  ) {
+    next = {
+      ...block,
+      citations: [...(block.citations ?? []), delta.citation],
+    }
   } else if (block.type === 'thinking' && delta.type === 'thinking_delta') {
     next = { ...block, thinking: block.thinking + (delta.thinking ?? '') }
   } else if (block.type === 'thinking' && delta.type === 'signature_delta') {
     next = { ...block, signature: block.signature + (delta.signature ?? '') }
-  } else if (block.type === 'tool_use' && delta.type === 'input_json_delta') {
+  } else if (
+    (block.type === 'tool_use' || block.type === 'server_tool_use') &&
+    delta.type === 'input_json_delta'
+  ) {
     next = { ...block, input: block.input + (delta.partial_json ?? '') }
   } else {
     return message
@@ -120,9 +156,10 @@ export function getMessagesResponseBlocks(
 
 /**
  * Content of an assistant turn as sent back to Messages: the kept blocks in
- * order, thinking blocks unchanged. tool_use blocks are kept only when the
- * user answered the calls (their results follow in the next user turn);
- * an unanswered call cannot be replayed without a result.
+ * order, thinking blocks, hosted tool calls with their results and text
+ * citations unchanged. tool_use blocks are kept only when the user answered
+ * the calls (their results follow in the next user turn); an unanswered
+ * call cannot be replayed without a result.
  */
 export function toMessagesReplayContent(
   blocks: readonly (MessagesReplayBlock | undefined)[],
@@ -139,6 +176,19 @@ export function toMessagesReplayContent(
         name: block.name,
         input: parseToolCallInput(block.input),
       })
+      continue
+    }
+    if (block.type === 'server_tool_use') {
+      content.push({
+        type: 'server_tool_use',
+        id: block.id,
+        name: block.name,
+        input: parseToolCallInput(block.input),
+      })
+      continue
+    }
+    if (block.type === 'server_tool_result') {
+      content.push(block.block as HostedToolResultBlock)
       continue
     }
     if (block.type === 'text' && block.text === '') continue

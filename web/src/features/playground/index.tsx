@@ -48,16 +48,18 @@ export function Playground(props: { initialModel?: string }) {
     if (initialModel) updateConfig('model', initialModel)
   }, [initialModel, updateConfig])
 
-  const { isLoadingModels, requestFormat } = usePlaygroundOptions({
-    currentGroup: config.group,
-    currentModel: config.model,
-    setGroups,
-    setModels,
-    updateConfig,
-  })
+  const { hostedToolsRoute, isLoadingModels, requestFormat } =
+    usePlaygroundOptions({
+      currentGroup: config.group,
+      currentModel: config.model,
+      setGroups,
+      setModels,
+      updateConfig,
+    })
 
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
     config,
+    hostedToolsRoute,
     parameterEnabled,
     requestFormat,
     onMessageUpdate: updateMessages,
@@ -122,6 +124,7 @@ export function Playground(props: { initialModel?: string }) {
           onStop={stopGeneration}
           onSubmit={handleSendMessage}
           parameterEnabled={parameterEnabled}
+          hostedToolsRoute={hostedToolsRoute}
           hasMessages={messages.length > 0}
         />
       </div>

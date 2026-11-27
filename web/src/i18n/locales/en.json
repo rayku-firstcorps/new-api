@@ -6367,7 +6367,6 @@
     "Search colors...": "Search colors...",
     "Search conflicting models or fields": "Search conflicting models or fields",
     "Search deployments...": "Search deployments...",
-    "Search feature in development": "Search feature in development",
     "Search group names...": "Search group names...",
     "Search groups by name or description": "Search groups by name or description",
     "Search groups...": "Search groups...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "Function definitions for chat and Claude models. You enter each tool result yourself.",
     "Awaiting Approval": "Awaiting Approval",
     "Responded": "Responded",
-    "Denied": "Denied"
+    "Denied": "Denied",
+    "Search the web and cite the pages used": "Search the web and cite the pages used",
+    "Web fetch": "Web fetch",
+    "Read pages whose URLs appear in the conversation": "Read pages whose URLs appear in the conversation",
+    "Code execution": "Code execution",
+    "Run code in the provider sandbox": "Run code in the provider sandbox",
+    "Hosted tools": "Hosted tools",
+    "Run by the model provider. Web search and code execution may be billed per use.": "Run by the model provider. Web search and code execution may be billed per use.",
+    "Not available for this model": "Not available for this model",
+    "Web search: off": "Web search: off",
+    "Web search: on": "Web search: on",
+    "Web search is not available for this model": "Web search is not available for this model",
+    "The tool returned an error: {{code}}": "The tool returned an error: {{code}}",
+    "Exit code: {{code}}": "Exit code: {{code}}",
+    "No results": "No results",
+    "Not finished": "Not finished"
   }
 }

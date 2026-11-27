@@ -6367,7 +6367,6 @@
     "Search colors...": "Tìm kiếm màu sắc...",
     "Search conflicting models or fields": "Tìm kiếm mô hình hoặc trường xung đột",
     "Search deployments...": "Tìm kiếm triển khai...",
-    "Search feature in development": "Tính năng tìm kiếm đang được phát triển",
     "Search group names...": "Tìm kiếm tên nhóm...",
     "Search groups by name or description": "Tìm theo tên hoặc mô tả nhóm",
     "Search groups...": "Searching for group...",
@@ -8613,6 +8612,21 @@
     "Function definitions for chat and Claude models. You enter each tool result yourself.": "Định nghĩa hàm cho các mô hình chat và Claude. Bạn tự nhập kết quả của từng công cụ.",
     "Awaiting Approval": "Đang chờ phê duyệt",
     "Responded": "Đã phản hồi",
-    "Denied": "Đã từ chối"
+    "Denied": "Đã từ chối",
+    "Search the web and cite the pages used": "Tìm kiếm trên web và trích dẫn các trang đã dùng",
+    "Web fetch": "Tải trang web",
+    "Read pages whose URLs appear in the conversation": "Đọc các trang có URL xuất hiện trong cuộc trò chuyện",
+    "Code execution": "Thực thi mã",
+    "Run code in the provider sandbox": "Chạy mã trong sandbox của nhà cung cấp",
+    "Hosted tools": "Công cụ được lưu trữ",
+    "Run by the model provider. Web search and code execution may be billed per use.": "Do nhà cung cấp mô hình thực thi. Tìm kiếm web và thực thi mã có thể bị tính phí theo lượt dùng.",
+    "Not available for this model": "Không khả dụng cho mô hình này",
+    "Web search: off": "Tìm kiếm web: tắt",
+    "Web search: on": "Tìm kiếm web: bật",
+    "Web search is not available for this model": "Mô hình này không hỗ trợ tìm kiếm web",
+    "The tool returned an error: {{code}}": "Công cụ trả về lỗi: {{code}}",
+    "Exit code: {{code}}": "Mã thoát: {{code}}",
+    "No results": "Không có kết quả",
+    "Not finished": "Chưa hoàn tất"
   }
 }
