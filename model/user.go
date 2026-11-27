@@ -539,7 +539,7 @@ func GetSelfUserById(id int) (*User, error) {
 		"github_id", "discord_id", "oidc_id", "wechat_id", "telegram_id",
 		"group", "quota", "used_quota", "request_count", "aff_code", "aff_count",
 		"aff_quota", "aff_history", "inviter_id", "linux_do_id", "setting",
-		"stripe_customer", "auth_version",
+		"stripe_customer", "auth_version", "new_user_quota_rewarded",
 		"CASE WHEN password <> '' THEN 1 ELSE 0 END AS has_password",
 	}).First(&profile, "id = ?", id).Error
 	profile.User.HasPassword = profile.HasPassword
@@ -784,6 +784,9 @@ func (user *User) FinalizeOAuthUserCreation(inviterId int) {
 			_ = inviteUser(inviterId)
 		}
 	}
+
+	// 注册赠送：未要求邮箱时 OAuth 新用户注册即发放；要求邮箱时由补绑邮箱触发
+	TryGrantNewUserQuota(user.Id)
 }
 
 func (user *User) Update(updatePassword bool) error {
@@ -1390,35 +1393,39 @@ func increaseUserQuota(id int, quota int) (err error) {
 	return ErrWalletQuotaLimitExceeded
 }
 
-// TryGrantNewUserQuota 在用户邮箱验证通过后，自动发放新用户免费额度（QuotaForNewUser）。
-// 仅当 QuotaForNewUser > 0 且用户已绑定/验证邮箱时发放，使用行锁 + 防重复字段保证只发一次。
-// 触发点：邮箱注册成功后（Register）、OAuth 用户补绑邮箱后（EmailBind）。
+// TryGrantNewUserQuota grants the one-time registration bonus (QuotaForNewUser).
+// Nothing is granted while the registration bonus switch is off or the amount is 0.
+// With new_user_quota_require_email on, the user must also have an email; with it
+// off, registration alone qualifies. A row lock plus the NewUserQuotaRewarded flag
+// guarantee at most one grant per user.
+// Triggers: Register, OAuth/WeChat user creation, and email binding (EmailBind).
 func TryGrantNewUserQuota(userId int) {
-	if common.QuotaForNewUser <= 0 {
+	amount := common.QuotaForNewUser
+	if !operation_setting.IsNewUserQuotaEnabled() || amount <= 0 {
 		return
 	}
+	requireEmail := operation_setting.IsNewUserQuotaRequireEmail()
 	var user User
 	if err := DB.Select("id", "email", "new_user_quota_rewarded").Where("id = ?", userId).First(&user).Error; err != nil {
 		return
 	}
-	// 必须已绑定/验证邮箱，且未发放过
-	if user.NewUserQuotaRewarded || strings.TrimSpace(user.Email) == "" {
+	if user.NewUserQuotaRewarded || (requireEmail && strings.TrimSpace(user.Email) == "") {
 		return
 	}
 
 	granted := false
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		var locked User
-		if err := LockForUpdate(tx).
+		if err := lockForUpdate(tx).
 			Select("id", "email", "new_user_quota_rewarded").
 			Where("id = ?", userId).First(&locked).Error; err != nil {
 			return err
 		}
-		if locked.NewUserQuotaRewarded || strings.TrimSpace(locked.Email) == "" {
+		if locked.NewUserQuotaRewarded || (requireEmail && strings.TrimSpace(locked.Email) == "") {
 			return nil
 		}
 		if err := tx.Model(&User{}).Where("id = ?", userId).Updates(map[string]interface{}{
-			"quota":                   gorm.Expr("quota + ?", common.QuotaForNewUser),
+			"quota":                   gorm.Expr("quota + ?", amount),
 			"new_user_quota_rewarded": true,
 		}).Error; err != nil {
 			return err
@@ -1435,10 +1442,14 @@ func TryGrantNewUserQuota(userId int) {
 	}
 
 	// 同步用户额度缓存，避免缓存读到旧值（与 IncreaseUserQuota 行为对齐）
-	if err := cacheIncrUserQuota(userId, int64(common.QuotaForNewUser)); err != nil {
+	if err := cacheIncrUserQuota(userId, int64(amount)); err != nil {
 		common.SysLog("failed to sync cache after granting new user quota: " + err.Error())
 	}
-	RecordLog(userId, LogTypeSystem, common.NewMessage("New user email verification bonus {{quota}}", map[string]any{"quota": logger.FormatQuota(common.QuotaForNewUser)}))
+	logContent := "New user registration bonus {{quota}}"
+	if requireEmail {
+		logContent = "New user email verification bonus {{quota}}"
+	}
+	RecordLog(userId, LogTypeSystem, common.NewMessage(logContent, map[string]any{"quota": logger.FormatQuota(amount)}))
 }
 
 func DecreaseUserQuota(id int, quota int, db bool) (err error) {

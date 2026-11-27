@@ -28,6 +28,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ChannelsReturnBanner } from '@/features/onboarding/components/channels-return-banner'
 import { ROLE } from '@/lib/roles'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { useAuthStore } from '@/stores/auth-store'
@@ -103,6 +104,7 @@ export function Channels() {
       </SectionPageLayout>
 
       <ChannelsDialogs />
+      <ChannelsReturnBanner />
     </ChannelsProvider>
   )
 }

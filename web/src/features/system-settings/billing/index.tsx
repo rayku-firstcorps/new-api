@@ -33,6 +33,8 @@ const defaultBillingSettings: BillingSettings = {
   AffCommissionMaxPerTopup: 0,
   AffFirstTopupMinAmount: 0,
   TopUpLink: '',
+  'quota_setting.new_user_quota_enabled': false,
+  'quota_setting.new_user_quota_require_email': true,
   'quota_setting.enable_free_model_pre_consume': true,
   'quota_setting.trust_quota_usd': 10,
   'quota_setting.pre_consume_multiplier': 1,

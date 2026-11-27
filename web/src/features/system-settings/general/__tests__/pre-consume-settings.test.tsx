@@ -29,9 +29,12 @@ import { useState } from 'react'
 import { beforeEach, expect, test, vi } from 'vitest'
 
 import { api } from '@/lib/api'
+import { quotaUnitsToDollars } from '@/lib/format'
 
 import { SettingsPageProvider } from '../../components/settings-page-context'
 import { QuotaSettingsSection } from '../quota-settings-section'
+
+const newUserFixture = { amount: 0, enabled: true, requireEmail: true }
 
 function Fixture() {
   const [container, setContainer] = useState<HTMLDivElement | null>(null)
@@ -41,7 +44,7 @@ function Fixture() {
       <SettingsPageProvider actionsContainer={container}>
         <QuotaSettingsSection
           defaultValues={{
-            QuotaForNewUser: 0,
+            QuotaForNewUser: newUserFixture.amount,
             QuotaForInviter: 0,
             QuotaForInvitee: 0,
             AffCommissionRate: 0,
@@ -50,6 +53,8 @@ function Fixture() {
             AffFirstTopupMinAmount: 0,
             TopUpLink: '',
             quota_setting: {
+              new_user_quota_enabled: newUserFixture.enabled,
+              new_user_quota_require_email: newUserFixture.requireEmail,
               enable_free_model_pre_consume: true,
               trust_quota_usd: 10,
               pre_consume_multiplier: 1,
@@ -80,6 +85,11 @@ async function renderSettings() {
 }
 
 beforeEach(() => {
+  Object.assign(newUserFixture, {
+    amount: 0,
+    enabled: true,
+    requireEmail: true,
+  })
   vi.spyOn(api, 'put').mockResolvedValue({ data: { success: true } })
 })
 
@@ -149,3 +159,74 @@ test.each(['', '-1'])(
     expect(api.put).not.toHaveBeenCalled()
   }
 )
+
+test('signup bonus switch off disables the amount input and keeps its value', async () => {
+  Object.assign(newUserFixture, { amount: 500000, enabled: false })
+  await renderSettings()
+  const amount = screen.getByRole('spinbutton', { name: 'New User Quota' })
+  expect(amount).toBeDisabled()
+  expect(amount).toHaveValue(quotaUnitsToDollars(500000))
+  expect(
+    screen.getByRole('switch', {
+      name: /Grant only after email is verified/,
+    })
+  ).toHaveAttribute('aria-disabled', 'true')
+})
+
+test('saving the signup bonus switch submits the new_user_quota_enabled option', async () => {
+  const user = userEvent.setup()
+  Object.assign(newUserFixture, { enabled: false })
+  await renderSettings()
+  await user.click(
+    screen.getByRole('switch', { name: 'Enable new user signup bonus' })
+  )
+  expect(
+    screen.getByRole('spinbutton', { name: 'New User Quota' })
+  ).toBeEnabled()
+  await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+  await waitFor(() =>
+    expect(api.put).toHaveBeenCalledWith('/api/option/', {
+      key: 'quota_setting.new_user_quota_enabled',
+      value: true,
+    })
+  )
+})
+
+test('turning off the email requirement asks for confirmation and saves only after confirming', async () => {
+  const user = userEvent.setup()
+  await renderSettings()
+  const emailSwitch = screen.getByRole('switch', {
+    name: /Grant only after email is verified/,
+  })
+  await user.click(emailSwitch)
+  expect(
+    await screen.findByText(
+      'Grant the signup bonus without email verification?'
+    )
+  ).toBeInTheDocument()
+  expect(emailSwitch).toBeChecked()
+  await user.click(screen.getByRole('button', { name: 'Turn off requirement' }))
+  await waitFor(() => expect(emailSwitch).not.toBeChecked())
+  expect(
+    screen.getByText(/granted without email verification/)
+  ).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+  await waitFor(() =>
+    expect(api.put).toHaveBeenCalledWith('/api/option/', {
+      key: 'quota_setting.new_user_quota_require_email',
+      value: false,
+    })
+  )
+})
+
+test('cancelling the confirmation keeps the email requirement on', async () => {
+  const user = userEvent.setup()
+  await renderSettings()
+  const emailSwitch = screen.getByRole('switch', {
+    name: /Grant only after email is verified/,
+  })
+  await user.click(emailSwitch)
+  await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+  expect(emailSwitch).toBeChecked()
+  expect(api.put).not.toHaveBeenCalled()
+})

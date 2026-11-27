@@ -23,7 +23,14 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -33,9 +40,13 @@ import { useSystemConfigStore } from '@/stores/system-config-store'
 
 import { OverviewDashboard } from '../overview-dashboard'
 
-const storageKey = 'dashboard_overview_setup_guide_expanded'
+const legacyStorageKey = 'dashboard_overview_setup_guide_expanded'
+const storageKey = `${legacyStorageKey}:u_1`
 let client: QueryClient
 let keyLookupError: Error | null
+let keyItems: { id: number; name: string; key: string; status: number }[]
+let statusFlags: Record<string, unknown>
+let selfData: Record<string, unknown>
 
 beforeEach(() => {
   window.localStorage.clear()
@@ -52,6 +63,12 @@ beforeEach(() => {
     defaultOptions: { queries: { retry: false } },
   })
   keyLookupError = null
+  keyItems = [{ id: 1, name: 'App key', key: 'masked', status: 1 }]
+  statusFlags = {}
+  selfData = {}
+  vi.spyOn(api, 'post').mockResolvedValue({
+    data: { success: true, data: { key: 'fullkey' } },
+  })
   vi.spyOn(api, 'get').mockImplementation(async (url) => {
     switch (url) {
       case '/api/token/?p=1&size=10':
@@ -59,9 +76,7 @@ beforeEach(() => {
         return {
           data: {
             success: true,
-            data: {
-              items: [{ id: 1, name: 'App key', key: 'masked', status: 1 }],
-            },
+            data: { items: keyItems },
           },
         }
       case '/api/status':
@@ -72,9 +87,12 @@ beforeEach(() => {
               announcements_enabled: false,
               faq_enabled: false,
               uptime_kuma_enabled: false,
+              ...statusFlags,
             },
           },
         }
+      case '/api/user/self':
+        return { data: { success: true, data: selfData } }
       case '/api/user/models':
         return { data: { success: true, data: ['gpt-4o-mini'] } }
       case '/api/data/self':
@@ -236,6 +254,176 @@ describe('overview setup guide', () => {
     ).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Setup guide' })
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('overview first-use fallback', () => {
+  function setNewUser(overrides: Record<string, unknown> = {}) {
+    useAuthStore.getState().auth.setUser({
+      id: 1,
+      username: 'new-user',
+      role: 1,
+      quota: 0,
+      used_quota: 0,
+      request_count: 0,
+      ...overrides,
+    })
+  }
+
+  it('hides the Recommended actions card while setup is unfinished and highlights the first open step', async () => {
+    setNewUser()
+    await renderOverview()
+
+    expect(
+      await screen.findByRole('button', { name: 'Hide setup guide' })
+    ).toBeVisible()
+    expect(screen.queryByText('Recommended actions')).not.toBeInTheDocument()
+    const steps = screen.getAllByRole('listitem')
+    const active = steps.filter((item) => item.getAttribute('aria-current'))
+    expect(active).toHaveLength(1)
+    expect(active[0]).toHaveTextContent('Add credits')
+  })
+
+  it('removes the Add credits step in self-use mode', async () => {
+    setNewUser()
+    statusFlags = { self_use_mode_enabled: true }
+    await renderOverview()
+
+    expect(await screen.findByText('Send a request')).toBeVisible()
+    await waitFor(() =>
+      expect(screen.queryByText('Add credits')).not.toBeInTheDocument()
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hide setup guide' })
+    )
+    expect(screen.getByText('Setup progress: 1/2')).toBeVisible()
+  })
+
+  it('keeps the Add credits step when the site is not in self-use mode', async () => {
+    setNewUser()
+    await renderOverview()
+
+    expect((await screen.findAllByText('Add credits')).length).toBeGreaterThan(
+      0
+    )
+  })
+
+  it('opens the in-place key dialog from the active Create API Key step', async () => {
+    const user = userEvent.setup()
+    setNewUser()
+    keyItems = []
+    await renderOverview()
+
+    const activeStep = await waitFor(() => {
+      const item = screen
+        .getAllByRole('listitem')
+        .find((entry) => entry.getAttribute('aria-current') === 'step')
+      expect(item).toBeDefined()
+      return item as HTMLElement
+    })
+    await user.click(
+      within(activeStep).getByRole('button', { name: 'Create API Key' })
+    )
+
+    expect(await screen.findByRole('dialog')).toBeVisible()
+    expect(await screen.findByLabelText('Key name')).toBeVisible()
+  })
+
+  it('stores the collapsed state per account so accounts do not affect each other', async () => {
+    const user = userEvent.setup()
+    setNewUser()
+    const first = await renderOverview()
+    await user.click(
+      await screen.findByRole('button', { name: 'Hide setup guide' })
+    )
+    expect(window.localStorage.getItem(storageKey)).toBe('collapsed')
+    first.unmount()
+
+    setNewUser({ id: 2, username: 'second-user' })
+    await renderOverview()
+
+    expect(
+      await screen.findByRole('button', { name: 'Hide setup guide' })
+    ).toBeVisible()
+    expect(window.localStorage.getItem(`${legacyStorageKey}:u_2`)).toBeNull()
+  })
+
+  it('adopts the legacy global preference once for the first account', async () => {
+    setNewUser()
+    window.localStorage.setItem(legacyStorageKey, 'collapsed')
+    await renderOverview()
+
+    expect(await screen.findByText('Setup progress: 1/3')).toBeVisible()
+    expect(window.localStorage.getItem(legacyStorageKey)).toBeNull()
+    expect(window.localStorage.getItem(storageKey)).toBe('collapsed')
+  })
+
+  it('shows a neutral Not topped up yet state instead of Balance depleted for an untouched account', async () => {
+    setNewUser()
+    await renderOverview()
+
+    expect(await screen.findByText('Not topped up yet')).toBeVisible()
+    expect(screen.queryByText('Balance depleted')).not.toBeInTheDocument()
+  })
+
+  it('keeps Balance depleted for an account that already used its credit', async () => {
+    setNewUser({ used_quota: 5000, request_count: 3 })
+    await renderOverview()
+
+    expect(
+      (await screen.findAllByText('Balance depleted')).length
+    ).toBeGreaterThan(0)
+    expect(screen.queryByText('Not topped up yet')).not.toBeInTheDocument()
+  })
+
+  it('refreshes request count and balance from the server when the page mounts', async () => {
+    setNewUser()
+    selfData = { quota: 777, used_quota: 10, request_count: 5 }
+    await renderOverview()
+
+    await waitFor(() =>
+      expect(useAuthStore.getState().auth.user?.request_count).toBe(5)
+    )
+    expect(useAuthStore.getState().auth.user?.quota).toBe(777)
+  })
+
+  it('shows full scrollable code tabs with docs and Playground entries', async () => {
+    setNewUser()
+    await renderOverview()
+
+    expect(await screen.findByRole('tab', { name: 'curl' })).toBeVisible()
+    expect(screen.getByRole('tab', { name: 'Python' })).toBeVisible()
+    expect(
+      screen.queryByRole('tab', { name: 'CC Switch' })
+    ).not.toBeInTheDocument()
+    const code = await screen.findByLabelText('Terminal')
+    expect(code).toHaveClass('overflow-x-auto')
+    expect(code.querySelector('.truncate')).toBeNull()
+    expect(code).toHaveTextContent('Authorization: Bearer sk-')
+    expect(
+      screen.getByRole('button', { name: 'Test in Playground' })
+    ).toHaveAttribute('href', expect.stringContaining('model=gpt-4o-mini'))
+    expect(
+      screen.getByRole('button', { name: 'Open the full setup guide' })
+    ).toHaveAttribute('href', '/docs')
+  })
+
+  it('shows the CC Switch tab only when the CC Switch option is on', async () => {
+    setNewUser()
+    statusFlags = { onboarding_cc_switch_enabled: true }
+    await renderOverview()
+
+    expect(await screen.findByRole('tab', { name: 'CC Switch' })).toBeVisible()
+  })
+
+  it('hides the Quick start entry when the onboarding switch is off', async () => {
+    setNewUser()
+    await renderOverview()
+
+    await screen.findByRole('button', { name: 'Hide setup guide' })
+    expect(
+      screen.queryByRole('button', { name: 'Quick start' })
     ).not.toBeInTheDocument()
   })
 })

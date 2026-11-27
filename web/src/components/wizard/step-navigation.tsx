@@ -21,13 +21,17 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 
-interface StepNavigationProps {
+export interface StepNavigationProps {
   currentStep: number
   totalSteps: number
   onBack: () => void
   onNext: () => void
   onSubmit: () => void
   isSubmitting?: boolean
+  /** Already translated label of the final-step button. Defaults to "Initialize system". */
+  submitLabel?: string
+  /** Already translated label while submitting. Defaults to "Initializing…". */
+  submittingLabel?: string
 }
 
 export function StepNavigation({
@@ -37,6 +41,8 @@ export function StepNavigation({
   onNext,
   onSubmit,
   isSubmitting = false,
+  submitLabel,
+  submittingLabel,
 }: StepNavigationProps) {
   const { t } = useTranslation()
   const isFirstStep = currentStep === 0
@@ -64,12 +70,12 @@ export function StepNavigation({
             {isSubmitting ? (
               <>
                 <Loader2 className='mr-2 size-4 animate-spin' />
-                {t('Initializing…')}
+                {submittingLabel ?? t('Initializing…')}
               </>
             ) : (
               <>
                 <CheckCircle2 className='mr-2 size-4' />
-                {t('Initialize system')}
+                {submitLabel ?? t('Initialize system')}
               </>
             )}
           </Button>

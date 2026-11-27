@@ -27,6 +27,7 @@ import {
 } from '../components/auth-page-heading'
 import { TermsFooter } from '../components/terms-footer'
 import { SignUpForm } from './components/sign-up-form'
+import { SignupBonusHint } from './components/signup-bonus-hint'
 
 export function SignUp() {
   const { t } = useTranslation()
@@ -38,6 +39,8 @@ export function SignUp() {
         <AuthPageHeading lead={t('Create your')} rest={t('account')}>
           <p>{t('One account for API keys, usage and billing.')}</p>
         </AuthPageHeading>
+
+        <SignupBonusHint />
 
         <SignUpForm />
 

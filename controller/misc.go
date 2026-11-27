@@ -48,6 +48,12 @@ func GetStatus(c *gin.Context) {
 	officialSocialLinks := model.PublicOfficialSocialLinksFromJSON(common.OptionMap[model.OptionKeyOfficialSocialLinks])
 	mainlandBaseURL, _ := operation_setting.NormalizeMainlandBaseURL(operation_setting.GetGeneralSetting().MainlandBaseURL)
 
+	onboarding := operation_setting.GetOnboardingSetting()
+	newUserQuotaAmount := 0
+	if operation_setting.IsNewUserQuotaEnabled() && common.QuotaForNewUser > 0 {
+		newUserQuotaAmount = common.QuotaForNewUser
+	}
+
 	data := gin.H{
 		"version":                     common.Version,
 		"start_time":                  common.StartTime,
@@ -133,6 +139,15 @@ func GetStatus(c *gin.Context) {
 		"log_max_range_days":          operation_setting.GetLogSetting().MaxRangeDays,
 		"quota_remind_enabled":        common.QuotaRemindEnabled,
 		"quota_remind_threshold":      common.QuotaRemindThreshold,
+
+		"onboarding_enabled":             onboarding.Enabled,
+		"onboarding_auto_open":           onboarding.AutoOpenOnFirstLogin,
+		"onboarding_inline_test_enabled": onboarding.AllowInlineTestRequest,
+		"onboarding_cc_switch_enabled":   onboarding.ShowCCSwitch,
+		"onboarding_admin_guide_enabled": onboarding.AdminGuideEnabled,
+		"new_user_quota_enabled":         operation_setting.IsNewUserQuotaEnabled(),
+		"new_user_quota_amount":          newUserQuotaAmount,
+		"new_user_quota_require_email":   operation_setting.IsNewUserQuotaRequireEmail(),
 	}
 
 	// 根据启用状态注入可选内容

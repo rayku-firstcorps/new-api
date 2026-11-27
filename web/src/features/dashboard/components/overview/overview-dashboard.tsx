@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   BookOpen,
@@ -27,14 +27,16 @@ import {
   FileText,
   KeyRound,
   ListChecks,
+  Rocket,
   RadioTower,
   ShieldCheck,
   TerminalSquare,
   Timer,
 } from 'lucide-react'
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { Dialog } from '@/components/dialog'
 import { SectionPageLayout } from '@/components/layout'
 import {
   CardStaggerContainer,
@@ -42,11 +44,17 @@ import {
 } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
 import { getApiKeys } from '@/features/keys/api'
-import { getUserModels } from '@/lib/api'
+import { ApiKeyBlock } from '@/features/onboarding/components/api-key-block'
+import { useOnboardingAutoOpen } from '@/features/onboarding/hooks/use-onboarding-auto-open'
+import { useOnboardingEntry } from '@/features/onboarding/hooks/use-onboarding-entry'
+import { readOnboardingFlags } from '@/features/onboarding/lib/availability'
+import type { OnboardingSelectedKey } from '@/features/onboarding/types'
+import { useStatus } from '@/hooks/use-status'
+import { getSelf, getUserModels } from '@/lib/api'
 import { ROLE } from '@/lib/roles'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuthStore, type AuthUser } from '@/stores/auth-store'
 
 import {
   useApiInfo,
@@ -81,6 +89,8 @@ export function OverviewDashboard() {
   const setupGuideId = useId()
   const setupGuideToggleRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.auth.user)
+  const onboardingAutoOpen = useOnboardingAutoOpen()
+  const onboardingEntry = useOnboardingEntry()
   const { items: apiInfoItems } = useApiInfo()
   const {
     apiInfo: showApiInfoPanel,
@@ -88,9 +98,26 @@ export function OverviewDashboard() {
     faq: showFAQPanel,
     uptimeKuma: showUptimePanel,
   } = useDashboardContentVisibility()
-  const [manualSetupGuideExpanded, setManualSetupGuideExpanded] = useState<
-    boolean | null
-  >(() => getSavedSetupGuideExpanded())
+  const { status } = useStatus()
+  const queryClient = useQueryClient()
+  const selfUseMode = readOnboardingFlags(status).selfUseMode
+  const userId = user?.id
+  const [keyDialogOpen, setKeyDialogOpen] = useState(false)
+  const [createdKey, setCreatedKey] = useState<OnboardingSelectedKey | null>(
+    null
+  )
+  // Collapse state belongs to one account; re-read it when the account changes.
+  const [setupGuidePref, setSetupGuidePref] = useState(() => ({
+    userId,
+    expanded: getSavedSetupGuideExpanded(userId),
+  }))
+  if (setupGuidePref.userId !== userId) {
+    setSetupGuidePref({
+      userId,
+      expanded: getSavedSetupGuideExpanded(userId),
+    })
+  }
+  const manualSetupGuideExpanded = setupGuidePref.expanded
 
   const requestCount = Number(user?.request_count ?? 0)
   const remainQuota = Number(user?.quota ?? 0)
@@ -115,37 +142,84 @@ export function OverviewDashboard() {
     staleTime: 5 * 60 * 1000,
   })
 
+  // Refresh balance / request count / signup-bonus state on mount and on focus, so
+  // progress advances after a test call made elsewhere (Playground, a client).
+  const selfQuery = useQuery({
+    queryKey: ['dashboard', 'overview', 'self', userId],
+    queryFn: async () => (await getSelf()) as { data?: Partial<AuthUser> },
+    enabled: userId !== undefined,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    meta: { errorToast: false },
+  })
+  useEffect(() => {
+    const fresh = selfQuery.data?.data
+    const current = useAuthStore.getState().auth.user
+    if (!fresh || !current || current.id !== userId) return
+    const next: AuthUser = { ...current }
+    if (typeof fresh.quota === 'number') next.quota = fresh.quota
+    if (typeof fresh.used_quota === 'number') next.used_quota = fresh.used_quota
+    if (typeof fresh.request_count === 'number') {
+      next.request_count = fresh.request_count
+    }
+    if (typeof fresh.email === 'string') next.email = fresh.email
+    if (fresh.setting !== undefined) next.setting = fresh.setting
+    if (typeof fresh.new_user_quota_rewarded === 'boolean') {
+      next.new_user_quota_rewarded = fresh.new_user_quota_rewarded
+    }
+    const changed = (Object.keys(next) as (keyof AuthUser)[]).some(
+      (key) => next[key] !== current[key]
+    )
+    if (changed) useAuthStore.getState().auth.setUser(next)
+  }, [selfQuery.data, userId])
+
   const preferredKey = useMemo(
     () => getPreferredKey(apiKeysQuery.data ?? []),
     [apiKeysQuery.data]
   )
 
-  const startSteps = useMemo<StartStep[]>(
-    () => [
+  const startSteps = useMemo<StartStep[]>(() => {
+    const steps: StartStep[] = [
       {
+        id: 'key',
         title: t('Create API Key'),
         description: t('Create a key for your app or service'),
         to: '/keys',
+        ctaLabel: t('Create API Key'),
         icon: KeyRound,
         completed: Boolean(preferredKey),
       },
       {
+        id: 'credits',
         title: t('Add credits'),
         description: t('Keep enough balance before production traffic'),
         to: '/wallet',
+        ctaLabel: t('Add credits'),
         icon: CreditCard,
         completed: remainQuota > 0 || usedQuota > 0,
       },
       {
+        id: 'request',
         title: t('Send a request'),
         description: t('Verify routing with Playground or your client'),
         to: '/playground',
+        ctaLabel: t('Test in Playground'),
+        playgroundModel: modelsQuery.data?.[0],
         icon: TerminalSquare,
         completed: requestCount > 0,
       },
-    ],
-    [preferredKey, remainQuota, requestCount, t, usedQuota]
-  )
+    ]
+    // Self-use sites do not bill users, so there is no credit step.
+    return selfUseMode ? steps.filter((step) => step.id !== 'credits') : steps
+  }, [
+    modelsQuery.data,
+    preferredKey,
+    remainQuota,
+    requestCount,
+    selfUseMode,
+    t,
+    usedQuota,
+  ])
 
   const quickActions = useMemo<QuickAction[]>(
     () => [
@@ -227,6 +301,7 @@ export function OverviewDashboard() {
 
   const completedStepCount = startSteps.filter((step) => step.completed).length
   const setupComplete = completedStepCount === startSteps.length
+  const activeStepId = startSteps.find((step) => !step.completed)?.id
   const setupStatusReady = apiKeysQuery.isFetched && Boolean(user)
   const setupGuideExpanded =
     manualSetupGuideExpanded ?? (setupStatusReady && !setupComplete)
@@ -236,223 +311,285 @@ export function OverviewDashboard() {
 
   const handleSetupGuideToggle = () => {
     const nextExpanded = !setupGuideExpanded
-    setManualSetupGuideExpanded(nextExpanded)
-    saveSetupGuideExpanded(nextExpanded)
+    setSetupGuidePref({ userId, expanded: nextExpanded })
+    saveSetupGuideExpanded(nextExpanded, userId)
     if (!nextExpanded && setupComplete) {
       setupGuideToggleRef.current?.focus()
     }
   }
 
+  const handleKeySelected = (key: OnboardingSelectedKey) => {
+    setCreatedKey(key)
+    void queryClient.invalidateQueries({
+      queryKey: ['dashboard', 'overview', 'api-keys'],
+    })
+  }
+
+  const handleKeyDialogOpenChange = (open: boolean) => {
+    setKeyDialogOpen(open)
+    // The plaintext key is memory only: drop it as soon as the dialog closes.
+    if (!open) setCreatedKey(null)
+  }
+
+  // Render nothing while deciding whether a first-time user is sent to /onboarding.
+  if (!onboardingAutoOpen.settled) return null
+
   return (
-    <SectionPageLayout>
-      <SectionPageLayout.Title>{t('Overview')}</SectionPageLayout.Title>
-      <SectionPageLayout.Actions>
-        {setupStatusReady && setupComplete && (
-          <Button
-            ref={setupGuideToggleRef}
-            variant='ghost'
-            size='sm'
-            className='text-muted-foreground hover:text-foreground h-auto min-h-7 max-w-[60vw] whitespace-normal'
-            aria-expanded={setupGuideExpanded}
-            aria-controls={setupGuideId}
-            onClick={handleSetupGuideToggle}
-          >
-            {t('Setup guide')}
-          </Button>
-        )}
-      </SectionPageLayout.Actions>
-      <SectionPageLayout.Content>
-        <div className='flex flex-col gap-4'>
-          <div id={setupGuideId} hidden={!setupGuideExpanded}>
-            {setupGuideExpanded && (
-              <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
-                <CardStaggerItem className='bg-card h-full overflow-hidden rounded-xl border'>
-                  <div className='relative h-full overflow-hidden p-4 sm:p-5'>
-                    <div className='relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]'>
-                      <div className='flex min-w-0 flex-col gap-5'>
-                        <div className='flex flex-wrap items-start justify-between gap-3'>
-                          <div className='flex max-w-2xl flex-col gap-1'>
-                            <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
-                              <ListChecks
-                                className='size-3.5'
-                                aria-hidden='true'
-                              />
-                              {t('Get started')}
+    <>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('Overview')}</SectionPageLayout.Title>
+        <SectionPageLayout.Actions>
+          {onboardingEntry.visible && (
+            <Button
+              variant='ghost'
+              size='sm'
+              render={<Link to='/onboarding' />}
+            >
+              <Rocket data-icon='inline-start' />
+              {t('Quick start')}
+            </Button>
+          )}
+          {setupStatusReady && setupComplete && (
+            <Button
+              ref={setupGuideToggleRef}
+              variant='ghost'
+              size='sm'
+              className='text-muted-foreground hover:text-foreground h-auto min-h-7 max-w-[60vw] whitespace-normal'
+              aria-expanded={setupGuideExpanded}
+              aria-controls={setupGuideId}
+              onClick={handleSetupGuideToggle}
+            >
+              {t('Setup guide')}
+            </Button>
+          )}
+        </SectionPageLayout.Actions>
+        <SectionPageLayout.Content>
+          <div className='flex flex-col gap-4'>
+            <div id={setupGuideId} hidden={!setupGuideExpanded}>
+              {setupGuideExpanded && (
+                <CardStaggerContainer
+                  className={cn(
+                    'grid items-stretch gap-4',
+                    // While setup is unfinished the guide gets the full width; the
+                    // quick actions would only repeat its steps.
+                    setupComplete && 'xl:grid-cols-[minmax(0,1fr)_22rem]'
+                  )}
+                >
+                  <CardStaggerItem className='bg-card h-full overflow-hidden rounded-xl border'>
+                    <div className='relative h-full overflow-hidden p-4 sm:p-5'>
+                      <div className='relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]'>
+                        <div className='flex min-w-0 flex-col gap-5'>
+                          <div className='flex flex-wrap items-start justify-between gap-3'>
+                            <div className='flex max-w-2xl flex-col gap-1'>
+                              <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
+                                <ListChecks
+                                  className='size-3.5'
+                                  aria-hidden='true'
+                                />
+                                {t('Get started')}
+                              </div>
+                              <h3 className='font-display text-xl font-medium tracking-tight sm:text-2xl'>
+                                {t('Build on your API gateway in minutes')}
+                              </h3>
+                              <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
+                                {t(
+                                  'A focused home for keys, balance, routing, and service health.'
+                                )}
+                              </p>
                             </div>
-                            <h3 className='font-display text-xl font-medium tracking-tight sm:text-2xl'>
-                              {t('Build on your API gateway in minutes')}
-                            </h3>
-                            <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
-                              {t(
-                                'A focused home for keys, balance, routing, and service health.'
-                              )}
-                            </p>
+                            <div className='flex flex-wrap items-center gap-2'>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                aria-expanded={setupGuideExpanded}
+                                aria-controls={setupGuideId}
+                                onClick={handleSetupGuideToggle}
+                              >
+                                <ChevronUp data-icon='inline-start' />
+                                {t('Hide setup guide')}
+                              </Button>
+                            </div>
                           </div>
-                          <div className='flex flex-wrap items-center gap-2'>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              aria-expanded={setupGuideExpanded}
-                              aria-controls={setupGuideId}
-                              onClick={handleSetupGuideToggle}
-                            >
-                              <ChevronUp data-icon='inline-start' />
-                              {t('Hide setup guide')}
-                            </Button>
-                            <Button size='sm' render={<Link to='/keys' />}>
-                              <KeyRound data-icon='inline-start' />
-                              {t('Create API Key')}
-                            </Button>
-                          </div>
+
+                          <ol className='bg-muted/30 rounded-xl border p-2'>
+                            {startSteps.map((step, index) => (
+                              <StartStepItem
+                                key={step.id}
+                                step={step}
+                                index={index}
+                                isLast={index === startSteps.length - 1}
+                                active={step.id === activeStepId}
+                                onAction={
+                                  step.id === 'key'
+                                    ? () => setKeyDialogOpen(true)
+                                    : undefined
+                                }
+                              />
+                            ))}
+                          </ol>
                         </div>
 
-                        <ol className='bg-muted/30 rounded-xl border p-2'>
-                          {startSteps.map((step, index) => (
-                            <StartStepItem
-                              key={step.title}
-                              step={step}
-                              index={index}
-                              isLast={index === startSteps.length - 1}
+                        <RequestPreview
+                          example={requestExample}
+                          signals={heroSignals}
+                        />
+                      </div>
+                    </div>
+                  </CardStaggerItem>
+
+                  {setupComplete && (
+                    <CardStaggerItem className='bg-card h-full rounded-xl border p-4 sm:p-5'>
+                      <div className='flex h-full flex-col gap-4'>
+                        <div className='flex flex-col gap-1'>
+                          <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                            {t('Recommended actions')}
+                          </div>
+                          <h3 className='font-display text-lg font-medium tracking-tight'>
+                            {t('Keep the platform ready')}
+                          </h3>
+                        </div>
+                        <div className='grid gap-2'>
+                          {visibleQuickActions.map((action) => (
+                            <QuickActionItem
+                              key={action.title}
+                              action={action}
                             />
                           ))}
-                        </ol>
+                        </div>
+                      </div>
+                    </CardStaggerItem>
+                  )}
+                </CardStaggerContainer>
+              )}
+            </div>
+            {!setupGuideExpanded && !setupComplete && (
+              <CardStaggerContainer>
+                <CardStaggerItem className='bg-card overflow-hidden rounded-xl border'>
+                  <div className='relative overflow-hidden px-4 py-3 sm:px-5'>
+                    <div className='relative flex flex-wrap items-center justify-between gap-3'>
+                      <div className='flex min-w-0 items-center gap-3'>
+                        <span className='bg-background flex size-9 shrink-0 items-center justify-center rounded-lg border'>
+                          <Check
+                            className='text-success size-4'
+                            aria-hidden='true'
+                          />
+                        </span>
+                        <div className='min-w-0'>
+                          <div className='flex items-center gap-2'>
+                            <h3 className='truncate text-sm font-medium'>
+                              {t('Setup guide')}
+                            </h3>
+                            <span className='text-muted-foreground bg-background rounded-md border px-2 py-0.5 text-xs'>
+                              {t('Setup progress: {{completed}}/{{total}}', {
+                                completed: completedStepCount,
+                                total: startSteps.length,
+                              })}
+                            </span>
+                          </div>
+                          <p className='text-muted-foreground line-clamp-1 text-xs'>
+                            {t('Setup guide is collapsed. Expand it anytime.')}
+                          </p>
+                        </div>
                       </div>
 
-                      <RequestPreview
-                        example={requestExample}
-                        signals={heroSignals}
-                      />
-                    </div>
-                  </div>
-                </CardStaggerItem>
-
-                <CardStaggerItem className='bg-card h-full rounded-xl border p-4 sm:p-5'>
-                  <div className='flex h-full flex-col gap-4'>
-                    <div className='flex flex-col gap-1'>
-                      <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                        {t('Recommended actions')}
+                      <div className='flex flex-wrap items-center gap-2'>
+                        {visibleQuickActions.map((action) => (
+                          <CompactQuickAction
+                            key={action.title}
+                            action={action}
+                          />
+                        ))}
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          className='h-8 min-w-28'
+                          aria-expanded={setupGuideExpanded}
+                          aria-controls={setupGuideId}
+                          onClick={handleSetupGuideToggle}
+                        >
+                          <ChevronDown data-icon='inline-start' />
+                          {t('Show setup guide')}
+                        </Button>
                       </div>
-                      <h3 className='font-display text-lg font-medium tracking-tight'>
-                        {t('Keep the platform ready')}
-                      </h3>
-                    </div>
-                    <div className='grid gap-2'>
-                      {visibleQuickActions.map((action) => (
-                        <QuickActionItem key={action.title} action={action} />
-                      ))}
                     </div>
                   </div>
                 </CardStaggerItem>
               </CardStaggerContainer>
             )}
-          </div>
-          {!setupGuideExpanded && !setupComplete && (
-            <CardStaggerContainer>
-              <CardStaggerItem className='bg-card overflow-hidden rounded-xl border'>
-                <div className='relative overflow-hidden px-4 py-3 sm:px-5'>
-                  <div className='relative flex flex-wrap items-center justify-between gap-3'>
-                    <div className='flex min-w-0 items-center gap-3'>
-                      <span className='bg-background flex size-9 shrink-0 items-center justify-center rounded-lg border'>
-                        <Check
-                          className='text-success size-4'
-                          aria-hidden='true'
-                        />
-                      </span>
-                      <div className='min-w-0'>
-                        <div className='flex items-center gap-2'>
-                          <h3 className='truncate text-sm font-medium'>
-                            {t('Setup guide')}
-                          </h3>
-                          <span className='text-muted-foreground bg-background rounded-md border px-2 py-0.5 text-xs'>
-                            {t('Setup progress: {{completed}}/{{total}}', {
-                              completed: completedStepCount,
-                              total: startSteps.length,
-                            })}
-                          </span>
-                        </div>
-                        <p className='text-muted-foreground line-clamp-1 text-xs'>
-                          {t('Setup guide is collapsed. Expand it anytime.')}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className='flex flex-wrap items-center gap-2'>
-                      {visibleQuickActions.map((action) => (
-                        <CompactQuickAction
-                          key={action.title}
-                          action={action}
-                        />
-                      ))}
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        className='h-8 min-w-28'
-                        aria-expanded={setupGuideExpanded}
-                        aria-controls={setupGuideId}
-                        onClick={handleSetupGuideToggle}
-                      >
-                        <ChevronDown data-icon='inline-start' />
-                        {t('Show setup guide')}
-                      </Button>
-                    </div>
+            <SummaryCards />
+
+            {showContentPanels && (
+              <CardStaggerContainer
+                className={cn(
+                  'grid grid-cols-1 gap-4',
+                  showLeftContentPanels &&
+                    showUptimePanel &&
+                    'xl:grid-cols-[minmax(0,1fr)_22rem]'
+                )}
+              >
+                {showLeftContentPanels && (
+                  <div
+                    className={cn(
+                      'grid min-w-0 grid-cols-1 gap-4',
+                      (showApiInfoPanel ||
+                        showAnnouncementsPanel ||
+                        showFAQPanel) &&
+                        'lg:grid-cols-2'
+                    )}
+                  >
+                    {isAdmin && (
+                      <CardStaggerItem className='lg:col-span-2'>
+                        <PerformanceHealthPanel />
+                      </CardStaggerItem>
+                    )}
+                    {showApiInfoPanel && (
+                      <CardStaggerItem>
+                        <ApiInfoPanel />
+                      </CardStaggerItem>
+                    )}
+                    {showAnnouncementsPanel && (
+                      <CardStaggerItem>
+                        <AnnouncementsPanel />
+                      </CardStaggerItem>
+                    )}
+                    {showFAQPanel && (
+                      <CardStaggerItem>
+                        <FAQPanel />
+                      </CardStaggerItem>
+                    )}
                   </div>
-                </div>
-              </CardStaggerItem>
-            </CardStaggerContainer>
-          )}
-
-          <SummaryCards />
-
-          {showContentPanels && (
-            <CardStaggerContainer
-              className={cn(
-                'grid grid-cols-1 gap-4',
-                showLeftContentPanels &&
-                  showUptimePanel &&
-                  'xl:grid-cols-[minmax(0,1fr)_22rem]'
-              )}
-            >
-              {showLeftContentPanels && (
-                <div
-                  className={cn(
-                    'grid min-w-0 grid-cols-1 gap-4',
-                    (showApiInfoPanel ||
-                      showAnnouncementsPanel ||
-                      showFAQPanel) &&
-                      'lg:grid-cols-2'
-                  )}
-                >
-                  {isAdmin && (
-                    <CardStaggerItem className='lg:col-span-2'>
-                      <PerformanceHealthPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showApiInfoPanel && (
-                    <CardStaggerItem>
-                      <ApiInfoPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showAnnouncementsPanel && (
-                    <CardStaggerItem>
-                      <AnnouncementsPanel />
-                    </CardStaggerItem>
-                  )}
-                  {showFAQPanel && (
-                    <CardStaggerItem>
-                      <FAQPanel />
-                    </CardStaggerItem>
-                  )}
-                </div>
-              )}
-              {showUptimePanel && (
-                <CardStaggerItem>
-                  <UptimePanel />
-                </CardStaggerItem>
-              )}
-            </CardStaggerContainer>
-          )}
-        </div>
-      </SectionPageLayout.Content>
-    </SectionPageLayout>
+                )}
+                {showUptimePanel && (
+                  <CardStaggerItem>
+                    <UptimePanel />
+                  </CardStaggerItem>
+                )}
+              </CardStaggerContainer>
+            )}
+          </div>
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
+      <Dialog
+        open={keyDialogOpen}
+        onOpenChange={handleKeyDialogOpenChange}
+        title={t('Create API Key')}
+        contentClassName='sm:max-w-lg'
+        contentHeight='auto'
+        footer={
+          <Button onClick={() => handleKeyDialogOpenChange(false)}>
+            {t('Done')}
+          </Button>
+        }
+      >
+        {keyDialogOpen && (
+          <ApiKeyBlock
+            useCase='api'
+            selectedKey={createdKey}
+            onSelect={handleKeySelected}
+          />
+        )}
+      </Dialog>
+    </>
   )
 }

@@ -16,24 +16,33 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Copy, TerminalSquare } from 'lucide-react'
+import { Terminal, TerminalSquare } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 
+import {
+  CodeSnippetTabs,
+  type CodeSnippet,
+} from '@/components/code-snippet-tabs'
 import { Button } from '@/components/ui/button'
 import { IconBadge } from '@/components/ui/icon-badge'
-import {
-  buildCurlCommand,
-  type HeroSignal,
-  type RequestExample,
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type {
+  HeroSignal,
+  RequestExample,
 } from '@/features/dashboard/lib/setup-guide'
 import { fetchTokenKey } from '@/features/keys/api'
-import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { handleServerError } from '@/lib/handle-server-error'
+import { CCSwitchDialog } from '@/features/keys/components/dialogs/cc-switch-dialog'
+import { readOnboardingFlags } from '@/features/onboarding/lib/availability'
+import { useStatus } from '@/hooks/use-status'
+import { buildConnectSnippets } from '@/lib/connect-snippets'
 import { MOTION_TRANSITION } from '@/lib/motion'
+
+const CC_SWITCH_TAB = 'cc-switch'
+const CHAT_COMPLETIONS_SUFFIX = /\/v1\/chat\/completions$/
 
 export function RequestPreview(props: {
   example: RequestExample
@@ -41,50 +50,49 @@ export function RequestPreview(props: {
 }) {
   const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
-  const [isCopying, setIsCopying] = useState(false)
-  const { copyToClipboard } = useCopyToClipboard({ notify: false })
-  const previewCurl = buildCurlCommand({
-    endpoint: props.example.endpoint,
-    apiKey: props.example.displayKey,
-    model: props.example.model,
+  const { status } = useStatus()
+  const showCcSwitch =
+    props.example.ready && readOnboardingFlags(status).ccSwitch
+  const [ccSwitchOpen, setCcSwitchOpen] = useState(false)
+
+  // The full key lives in query memory only (never persisted) and is dropped on unmount.
+  const fullKeyQuery = useQuery({
+    queryKey: ['dashboard', 'overview', 'full-key', props.example.keyId],
+    queryFn: async () => {
+      const result = await fetchTokenKey(props.example.keyId as number)
+      return result.success && result.data?.key ? `sk-${result.data.key}` : ''
+    },
+    enabled: Boolean(props.example.ready && props.example.keyId),
+    staleTime: Infinity,
+    gcTime: 0,
+    retry: false,
+    meta: { errorToast: false },
   })
-  const previewLines = previewCurl.split('\n')
-  const handleCopyRequest = async () => {
-    if (!props.example.keyId || isCopying) return
+  const fullKey = fullKeyQuery.data || undefined
 
-    setIsCopying(true)
-    try {
-      const result = await fetchTokenKey(props.example.keyId)
-      const key = result.success && result.data?.key ? result.data.key : ''
-      if (!key) {
-        handleServerError(result, t('Failed to copy to clipboard'))
-        return
-      }
+  const snippets = useMemo<CodeSnippet[]>(() => {
+    const all = buildConnectSnippets({
+      baseUrl: props.example.endpoint.replace(CHAT_COMPLETIONS_SUFFIX, ''),
+      model: props.example.model,
+      displayKey: props.example.displayKey,
+      copyKey: fullKey,
+    })
+    return all.filter((item) => item.id === 'curl' || item.id === 'python')
+  }, [
+    fullKey,
+    props.example.displayKey,
+    props.example.endpoint,
+    props.example.model,
+  ])
 
-      const realCurl = buildCurlCommand({
-        endpoint: props.example.endpoint,
-        apiKey: `sk-${key}`,
-        model: props.example.model,
-      })
-      const copied = await copyToClipboard(realCurl)
-      if (copied) {
-        toast.success(t('Copied to clipboard'))
-      } else {
-        toast.error(t('Failed to copy to clipboard'))
-      }
-    } catch (error) {
-      handleServerError(error, t('Failed to copy to clipboard'))
-    } finally {
-      setIsCopying(false)
-    }
-  }
+  const copyDisabled = !props.example.ready || !fullKey
 
   return (
     <motion.div
       initial={shouldReduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
       animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
       transition={MOTION_TRANSITION.slow}
-      className='bg-background relative overflow-hidden rounded-xl border p-3'
+      className='bg-background relative min-w-0 overflow-hidden rounded-xl border p-3'
     >
       {!shouldReduceMotion && (
         <motion.div
@@ -94,65 +102,85 @@ export function RequestPreview(props: {
           aria-hidden='true'
         />
       )}
-
       <div className='flex items-center justify-between gap-3 border-b pb-3'>
         <div className='flex min-w-0 items-center gap-2'>
           <IconBadge tone='neutral'>
             <TerminalSquare />
           </IconBadge>
           <div className='min-w-0'>
-            <div className='truncate text-sm font-medium'>
+            <div className='line-clamp-1 text-sm font-medium'>
               {t('First API request')}
             </div>
-            <div className='text-muted-foreground truncate text-xs'>
+            <div className='text-muted-foreground line-clamp-1 text-xs'>
               {props.example.ready
                 ? props.example.keyName
                 : t('Create an API key to unlock the real request')}
             </div>
           </div>
         </div>
-        {props.example.ready ? (
-          <Button
-            variant='outline'
-            size='sm'
-            className='h-7 gap-1.5 px-2 text-xs'
-            disabled={isCopying}
-            onClick={handleCopyRequest}
-            aria-label={t('Copy ready-to-run curl')}
-          >
-            <Copy data-icon='inline-start' />
-            {isCopying ? t('Loading') : t('Copy')}
-          </Button>
-        ) : (
+        {!props.example.ready && (
           <Button size='sm' variant='outline' render={<Link to='/keys' />}>
             {t('Create API Key')}
           </Button>
         )}
       </div>
 
-      <div className='bg-muted/50 my-3 rounded-lg p-3 font-mono text-xs'>
-        <div className='mb-2 flex items-center gap-1.5'>
-          <span className='bg-destructive size-2 rounded-full' />
-          <span className='bg-warning size-2 rounded-full' />
-          <span className='bg-success size-2 rounded-full' />
-        </div>
-        <div className='flex flex-col gap-1 overflow-hidden'>
-          {previewLines.map((line) => (
-            <code
-              key={line}
-              className='text-muted-foreground truncate'
-              title={line}
-            >
-              {line}
-            </code>
+      <Tabs
+        defaultValue={showCcSwitch ? CC_SWITCH_TAB : 'curl'}
+        className='my-3 min-w-0'
+      >
+        <TabsList className='h-auto max-w-full flex-wrap justify-start'>
+          {showCcSwitch && (
+            <TabsTrigger value={CC_SWITCH_TAB}>{t('CC Switch')}</TabsTrigger>
+          )}
+          {snippets.map((snippet) => (
+            <TabsTrigger key={snippet.id} value={snippet.id}>
+              {snippet.id === 'python' ? 'Python' : snippet.label}
+            </TabsTrigger>
           ))}
-        </div>
+        </TabsList>
+        {showCcSwitch && (
+          <TabsContent value={CC_SWITCH_TAB}>
+            <div className='bg-muted/30 flex flex-col items-start gap-2 rounded-xl border p-3'>
+              <p className='text-muted-foreground text-xs'>
+                {t('Your gateway address and API key are filled in for you.')}
+              </p>
+              <Button
+                size='sm'
+                disabled={!fullKey}
+                onClick={() => setCcSwitchOpen(true)}
+              >
+                <Terminal data-icon='inline-start' />
+                {t('Import to CC Switch')}
+              </Button>
+            </div>
+          </TabsContent>
+        )}
+        {snippets.map((snippet) => (
+          <TabsContent key={snippet.id} value={snippet.id}>
+            <CodeSnippetTabs snippets={[snippet]} copyDisabled={copyDisabled} />
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      <div className='mb-3 flex flex-wrap items-center gap-2'>
+        <Button
+          size='sm'
+          variant='outline'
+          render={
+            <Link to='/playground' search={{ model: props.example.model }} />
+          }
+        >
+          {t('Test in Playground')}
+        </Button>
+        <Button size='sm' variant='ghost' render={<Link to='/docs' />}>
+          {t('Open the full setup guide')}
+        </Button>
       </div>
 
       <div className='grid gap-2'>
         {props.signals.map((signal) => {
           const Icon = signal.icon
-
           return (
             <div
               key={signal.label}
@@ -162,7 +190,7 @@ export function RequestPreview(props: {
                 <IconBadge tone='neutral' size='xs'>
                   <Icon />
                 </IconBadge>
-                <span className='truncate text-xs font-medium'>
+                <span className='line-clamp-1 text-xs font-medium'>
                   {signal.label}
                 </span>
               </span>
@@ -173,6 +201,14 @@ export function RequestPreview(props: {
           )
         })}
       </div>
+
+      {showCcSwitch && (
+        <CCSwitchDialog
+          open={ccSwitchOpen}
+          onOpenChange={setCcSwitchOpen}
+          tokenKey={fullKey ?? ''}
+        />
+      )}
     </motion.div>
   )
 }

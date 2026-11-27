@@ -724,3 +724,45 @@ func TestUpdateUserSettingKeepsWhatTheRequestLeavesOut(t *testing.T) {
 		})
 	}
 }
+
+// The onboarding endpoint merges only its whitelisted fields into the stored
+// setting and rejects a use case outside coding / api / playground.
+func TestUpdateUserOnboardingOnlyChangesWhitelistedFields(t *testing.T) {
+	db := setupManageUserTestDB(t)
+	stored := dto.UserSetting{
+		NotifyType:     dto.NotifyTypeEmail,
+		Language:       "zhCN",
+		SidebarModules: `{"chat":{"enabled":true}}`,
+	}
+	setting, err := common.Marshal(stored)
+	require.NoError(t, err)
+	user := model.User{Username: "onboarding-owner", Role: common.RoleCommonUser, Status: common.UserStatusEnabled, AffCode: "onboarding-owner-aff", Setting: string(setting)}
+	require.NoError(t, db.Create(&user).Error)
+
+	put := func(body string) string {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Request = httptest.NewRequest(http.MethodPut, "/api/user/onboarding", strings.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		c.Set("id", user.Id)
+		UpdateUserOnboarding(c)
+		return recorder.Body.String()
+	}
+
+	assert.Contains(t, put(`{"use_case":"coding","dismissed":true}`), `"success":true`)
+	require.NoError(t, db.First(&user, user.Id).Error)
+	want := stored
+	want.OnboardingUseCase, want.OnboardingDismissed = "coding", true
+	assert.Equal(t, want, user.GetSetting())
+
+	assert.Contains(t, put(`{"completed":true}`), `"success":true`)
+	require.NoError(t, db.First(&user, user.Id).Error)
+	want.OnboardingCompleted = true
+	assert.Equal(t, want, user.GetSetting())
+
+	for _, body := range []string{`{"use_case":"hacking"}`, `{"use_case":""}`, `{}`, `{"language":"en"}`} {
+		assert.Contains(t, put(body), `"success":false`, body)
+	}
+	require.NoError(t, db.First(&user, user.Id).Error)
+	assert.Equal(t, want, user.GetSetting())
+}

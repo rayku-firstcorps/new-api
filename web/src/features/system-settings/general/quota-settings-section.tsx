@@ -18,11 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
 import i18next from 'i18next'
-import type { ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import type { Resolver } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import * as z from 'zod'
 
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Form,
@@ -73,6 +74,8 @@ const quotaSchema = z.object({
   AffFirstTopupMinAmount: z.coerce.number().min(0),
   TopUpLink: z.string(),
   quota_setting: z.object({
+    new_user_quota_enabled: z.boolean(),
+    new_user_quota_require_email: z.boolean(),
     enable_free_model_pre_consume: z.boolean(),
     trust_quota_usd: z.preprocess(
       (value) => (value === '' ? undefined : value),
@@ -103,6 +106,7 @@ export function QuotaSettingsSection({
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const currencyLabel = getCurrencyLabel()
+  const [confirmDisableEmail, setConfirmDisableEmail] = useState(false)
   const handleNumberChange =
     (onChange: (value: QuotaInputValue) => void) =>
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -145,6 +149,9 @@ export function QuotaSettingsSection({
       },
     })
 
+  const newUserQuotaEnabled = form.watch('quota_setting.new_user_quota_enabled')
+  const requireEmail = form.watch('quota_setting.new_user_quota_require_email')
+
   return (
     <SettingsSection title={t('Quota Settings')}>
       <FormNavigationGuard when={isDirty} />
@@ -167,6 +174,31 @@ export function QuotaSettingsSection({
           />
           <FormDirtyIndicator isDirty={isDirty} />
           <SettingsFormGrid>
+            <SettingsFormGridItem span='full'>
+              <FormField
+                control={form.control}
+                name='quota_setting.new_user_quota_enabled'
+                render={({ field }) => (
+                  <SettingsSwitchItem>
+                    <SettingsSwitchContent>
+                      <FormLabel>{t('Enable new user signup bonus')}</FormLabel>
+                      <FormDescription>
+                        {t(
+                          'When off, no quota is granted to new users. The amount below is kept so you can turn it back on later.'
+                        )}
+                      </FormDescription>
+                    </SettingsSwitchContent>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </SettingsSwitchItem>
+                )}
+              />
+            </SettingsFormGridItem>
+
             <FormField
               control={form.control}
               name='QuotaForNewUser'
@@ -182,6 +214,7 @@ export function QuotaSettingsSection({
                       name={field.name}
                       onBlur={field.onBlur}
                       ref={field.ref}
+                      disabled={!newUserQuotaEnabled}
                     />
                   </FormControl>
                   <FormDescription>
@@ -191,6 +224,51 @@ export function QuotaSettingsSection({
                 </FormItem>
               )}
             />
+
+            <SettingsFormGridItem span='full'>
+              <FormField
+                control={form.control}
+                name='quota_setting.new_user_quota_require_email'
+                render={({ field }) => (
+                  <SettingsSwitchItem>
+                    <SettingsSwitchContent>
+                      <FormLabel>
+                        {t(
+                          'Grant only after email is verified or bound (recommended, anti-abuse)'
+                        )}
+                      </FormLabel>
+                      <FormDescription>
+                        {t(
+                          'Each user can receive the signup bonus at most once.'
+                        )}
+                      </FormDescription>
+                    </SettingsSwitchContent>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        disabled={!newUserQuotaEnabled}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            field.onChange(true)
+                            return
+                          }
+                          setConfirmDisableEmail(true)
+                        }}
+                      />
+                    </FormControl>
+                  </SettingsSwitchItem>
+                )}
+              />
+              {newUserQuotaEnabled && !requireEmail ? (
+                <Alert variant='destructive' className='mt-2'>
+                  <AlertDescription>
+                    {t(
+                      'The signup bonus is granted without email verification, which makes it easy to farm with throwaway accounts. Enable Turnstile human verification or invitation-only registration.'
+                    )}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </SettingsFormGridItem>
 
             <FormField
               control={form.control}
@@ -461,6 +539,22 @@ export function QuotaSettingsSection({
           </SettingsFormGrid>
         </SettingsForm>
       </Form>
+      <ConfirmDialog
+        open={confirmDisableEmail}
+        onOpenChange={setConfirmDisableEmail}
+        title={t('Grant the signup bonus without email verification?')}
+        desc={t(
+          'Accounts that never verify an email will receive the bonus immediately, which makes it easy to farm with throwaway accounts. Enable Turnstile human verification or invitation-only registration alongside this option.'
+        )}
+        confirmText={t('Turn off requirement')}
+        destructive
+        handleConfirm={() => {
+          form.setValue('quota_setting.new_user_quota_require_email', false, {
+            shouldDirty: true,
+          })
+          setConfirmDisableEmail(false)
+        }}
+      />
     </SettingsSection>
   )
 }

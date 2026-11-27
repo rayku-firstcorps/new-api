@@ -32,10 +32,17 @@ export type DashboardActionPath =
   | '/usage-logs'
   | '/pricing'
 
+export type StartStepId = 'key' | 'credits' | 'request'
+
 export interface StartStep {
+  id: StartStepId
   title: string
   description: string
   to: DashboardActionPath
+  /** Label of the primary button shown while this is the active step. */
+  ctaLabel: string
+  /** Preset model for `/playground?model=`; never a key. */
+  playgroundModel?: string
   icon: LucideIcon
   completed: boolean
 }
@@ -64,20 +71,55 @@ export interface HeroSignal {
   tone: IconBadgeTone
 }
 
-export function getSavedSetupGuideExpanded(): boolean | null {
-  if (typeof window === 'undefined') return null
-  const saved = window.localStorage.getItem(SETUP_GUIDE_VISIBILITY_STORAGE_KEY)
+/** Per-account key, so switching accounts in one browser never shares the state. */
+export function getSetupGuideStorageKey(userId: number): string {
+  return `${SETUP_GUIDE_VISIBILITY_STORAGE_KEY}:u_${userId}`
+}
+
+function parseSetupGuideExpanded(saved: string | null): boolean | null {
   if (saved === 'expanded') return true
   if (saved === 'collapsed') return false
   return null
 }
 
-export function saveSetupGuideExpanded(expanded: boolean): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(
-    SETUP_GUIDE_VISIBILITY_STORAGE_KEY,
-    expanded ? 'expanded' : 'collapsed'
-  )
+/**
+ * Reads the saved preference of one account. The pre-isolation global key is
+ * adopted once (copied to the account key, then removed) so existing
+ * single-account browsers keep their choice without leaking it to other accounts.
+ */
+export function getSavedSetupGuideExpanded(userId?: number): boolean | null {
+  if (typeof window === 'undefined' || userId === undefined) return null
+  try {
+    const key = getSetupGuideStorageKey(userId)
+    const own = window.localStorage.getItem(key)
+    if (own !== null) return parseSetupGuideExpanded(own)
+
+    const legacy = window.localStorage.getItem(
+      SETUP_GUIDE_VISIBILITY_STORAGE_KEY
+    )
+    if (legacy === null) return null
+    window.localStorage.removeItem(SETUP_GUIDE_VISIBILITY_STORAGE_KEY)
+    const migrated = parseSetupGuideExpanded(legacy)
+    if (migrated !== null) window.localStorage.setItem(key, legacy)
+    return migrated
+  } catch {
+    return null
+  }
+}
+
+export function saveSetupGuideExpanded(
+  expanded: boolean,
+  userId?: number
+): void {
+  if (typeof window === 'undefined' || userId === undefined) return
+  try {
+    window.localStorage.setItem(
+      getSetupGuideStorageKey(userId),
+      expanded ? 'expanded' : 'collapsed'
+    )
+  } catch {
+    // Storage can be unavailable; the in-memory state still applies.
+  }
 }
 
 function getCurrentOrigin(): string {

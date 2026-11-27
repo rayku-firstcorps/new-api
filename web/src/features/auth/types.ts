@@ -92,7 +92,45 @@ export interface ApiResponse<T = unknown> {
 // System Status
 // ============================================================================
 
-export interface SystemStatus {
+/**
+ * Public onboarding and signup-bonus fields returned by `GET /api/status`.
+ * Optional so an older backend that omits them still type-checks.
+ */
+export interface OnboardingStatusFields {
+  onboarding_enabled?: boolean
+  /** Raw setting; not ANDed with `onboarding_enabled`. */
+  onboarding_auto_open?: boolean
+  onboarding_inline_test_enabled?: boolean
+  onboarding_cc_switch_enabled?: boolean
+  onboarding_admin_guide_enabled?: boolean
+  new_user_quota_enabled?: boolean
+  new_user_quota_require_email?: boolean
+  /** Quota units; 0 unless the bonus is enabled and the amount is > 0. */
+  new_user_quota_amount?: number
+}
+
+export type OnboardingUseCase = 'coding' | 'api' | 'playground'
+
+/** Onboarding keys inside the JSON string held by `user.setting`. */
+export interface UserOnboardingSetting {
+  onboarding_completed?: boolean
+  onboarding_dismissed?: boolean
+  onboarding_use_case?: OnboardingUseCase | ''
+}
+
+/** Top-level extra of the `GET /api/user/self` response (beside `data`). */
+export interface SelfResponseOnboardingFields {
+  new_user_quota_rewarded?: boolean
+}
+
+/** Body of `PUT /api/user/onboarding`. */
+export interface UpdateOnboardingRequest {
+  completed?: boolean
+  dismissed?: boolean
+  use_case?: OnboardingUseCase
+}
+
+export interface SystemStatus extends OnboardingStatusFields {
   success?: boolean
   message?: string
   data?: {
@@ -143,7 +181,7 @@ export interface SystemStatus {
     official_social_links?: OfficialSocialLink[]
     OfficialSocialLinks?: OfficialSocialLink[]
     [key: string]: unknown
-  }
+  } & OnboardingStatusFields
   // Allow direct access to common properties
   version?: string
   system_name?: string

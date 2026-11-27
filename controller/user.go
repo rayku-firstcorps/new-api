@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -354,10 +355,8 @@ func Register(c *gin.Context) {
 		common.ApiErrorT(c, "User registration failed or user ID retrieval failed")
 		return
 	}
-	// 邮箱验证开启时，注册当下邮箱已通过验证，发放新用户免费额度（防薅：仅验证邮箱后才发）
-	if common.EmailVerificationEnabled {
-		model.TryGrantNewUserQuota(insertedUser.Id)
-	}
+	// 注册赠送：要求邮箱时仅在邮箱验证注册（此时邮箱已通过验证）后发放；不要求邮箱时注册即发放
+	model.TryGrantNewUserQuota(insertedUser.Id)
 	// 生成默认令牌
 	if constant.GenerateDefaultToken {
 		key, err := common.GenerateKey()
@@ -556,34 +555,35 @@ func buildSelfUserData(user *model.User) map[string]any {
 	permissions := calculateUserPermissions(user.Role)
 	permissions["admin_permissions"] = authz.Capabilities(user.Id, user.Role)
 	return map[string]any{
-		"id":                    user.Id,
-		"username":              user.Username,
-		"display_name":          user.DisplayName,
-		"has_password":          user.HasPassword,
-		"role":                  user.Role,
-		"status":                user.Status,
-		"email":                 user.Email,
-		"github_id":             user.GitHubId,
-		"discord_id":            user.DiscordId,
-		"oidc_id":               user.OidcId,
-		"wechat_id":             user.WeChatId,
-		"telegram_id":           user.TelegramId,
-		"group":                 user.Group,
-		"quota":                 user.Quota,
-		"used_quota":            user.UsedQuota,
-		"request_count":         user.RequestCount,
-		"aff_code":              user.AffCode,
-		"aff_count":             user.AffCount,
-		"aff_quota":             user.AffQuota,
-		"aff_history_quota":     user.AffHistoryQuota,
-		"inviter_id":            user.InviterId,
-		"promotion_code":        user.PromotionCode,
-		"promotion_channel_tag": user.PromotionChannelTag,
-		"linux_do_id":           user.LinuxDOId,
-		"setting":               user.Setting,
-		"stripe_customer":       user.StripeCustomer,
-		"sidebar_modules":       userSetting.SidebarModules, // 姝ｇ‘鎻愬彇sidebar_modules瀛楁
-		"permissions":           permissions,
+		"id":                      user.Id,
+		"username":                user.Username,
+		"display_name":            user.DisplayName,
+		"has_password":            user.HasPassword,
+		"role":                    user.Role,
+		"status":                  user.Status,
+		"email":                   user.Email,
+		"github_id":               user.GitHubId,
+		"discord_id":              user.DiscordId,
+		"oidc_id":                 user.OidcId,
+		"wechat_id":               user.WeChatId,
+		"telegram_id":             user.TelegramId,
+		"group":                   user.Group,
+		"quota":                   user.Quota,
+		"used_quota":              user.UsedQuota,
+		"request_count":           user.RequestCount,
+		"aff_code":                user.AffCode,
+		"aff_count":               user.AffCount,
+		"aff_quota":               user.AffQuota,
+		"aff_history_quota":       user.AffHistoryQuota,
+		"inviter_id":              user.InviterId,
+		"promotion_code":          user.PromotionCode,
+		"promotion_channel_tag":   user.PromotionChannelTag,
+		"linux_do_id":             user.LinuxDOId,
+		"setting":                 user.Setting,
+		"new_user_quota_rewarded": user.NewUserQuotaRewarded,
+		"stripe_customer":         user.StripeCustomer,
+		"sidebar_modules":         userSetting.SidebarModules, // 姝ｇ‘鎻愬彇sidebar_modules瀛楁
+		"permissions":             permissions,
 	}
 }
 
@@ -1534,4 +1534,51 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	common.ApiSuccessT(c, "Settings updated", nil)
+}
+
+// UpdateUserOnboardingRequest carries the only fields a user may change about the first-setup guide.
+type UpdateUserOnboardingRequest struct {
+	Completed *bool   `json:"completed"`
+	Dismissed *bool   `json:"dismissed"`
+	UseCase   *string `json:"use_case"`
+}
+
+// UpdateUserOnboarding merges the whitelisted onboarding fields into the caller's stored
+// setting; every other UserSetting field is kept. UpdateUserSetting cannot serve this
+// because it validates and rewrites the notification form on every call.
+func UpdateUserOnboarding(c *gin.Context) {
+	var req UpdateUserOnboardingRequest
+	if err := c.ShouldBindJSON(&req); err != nil || (req.Completed == nil && req.Dismissed == nil && req.UseCase == nil) {
+		common.ApiErrorT(c, "Invalid parameters")
+		return
+	}
+	if req.UseCase != nil && !slices.Contains([]string{"coding", "api", "playground"}, *req.UseCase) {
+		common.ApiErrorT(c, "Invalid onboarding use case")
+		return
+	}
+
+	user, err := model.GetUserById(c.GetInt("id"), true)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	settings := user.GetSetting()
+	if req.Completed != nil {
+		settings.OnboardingCompleted = *req.Completed
+	}
+	if req.Dismissed != nil {
+		settings.OnboardingDismissed = *req.Dismissed
+	}
+	if req.UseCase != nil {
+		settings.OnboardingUseCase = *req.UseCase
+	}
+	if err := model.UpdateUserSetting(user.Id, settings); err != nil {
+		common.ApiErrorT(c, "Update failed")
+		return
+	}
+	common.ApiSuccessT(c, "Settings updated", map[string]any{
+		"onboarding_completed": settings.OnboardingCompleted,
+		"onboarding_dismissed": settings.OnboardingDismissed,
+		"onboarding_use_case":  settings.OnboardingUseCase,
+	})
 }

@@ -52,6 +52,8 @@ export interface AuthUser {
   linux_do_id?: string
   language?: string
   setting?: Record<string, unknown> | string
+  /** From /api/user/self: whether the signup bonus was already granted. */
+  new_user_quota_rewarded?: boolean
   stripe_customer?: string
   sidebar_modules?: string
   permissions?: UserPermissions

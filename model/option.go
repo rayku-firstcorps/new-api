@@ -17,6 +17,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Option struct {
@@ -235,7 +236,32 @@ func InitOptionMap() {
 	common.OptionMapRWMutex.Unlock()
 	if err := LoadOptionsFromDatabase(); err != nil {
 		common.SysError(common.LogText("failed to load options from database: %s", err.Error()))
+		return
 	}
+	if common.IsMasterNode {
+		if err := InitNewUserQuotaSwitchOption(); err != nil {
+			common.SysError(common.LogText("failed to initialize the new user quota switch: %s", err.Error()))
+		}
+	}
+}
+
+// InitNewUserQuotaSwitchOption persists the registration bonus switch when the
+// database has none yet. Sites upgraded with QuotaForNewUser > 0 start with the
+// switch on so their bonus keeps working; every other site starts with it off.
+// The row is written once with ON CONFLICT DO NOTHING, so later restarts and
+// concurrent nodes never overwrite an administrator's choice.
+func InitNewUserQuotaSwitchOption() error {
+	value := strconv.FormatBool(common.QuotaForNewUser > 0)
+	key := operation_setting.NewUserQuotaEnabledOptionKey
+	result := DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&Option{Key: key, Value: value})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil
+	}
+	BumpSyncTopic(SyncTopicOptions)
+	return updateOptionMap(key, value)
 }
 
 // LoadOptionsFromDatabase applies every stored option. A failed read keeps

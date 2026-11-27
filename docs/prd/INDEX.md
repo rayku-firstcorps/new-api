@@ -48,3 +48,5 @@
 | 文件 | 说明 |
 |---|---|
 | [ai-cli-agent-access-tutorial-prd.md](ai-cli-agent-access-tutorial-prd.md) | AI CLI Agent 接入教程 PRD |
+| [user-onboarding-first-setup-plan.md](user-onboarding-first-setup-plan.md) | 用户引导（First Setup）与注册赠送配置优化实施计划 — 已完成（2026-11-27），待归档 |
+| [user-onboarding-first-setup-prompts.md](user-onboarding-first-setup-prompts.md) | 用户引导（First Setup）— 分阶段开发 Prompts（P0–P9） |

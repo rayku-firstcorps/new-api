@@ -233,6 +233,12 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 		option.Value = normalized
+	case "QuotaForNewUser":
+		quota, parseErr := strconv.Atoi(strings.TrimSpace(option.Value.(string)))
+		if parseErr != nil || quota < 0 || quota > common.MaxWalletQuota {
+			common.ApiErrorT(c, "The new user bonus must be a whole quota between 0 and {{max}}", map[string]any{"max": common.MaxWalletQuota})
+			return
+		}
 	case "QuotaForInviter", "QuotaForInvitee", "AffCommissionRate", "AffCommissionDurationDays", "AffCommissionMaxPerTopup", "AffFirstTopupMinAmount":
 		if isPositiveOptionValue(option.Value.(string)) && !operation_setting.IsPaymentComplianceConfirmed() {
 			common.ApiErrorT(c, "Payment, redemption, subscription, and invitation reward features are disabled. The administrator must confirm compliance terms before enabling them.")

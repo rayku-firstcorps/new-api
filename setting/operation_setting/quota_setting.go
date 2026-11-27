@@ -12,6 +12,8 @@ type QuotaSetting struct {
 	EnableFreeModelPreConsume bool    `json:"enable_free_model_pre_consume"` // 是否对免费模型启用预消耗
 	TrustQuotaUSD             float64 `json:"trust_quota_usd"`               // 钱包免预扣门槛，0 表示禁用
 	PreConsumeMultiplier      float64 `json:"pre_consume_multiplier"`        // 预计输入费用的预扣倍率，仅影响预留
+	NewUserQuotaEnabled       bool    `json:"new_user_quota_enabled"`        // 注册赠送总开关；关闭时保留 QuotaForNewUser 金额但不发放
+	NewUserQuotaRequireEmail  bool    `json:"new_user_quota_require_email"`  // 仅在用户拥有邮箱后发放注册赠送
 }
 
 // 默认配置
@@ -19,7 +21,12 @@ var quotaSetting = QuotaSetting{
 	EnableFreeModelPreConsume: true,
 	TrustQuotaUSD:             10,
 	PreConsumeMultiplier:      1,
+	NewUserQuotaEnabled:       false,
+	NewUserQuotaRequireEmail:  true,
 }
+
+// NewUserQuotaEnabledOptionKey is the persisted option key of the registration bonus switch.
+const NewUserQuotaEnabledOptionKey = "quota_setting.new_user_quota_enabled"
 
 func init() {
 	// 注册到全局配置管理器
@@ -28,6 +35,16 @@ func init() {
 
 func GetQuotaSetting() *QuotaSetting {
 	return &quotaSetting
+}
+
+// IsNewUserQuotaEnabled reports whether the registration bonus is switched on.
+func IsNewUserQuotaEnabled() bool {
+	return quotaSetting.NewUserQuotaEnabled
+}
+
+// IsNewUserQuotaRequireEmail reports whether the registration bonus waits for a bound email.
+func IsNewUserQuotaRequireEmail() bool {
+	return quotaSetting.NewUserQuotaRequireEmail
 }
 
 // ValidateQuotaOption validates reservation settings before they are persisted.

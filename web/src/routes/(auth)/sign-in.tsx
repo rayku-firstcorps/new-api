@@ -26,6 +26,8 @@ import { useAuthStore } from '@/stores/auth-store'
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
+  // Set by the /setup wizard so later onboarding can recognise a fresh install.
+  from: z.string().optional(),
 })
 
 export const Route = createFileRoute('/(auth)/sign-in')({

@@ -27,8 +27,14 @@ import { Button } from '@/components/ui/button'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import { useSummaryCardsConfig } from '@/features/dashboard/hooks/use-dashboard-config'
 import type { QuotaDataItem } from '@/features/dashboard/types'
+import { readOnboardingFlags } from '@/features/onboarding/lib/availability'
 import { useStatus } from '@/hooks/use-status'
-import { getCurrencyLabel, isCurrencyDisplayEnabled } from '@/lib/currency'
+import { toIntlLocale } from '@/i18n/languages'
+import {
+  formatQuotaWithCurrency,
+  getCurrencyLabel,
+  isCurrencyDisplayEnabled,
+} from '@/lib/currency'
 import { formatNumber, formatQuota } from '@/lib/format'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { computeTimeRange } from '@/lib/time'
@@ -110,9 +116,17 @@ function getRunwayDays(
   return days
 }
 
-type HealthLevel = 'healthy' | 'caution' | 'critical'
+type HealthLevel = 'healthy' | 'caution' | 'critical' | 'new'
 
-function getHealthLevel(remainQuota: number, recentUsage: number): HealthLevel {
+/** A zero balance with no usage history is a new account, not an exhausted one. */
+function getHealthLevel(args: {
+  remainQuota: number
+  recentUsage: number
+  usedQuota: number
+  requestCount: number
+}): HealthLevel {
+  const { remainQuota, recentUsage, usedQuota, requestCount } = args
+  if (remainQuota <= 0 && usedQuota === 0 && requestCount === 0) return 'new'
   if (remainQuota <= 0) return 'critical'
   const days = getRunwayDays(remainQuota, recentUsage)
   if (days !== null && days < 3) return 'caution'
@@ -135,13 +149,19 @@ const HEALTH_CONFIG: Record<
     dotClass: 'bg-destructive',
     labelKey: 'Balance depleted',
   },
+  new: {
+    dotClass: 'bg-muted-foreground',
+    labelKey: 'Not topped up yet',
+  },
 }
 
 export function SummaryCards() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const headingId = useId()
   const user = useAuthStore((state) => state.auth.user)
   const { status, loading } = useStatus()
+  const flags = readOnboardingFlags(status)
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
 
   const summaryTimeRange = useMemo(() => computeTimeRange(1), [])
   const remainQuota = Number(user?.quota ?? 0)
@@ -210,8 +230,20 @@ export function SummaryCards() {
     [usageTrendQuery.data?.data]
   )
 
-  const healthLevel = getHealthLevel(remainQuota, recentUsage)
+  const healthLevel = getHealthLevel({
+    remainQuota,
+    recentUsage,
+    usedQuota,
+    requestCount,
+  })
   const healthCfg = HEALTH_CONFIG[healthLevel]
+  const signupBonusPending =
+    healthLevel === 'new' &&
+    !flags.selfUseMode &&
+    flags.newUserQuotaEnabled &&
+    flags.newUserQuotaRequireEmail &&
+    flags.newUserQuotaAmount > 0 &&
+    !user?.email
   const runwayDays = getRunwayDays(remainQuota, recentUsage)
 
   const todayUsageDisplay = formatQuota(recentUsage)
@@ -224,7 +256,7 @@ export function SummaryCards() {
     } else {
       runwayDisplay = `~${formatNumber(Math.floor(runwayDays))} ${t('days')}`
     }
-  } else if (remainQuota <= 0) {
+  } else if (remainQuota <= 0 && healthLevel !== 'new') {
     runwayDisplay = t('Balance depleted')
   } else {
     runwayDisplay = t('No recent usage')
@@ -292,7 +324,15 @@ export function SummaryCards() {
               <div className='font-display truncate text-xl font-medium tracking-tight tabular-nums sm:text-[28px]'>
                 {formatQuota(remainQuota)}
               </div>
-
+              {signupBonusPending && (
+                <p className='text-muted-foreground text-xs'>
+                  {t('Bind your email to claim {{amount}} free credits', {
+                    amount: formatQuotaWithCurrency(flags.newUserQuotaAmount, {
+                      locale,
+                    }),
+                  })}
+                </p>
+              )}
               <div className='grid grid-cols-2 gap-2'>
                 <div className='bg-muted/40 rounded-lg px-2.5 py-2'>
                   <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>

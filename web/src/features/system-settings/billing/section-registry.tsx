@@ -70,6 +70,10 @@ const BILLING_SECTIONS = [
           AffFirstTopupMinAmount: settings.AffFirstTopupMinAmount,
           TopUpLink: settings.TopUpLink,
           quota_setting: {
+            new_user_quota_enabled:
+              settings['quota_setting.new_user_quota_enabled'],
+            new_user_quota_require_email:
+              settings['quota_setting.new_user_quota_require_email'],
             trust_quota_usd: settings['quota_setting.trust_quota_usd'],
             pre_consume_multiplier:
               settings['quota_setting.pre_consume_multiplier'],

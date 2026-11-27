@@ -281,6 +281,8 @@ export type BillingSettings = {
   AffCommissionMaxPerTopup: number
   AffFirstTopupMinAmount: number
   TopUpLink: string
+  'quota_setting.new_user_quota_enabled': boolean
+  'quota_setting.new_user_quota_require_email': boolean
   'quota_setting.enable_free_model_pre_consume': boolean
   'quota_setting.trust_quota_usd': number
   'quota_setting.pre_consume_multiplier': number
@@ -438,6 +440,11 @@ export type OperationsSettings = {
   'performance_setting.monitor_cpu_threshold': number
   'performance_setting.monitor_memory_threshold': number
   'performance_setting.monitor_disk_threshold': number
+  'onboarding_setting.enabled': boolean
+  'onboarding_setting.auto_open_on_first_login': boolean
+  'onboarding_setting.allow_inline_test_request': boolean
+  'onboarding_setting.show_cc_switch': boolean
+  'onboarding_setting.admin_guide_enabled': boolean
   'perf_metrics_setting.enabled': boolean
   'perf_metrics_setting.flush_interval': number
   'perf_metrics_setting.bucket_time': 'hour' | 'minute' | '5min'

@@ -25,6 +25,7 @@ import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
+import { OnboardingSettingsSection } from './onboarding-settings-section'
 import { PromotionRewardSection } from './promotion-reward-section'
 import { SplashAdSection } from './splash-ad-section'
 
@@ -81,6 +82,25 @@ const OPERATIONS_SECTIONS = [
           SMTPStartTLSEnabled: settings.SMTPStartTLSEnabled,
           SMTPInsecureSkipVerify: settings.SMTPInsecureSkipVerify,
           SMTPForceAuthLogin: settings.SMTPForceAuthLogin,
+        }}
+      />
+    ),
+  },
+  {
+    id: 'onboarding',
+    titleKey: 'User Onboarding',
+    build: (settings: OperationsSettings) => (
+      <OnboardingSettingsSection
+        defaultValues={{
+          'onboarding_setting.enabled': settings['onboarding_setting.enabled'],
+          'onboarding_setting.auto_open_on_first_login':
+            settings['onboarding_setting.auto_open_on_first_login'],
+          'onboarding_setting.allow_inline_test_request':
+            settings['onboarding_setting.allow_inline_test_request'],
+          'onboarding_setting.show_cc_switch':
+            settings['onboarding_setting.show_cc_switch'],
+          'onboarding_setting.admin_guide_enabled':
+            settings['onboarding_setting.admin_guide_enabled'],
         }}
       />
     ),

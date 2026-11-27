@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, Check, Circle } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import type {
@@ -26,57 +27,143 @@ import type {
 } from '@/features/dashboard/lib/setup-guide'
 import { cn } from '@/lib/utils'
 
+function StartStepBody(props: {
+  step: StartStep
+  index: number
+  trailing: ReactNode
+}) {
+  const Icon = props.step.icon
+
+  return (
+    <>
+      <span className='flex min-w-0 items-start gap-2.5'>
+        <span className='bg-muted mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg'>
+          <Icon className='size-3.5' aria-hidden='true' />
+        </span>
+        <span className='flex min-w-0 flex-col gap-0.5'>
+          <span className='flex items-center gap-2 text-sm font-medium'>
+            <span className='text-muted-foreground font-mono text-xs tabular-nums'>
+              {props.index + 1}.
+            </span>
+            <span className='truncate'>{props.step.title}</span>
+          </span>
+          <span className='text-muted-foreground line-clamp-1 text-xs'>
+            {props.step.description}
+          </span>
+        </span>
+      </span>
+      {props.trailing}
+    </>
+  )
+}
+
+const STEP_ROW_CLASS =
+  'bg-background flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left'
+
 export function StartStepItem(props: {
   step: StartStep
   index: number
   isLast: boolean
+  /** The first incomplete step: highlighted and carries the primary CTA. */
+  active?: boolean
+  /** Opens the in-place flow of the step (API key creation) instead of navigating. */
+  onAction?: () => void
 }) {
-  const Icon = props.step.icon
   const StatusIcon = props.step.completed ? Check : Circle
+  const goPlayground = props.step.to === '/playground'
+
+  const connector = !props.isLast && (
+    <span
+      className='bg-border absolute top-9 bottom-0 left-4 w-px'
+      aria-hidden='true'
+    />
+  )
+  const status = (
+    <span
+      className={cn(
+        'bg-background relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border',
+        props.step.completed && 'border-success/30 bg-success/10',
+        props.active && 'border-primary/60'
+      )}
+    >
+      <StatusIcon
+        className={props.step.completed ? 'text-success size-4' : 'size-4'}
+        aria-hidden='true'
+      />
+    </span>
+  )
+
+  if (props.active) {
+    let cta: ReactNode
+    if (props.onAction) {
+      cta = (
+        <Button size='sm' className='shrink-0' onClick={props.onAction}>
+          {props.step.ctaLabel}
+        </Button>
+      )
+    } else if (goPlayground) {
+      cta = (
+        <Button
+          size='sm'
+          className='shrink-0'
+          render={
+            <Link
+              to='/playground'
+              search={{ model: props.step.playgroundModel }}
+            />
+          }
+        >
+          {props.step.ctaLabel}
+        </Button>
+      )
+    } else {
+      cta = (
+        <Button
+          size='sm'
+          className='shrink-0'
+          render={<Link to={props.step.to} />}
+        >
+          {props.step.ctaLabel}
+        </Button>
+      )
+    }
+
+    return (
+      <li className='relative flex gap-3 pb-2.5 last:pb-0' aria-current='step'>
+        {connector}
+        {status}
+        <div
+          className={cn(
+            STEP_ROW_CLASS,
+            'border-primary/60 ring-primary/20 ring-2'
+          )}
+        >
+          <StartStepBody step={props.step} index={props.index} trailing={cta} />
+        </div>
+      </li>
+    )
+  }
 
   return (
     <li className='relative flex gap-3 pb-2.5 last:pb-0'>
-      {!props.isLast && (
-        <span
-          className='bg-border absolute top-9 bottom-0 left-4 w-px'
-          aria-hidden='true'
-        />
-      )}
-      <span
-        className={cn(
-          'bg-background relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border',
-          props.step.completed && 'border-success/30 bg-success/10'
-        )}
-      >
-        <StatusIcon
-          className={props.step.completed ? 'text-success size-4' : 'size-4'}
-          aria-hidden='true'
-        />
-      </span>
-
+      {connector}
+      {status}
       <Link
         to={props.step.to}
-        className='bg-background hover:bg-muted/50 focus-visible:ring-ring flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors outline-none focus-visible:ring-2'
+        className={cn(
+          STEP_ROW_CLASS,
+          'hover:bg-muted/50 focus-visible:ring-ring transition-colors outline-none focus-visible:ring-2'
+        )}
       >
-        <span className='flex min-w-0 items-start gap-2.5'>
-          <span className='bg-muted mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg'>
-            <Icon className='size-3.5' aria-hidden='true' />
-          </span>
-          <span className='flex min-w-0 flex-col gap-0.5'>
-            <span className='flex items-center gap-2 text-sm font-medium'>
-              <span className='text-muted-foreground font-mono text-xs tabular-nums'>
-                {props.index + 1}.
-              </span>
-              <span className='truncate'>{props.step.title}</span>
-            </span>
-            <span className='text-muted-foreground line-clamp-1 text-xs'>
-              {props.step.description}
-            </span>
-          </span>
-        </span>
-        <ArrowRight
-          className='text-muted-foreground size-4 shrink-0'
-          aria-hidden='true'
+        <StartStepBody
+          step={props.step}
+          index={props.index}
+          trailing={
+            <ArrowRight
+              className='text-muted-foreground size-4 shrink-0'
+              aria-hidden='true'
+            />
+          }
         />
       </Link>
     </li>

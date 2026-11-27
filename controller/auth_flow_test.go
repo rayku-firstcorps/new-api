@@ -20,6 +20,7 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/oauth"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/gin-gonic/gin"
@@ -1163,6 +1164,41 @@ func TestOAuthRegistrationPersistsInviter(t *testing.T) {
 			assert.Equal(t, created.Id, existing.Id)
 			require.NoError(t, db.First(&stored, created.Id).Error)
 			assert.Equal(t, tc.want, stored.InviterId, "login must not reassign the inviter")
+		})
+	}
+}
+
+func TestOAuthRegistrationGrantsNewUserQuotaWithoutEmailRequirement(t *testing.T) {
+	db, dialect := openTaskDialectDatabase(t, &model.User{}, &model.Log{})
+	oldDB, oldLogDB := model.DB, model.LOG_DB
+	oldMain, oldLog := common.MainDatabaseType(), common.LogDatabaseType()
+	oldRedis, oldRegister, oldQuota := common.RedisEnabled, common.RegisterEnabled, common.QuotaForNewUser
+	oldSetting := *operation_setting.GetQuotaSetting()
+	model.DB, model.LOG_DB = db, db
+	common.SetDatabaseTypes(dialect, dialect)
+	common.RedisEnabled, common.RegisterEnabled, common.QuotaForNewUser = false, true, 700000
+	t.Cleanup(func() {
+		model.DB, model.LOG_DB = oldDB, oldLogDB
+		common.SetDatabaseTypes(oldMain, oldLog)
+		common.RedisEnabled, common.RegisterEnabled, common.QuotaForNewUser = oldRedis, oldRegister, oldQuota
+		*operation_setting.GetQuotaSetting() = oldSetting
+	})
+	for _, tc := range []struct {
+		name         string
+		requireEmail bool
+		want         int
+	}{{"email required", true, 0}, {"email not required", false, 700000}} {
+		t.Run(tc.name, func(t *testing.T) {
+			quotaSetting := operation_setting.GetQuotaSetting()
+			quotaSetting.NewUserQuotaEnabled, quotaSetting.NewUserQuotaRequireEmail = true, tc.requireEmail
+			ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+			identity := &oauth.OAuthUser{ProviderUserID: "bonus-" + tc.name, Username: "bonus-" + tc.name}
+			created, _, err := findOrCreateOAuthUser(ctx, &oauth.GitHubProvider{}, identity, &oauth.OAuthToken{}, oauthFlowPayload{})
+			require.NoError(t, err)
+			var stored model.User
+			require.NoError(t, db.First(&stored, created.Id).Error)
+			assert.Equal(t, tc.want, stored.Quota)
+			assert.Equal(t, tc.want > 0, stored.NewUserQuotaRewarded)
 		})
 	}
 }

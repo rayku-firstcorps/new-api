@@ -31,6 +31,9 @@ const channelsSearchSchema = z.object({
   type: z.array(z.string()).optional().catch([]),
   group: z.array(z.string()).optional().catch([]),
   model: z.string().optional().catch(''),
+  // Set by the admin First Setup wizard so /channels can offer a way back.
+  onboarding: z.literal('channel').optional().catch(undefined),
+  provider: z.string().optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_authenticated/channels/')({
