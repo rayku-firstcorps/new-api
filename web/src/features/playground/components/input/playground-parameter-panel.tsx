@@ -52,6 +52,7 @@ import {
   type PlaygroundParameterKey,
 } from '../../lib/parameters/playground-parameters'
 import type { ParameterEnabled, PlaygroundConfig } from '../../types'
+import { PlaygroundToolsEditor } from './playground-tools-editor'
 
 type PlaygroundParameterPanelProps = {
   config: PlaygroundConfig
@@ -191,6 +192,16 @@ function PlaygroundParameterContent({
           </div>
         )
       })}
+
+      <PlaygroundToolsEditor
+        disabled={disabled}
+        enabled={parameterEnabled.tools}
+        onEnabledChange={(checked) =>
+          onParameterEnabledChange('tools', checked)
+        }
+        onValueChange={(value) => onConfigChange('tools', value)}
+        value={config.tools}
+      />
     </div>
   )
 }
@@ -198,9 +209,10 @@ function PlaygroundParameterContent({
 export function PlaygroundParameterPanel(props: PlaygroundParameterPanelProps) {
   const { t } = useTranslation()
   const isMobile = useIsMobile()
-  const activeCount = PLAYGROUND_PARAMETER_CONTROLS.filter(
-    (control) => props.parameterEnabled[control.key]
-  ).length
+  const activeCount =
+    PLAYGROUND_PARAMETER_CONTROLS.filter(
+      (control) => props.parameterEnabled[control.key]
+    ).length + (props.parameterEnabled.tools ? 1 : 0)
 
   const trigger = (
     <PromptInputButton

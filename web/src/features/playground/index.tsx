@@ -71,6 +71,7 @@ export function Playground(props: { initialModel?: string }) {
     handleEditOpenChange,
     applyEdit,
     handleDeleteMessage,
+    handleSubmitToolResults,
   } = usePlaygroundConversation({
     messages,
     updateMessages,
@@ -98,6 +99,7 @@ export function Playground(props: { initialModel?: string }) {
           onCancelEdit={handleEditOpenChange}
           onSaveEdit={(newContent) => applyEdit(newContent, false)}
           onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
+          onSubmitToolResults={handleSubmitToolResults}
         />
       </div>
 

@@ -8596,6 +8596,23 @@
     "Create a key and test forwarding": "建立金鑰並測試轉發",
     "Set up your first channel and make a test request": "設定首個渠道並發起一次測試請求",
     "Test in Playground": "在 Playground 中測試",
-    "Not topped up yet": "尚未儲值"
+    "Not topped up yet": "尚未儲值",
+    "Tools must be valid JSON: {{error}}": "工具定義必須是有效的 JSON：{{error}}",
+    "Tool {{index}} must be an object": "第 {{index}} 個工具必須是物件",
+    "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)": "第 {{index}} 個工具需要名稱，只能包含字母、數字、_ 或 -（最多 64 個字元）",
+    "Tool name {{name}} is used more than once": "工具名稱 {{name}} 重複",
+    "Tool {{name}} parameters must be a JSON Schema object": "工具 {{name}} 的 parameters 必須是 JSON Schema 物件",
+    "Generating arguments": "正在產生參數",
+    "Result sent": "結果已送出",
+    "Awaiting result": "等待結果",
+    "Tool call": "工具呼叫",
+    "Result for {{name}}": "{{name}} 的結果",
+    "Enter what the tool returned": "填寫工具回傳的內容",
+    "Enter a result for every tool call": "請為每個工具呼叫填寫結果",
+    "Send tool results": "送出工具結果",
+    "Function definitions for chat and Claude models. You enter each tool result yourself.": "用於對話和 Claude 模型的函式定義，每個工具的結果需要你手動填寫。",
+    "Awaiting Approval": "等待核准",
+    "Responded": "已回應",
+    "Denied": "已拒絕"
   }
 }

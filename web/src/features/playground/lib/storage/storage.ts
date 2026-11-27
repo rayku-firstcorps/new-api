@@ -393,17 +393,22 @@ export function saveMessages(messages: Message[]): void {
   try {
     // Generated images are megabytes of base64; store only their placeholders
     // so the conversation stays within the localStorage budget.
-    const trimmed = trimMessages(messages).map((message) =>
-      message.images
+    // Messages blocks are kept by stream index; drop the indexes of blocks
+    // that were not kept so the list stores densely.
+    const trimmed = trimMessages(messages).map((message) => ({
+      ...message,
+      ...(message.images
         ? {
-            ...message,
             images: message.images.map((image) => ({
               id: image.id,
               mediaType: image.mediaType,
             })),
           }
-        : message
-    )
+        : {}),
+      ...(message.messagesBlocks
+        ? { messagesBlocks: message.messagesBlocks.filter(Boolean) }
+        : {}),
+    }))
     const parsed = messagesSchema.parse(trimmed) as Message[]
     writeStoredValue(STORAGE_KEYS.MESSAGES, parsed)
   } catch (error) {

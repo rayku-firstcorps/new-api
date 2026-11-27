@@ -27,14 +27,19 @@ import {
   isStreamClosedReadyState,
   isStreamDoneMessage,
   MESSAGES_STREAM_EVENT_TYPES,
+  parseChatCompletionChunk,
   parseMessagesStreamEvent,
   parseResponsesStreamEvent,
   parseStreamErrorDetails,
   RESPONSES_STREAM_EVENT_TYPES,
-  parseStreamMessageUpdates,
   type ResponsesStreamEvent,
 } from '../lib'
-import type { GeneratedImage, PlaygroundStreamRequest } from '../types'
+import type {
+  GeneratedImage,
+  MessagesBlockEvent,
+  PlaygroundStreamRequest,
+  ToolCallDelta,
+} from '../types'
 
 interface StreamEventSource {
   readyState?: number
@@ -49,6 +54,8 @@ interface StreamEventSource {
 interface StreamRequestCallbacks {
   onUpdate: (type: 'reasoning' | 'content', chunk: string) => void
   onImage: (image: GeneratedImage) => void
+  onToolCalls?: (deltas: ToolCallDelta[]) => void
+  onMessagesBlock?: (event: MessagesBlockEvent) => void
   onComplete: () => void
   onError: (error: string, errorCode?: string) => void
 }
@@ -60,7 +67,7 @@ function parseStreamEvent(
   if (isStreamDoneMessage(data)) return { kind: 'done' }
   if (format === 'responses') return parseResponsesStreamEvent(data)
   if (format === 'messages') return parseMessagesStreamEvent(data)
-  return { kind: 'updates', updates: parseStreamMessageUpdates(data) }
+  return { kind: 'updates', ...parseChatCompletionChunk(data) }
 }
 
 const STREAM_ENDPOINTS: Record<PlaygroundStreamRequest['format'], string> = {
@@ -170,6 +177,12 @@ export function createStreamRequestController(
         case 'updates':
           for (const update of streamEvent.updates) {
             callbacks.onUpdate(update.type, update.chunk)
+          }
+          if (streamEvent.block) {
+            callbacks.onMessagesBlock?.(streamEvent.block)
+          }
+          if (streamEvent.toolCalls?.length) {
+            callbacks.onToolCalls?.(streamEvent.toolCalls)
           }
       }
     }

@@ -8596,6 +8596,23 @@
     "Create a key and test forwarding": "キーを作成して転送をテスト",
     "Set up your first channel and make a test request": "最初のチャネルを設定してテストリクエストを送信",
     "Test in Playground": "Playground でテスト",
-    "Not topped up yet": "まだチャージされていません"
+    "Not topped up yet": "まだチャージされていません",
+    "Tools must be valid JSON: {{error}}": "ツール定義は有効な JSON である必要があります: {{error}}",
+    "Tool {{index}} must be an object": "ツール {{index}} はオブジェクトである必要があります",
+    "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)": "ツール {{index}} には英数字、_、- のみの名前（最大 64 文字）が必要です",
+    "Tool name {{name}} is used more than once": "ツール名 {{name}} が重複しています",
+    "Tool {{name}} parameters must be a JSON Schema object": "ツール {{name}} の parameters は JSON Schema オブジェクトである必要があります",
+    "Generating arguments": "引数を生成中",
+    "Result sent": "結果を送信済み",
+    "Awaiting result": "結果待ち",
+    "Tool call": "ツール呼び出し",
+    "Result for {{name}}": "{{name}} の結果",
+    "Enter what the tool returned": "ツールが返した内容を入力",
+    "Enter a result for every tool call": "すべてのツール呼び出しに結果を入力してください",
+    "Send tool results": "ツール結果を送信",
+    "Function definitions for chat and Claude models. You enter each tool result yourself.": "チャットモデルと Claude モデル用の関数定義です。各ツールの結果はご自身で入力します。",
+    "Awaiting Approval": "承認待ち",
+    "Responded": "応答済み",
+    "Denied": "拒否済み"
   }
 }

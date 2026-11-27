@@ -947,4 +947,17 @@ export const STATIC_I18N_KEYS = [
   'Channel priorities changed. Refresh and try again.',
   'Invalid channel priority move',
   'Channel priority is outside the sortable range',
+  // Playground tool definition errors (passed to t as error keys).
+  'Tools must be valid JSON: {{error}}',
+  'Tool {{index}} must be an object',
+  'Tool {{index}} needs a name of letters, digits, _ or - (up to 64)',
+  'Tool name {{name}} is used more than once',
+  'Tool {{name}} parameters must be a JSON Schema object',
+  // Tool status badges in components/ai-elements/tool.tsx.
+  'Pending',
+  'Running',
+  'Awaiting Approval',
+  'Responded',
+  'Completed',
+  'Denied',
 ] as const

@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { t } from 'i18next'
 
 import { ERROR_MESSAGES, MESSAGE_ROLES, MESSAGE_STATUS } from '../../constants'
-import type { ChatCompletionResponse, Message } from '../../types'
+import type { ChatCompletionResponse, Message, ToolCall } from '../../types'
 import { parseThinkTags } from './message-reasoning-utils'
 import {
   completeAssistantTiming,
@@ -194,11 +194,21 @@ export function applyChatCompletionChoice(
   message: Message,
   choice: ChatCompletionChoice
 ): Message {
+  const toolCalls = (choice.message?.tool_calls ?? []).map(
+    (call, index): ToolCall => ({
+      index,
+      id: call.id ?? '',
+      name: call.function?.name ?? '',
+      arguments: call.function?.arguments ?? '',
+    })
+  )
+
   return completeAssistantTiming({
     ...finalizeMessage(
       updateCurrentVersionContent(message, choice.message?.content || ''),
       choice.message?.reasoning_content ?? choice.message?.reasoning
     ),
+    ...(toolCalls.length > 0 ? { toolCalls } : {}),
     status: MESSAGE_STATUS.COMPLETE,
   })
 }

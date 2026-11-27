@@ -89,7 +89,8 @@ export function getMessageContentState(
   const sources = message.sources ?? []
   const reasoningContent = isAssistant ? message.reasoning?.content : undefined
   const images = message.images ?? []
-  const hasImages = images.length > 0
+  // Images and tool calls render without text, so they end the loader too
+  const hasImages = images.length > 0 || (message.toolCalls?.length ?? 0) > 0
   const showLoader = shouldShowMessageLoader(
     message,
     isAssistant,

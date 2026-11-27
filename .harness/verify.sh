@@ -263,6 +263,22 @@ if [[ "$TARGET" == "all" || "$TARGET" == "playground-inline-base64-images" ]]; t
   fi
 fi
 
+if [[ "$TARGET" == "all" || "$TARGET" == "playground-function-calling" ]]; then
+  echo ""
+  echo "── playground-function-calling ──"
+  check "参数面板含工具定义编辑器"     "grep -q 'PlaygroundToolsEditor' web/src/features/playground/components/input/playground-parameter-panel.tsx"
+  check "chat 与 Messages 请求携带 tools"     "grep -q 'toChatCompletionTools' web/src/features/playground/lib/streaming/payload-builder.ts && grep -q 'toMessagesTools' web/src/features/playground/lib/streaming/payload-builder.ts"
+  check "Messages 流监听 content_block_start"     "grep -q \"'content_block_start'\" web/src/features/playground/lib/streaming/stream-utils.ts"
+  check "对话保存工具调用与 Messages 块"     "grep -q 'toolCalls: z.array' web/src/features/playground/lib/storage/storage-schema.ts && grep -q 'messagesBlocks: z.array' web/src/features/playground/lib/storage/storage-schema.ts"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "Playground 与 tool 组件 lint 通过" "(cd web && bunx oxlint -c .oxlintrc.json src/features/playground src/components/ai-elements/tool.tsx)"
+    check "Playground 测试通过" "(cd web && bunx vitest run src/features/playground)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
 # ── 汇总 ─────────────────────────────────────────────
 echo ""
 echo "================================================"

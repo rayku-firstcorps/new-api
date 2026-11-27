@@ -27,11 +27,13 @@ import {
 import { Loader } from '@/components/ai-elements/loader'
 import { Message } from '@/components/ai-elements/message'
 
+import { MESSAGE_STATUS } from '../../constants'
 import {
   getChatMessageRenderState,
   getEditingMessageContent,
   getMessageAlignment,
   getPreviousUserMessage,
+  hasPendingToolCalls,
   isErrorMessage,
 } from '../../lib'
 import type {
@@ -40,6 +42,7 @@ import type {
 } from '../../types'
 import { MessageActions } from '../message/message-actions'
 import { MessageErrorActions } from '../message/message-error-actions'
+import { MessageToolCalls } from '../message/message-tool-calls'
 import { PlaygroundMessageContent } from '../message/playground-message-content'
 import { PlaygroundMessageEditor } from '../message/playground-message-editor'
 import { PlaygroundEmptyState } from './playground-empty-state'
@@ -59,6 +62,10 @@ interface PlaygroundChatProps {
   onSaveEdit?: (newContent: string) => void
   onCancelEdit?: (open: boolean) => void
   onSaveEditAndSubmit?: (newContent: string) => void
+  onSubmitToolResults?: (
+    message: MessageType,
+    results: Record<string, string>
+  ) => void
   messageLayoutMode?: PlaygroundMessageLayoutMode
 }
 
@@ -75,6 +82,7 @@ export function PlaygroundChat({
   onSaveEdit,
   onCancelEdit,
   onSaveEditAndSubmit,
+  onSubmitToolResults,
   messageLayoutMode = 'alternating',
 }: PlaygroundChatProps) {
   const { t } = useTranslation()
@@ -126,6 +134,11 @@ export function PlaygroundChat({
       : null
     const alignment = getMessageAlignment(message, messageLayoutMode)
     const isSourceVisible = sourceMessageKeys.has(message.key)
+    const canSubmitToolResults =
+      messageIndex === messages.length - 1 &&
+      !isGenerating &&
+      message.status === MESSAGE_STATUS.COMPLETE &&
+      hasPendingToolCalls(message)
 
     return (
       <Message
@@ -163,6 +176,18 @@ export function PlaygroundChat({
               }
               isSourceVisible={isSourceVisible}
               message={message}
+              toolCalls={
+                message.toolCalls?.length ? (
+                  <MessageToolCalls
+                    canSubmit={canSubmitToolResults}
+                    messageKey={message.key}
+                    onSubmit={(results) =>
+                      onSubmitToolResults?.(message, results)
+                    }
+                    toolCalls={message.toolCalls}
+                  />
+                ) : undefined
+              }
               errorActions={
                 isError ? (
                   <MessageErrorActions

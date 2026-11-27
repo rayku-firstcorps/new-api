@@ -59,6 +59,8 @@ type PlaygroundMessageContentProps = {
   errorActions?: ReactNode
   isSourceVisible?: boolean
   message: Message
+  // Tool calls of the turn, rendered after its text and images
+  toolCalls?: ReactNode
   versionContent: string
 }
 
@@ -68,6 +70,7 @@ export function PlaygroundMessageContent({
   errorActions,
   isSourceVisible = false,
   message,
+  toolCalls,
   versionContent,
 }: PlaygroundMessageContentProps) {
   const { t } = useTranslation()
@@ -183,6 +186,7 @@ export function PlaygroundMessageContent({
                   )}
                 </div>
               )}
+              {toolCalls}
             </MessageContent>
           )}
           <MessageMetadata alignment={alignment} message={message} />

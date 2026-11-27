@@ -34,6 +34,7 @@ export const playgroundConfigSchema = z.object({
   presence_penalty: z.number().optional(),
   seed: z.number().nullable().optional(),
   stream: z.boolean().optional(),
+  tools: z.string().optional(),
 })
 
 export const parameterEnabledSchema = z.object({
@@ -43,6 +44,7 @@ export const parameterEnabledSchema = z.object({
   frequency_penalty: z.boolean().optional(),
   presence_penalty: z.boolean().optional(),
   seed: z.boolean().optional(),
+  tools: z.boolean().optional(),
 })
 
 const messageRoleSchema = z.enum(['user', 'assistant', 'system'])
@@ -77,6 +79,30 @@ const generatedImageSchema = z.object({
   base64: z.string().optional(),
 })
 
+const toolCallSchema = z.object({
+  index: z.number(),
+  id: z.string(),
+  name: z.string(),
+  arguments: z.string(),
+  result: z.string().optional(),
+})
+
+const messagesReplayBlockSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('thinking'),
+    thinking: z.string(),
+    signature: z.string(),
+  }),
+  z.object({ type: z.literal('redacted_thinking'), data: z.string() }),
+  z.object({ type: z.literal('text'), text: z.string() }),
+  z.object({
+    type: z.literal('tool_use'),
+    id: z.string(),
+    name: z.string(),
+    input: z.string(),
+  }),
+])
+
 const messageSchema = z.object({
   key: z.string(),
   from: messageRoleSchema,
@@ -93,6 +119,8 @@ const messageSchema = z.object({
   status: messageStatusSchema.optional(),
   errorCode: z.string().nullable().optional(),
   images: z.array(generatedImageSchema).optional(),
+  toolCalls: z.array(toolCallSchema).optional(),
+  messagesBlocks: z.array(messagesReplayBlockSchema).optional(),
 })
 
 export const messagesSchema = z.array(messageSchema)

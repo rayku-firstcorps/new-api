@@ -430,3 +430,81 @@ describe('anthropic messages stream', () => {
     expect(stream.getCompletions()).toBe(0)
   })
 })
+
+describe('tool call streams', () => {
+  test('a named content_block_start event delivers the tool call and its block', async () => {
+    const source = new FakeStreamSource()
+    const toolCalls: unknown[] = []
+    const blocks: unknown[] = []
+    const controller = createStreamRequestController({
+      getHeaders: () => Promise.resolve({}),
+      createSource: () => source,
+      setStreaming: () => undefined,
+    })
+    await controller.send(messagesRequest, {
+      ...noopCallbacks,
+      onToolCalls: (deltas) => toolCalls.push(...deltas),
+      onMessagesBlock: (event) => blocks.push(event),
+    })
+
+    const contentBlock = {
+      type: 'tool_use',
+      id: 'toolu_1',
+      name: 'get_weather',
+      input: {},
+    }
+    source.emit(
+      'content_block_start',
+      JSON.stringify({
+        type: 'content_block_start',
+        index: 1,
+        content_block: contentBlock,
+      })
+    )
+
+    expect(toolCalls).toEqual([
+      { index: 1, id: 'toolu_1', name: 'get_weather' },
+    ])
+    expect(blocks).toEqual([{ kind: 'start', index: 1, block: contentBlock }])
+  })
+
+  test('chat tool_calls deltas reach onToolCalls without content updates', async () => {
+    const source = new FakeStreamSource()
+    const updates: string[] = []
+    const toolCalls: unknown[] = []
+    const controller = createStreamRequestController({
+      getHeaders: () => Promise.resolve({}),
+      createSource: () => source,
+      setStreaming: () => undefined,
+    })
+    await controller.send(payload, {
+      ...noopCallbacks,
+      onUpdate: (_type, chunk) => updates.push(chunk),
+      onToolCalls: (deltas) => toolCalls.push(...deltas),
+    })
+
+    source.emit(
+      'message',
+      JSON.stringify({
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                {
+                  index: 0,
+                  id: 'call_1',
+                  function: { name: 'get_weather', arguments: '{"ci' },
+                },
+              ],
+            },
+          },
+        ],
+      })
+    )
+
+    expect(updates).toEqual([])
+    expect(toolCalls).toEqual([
+      { index: 0, id: 'call_1', name: 'get_weather', arguments: '{"ci' },
+    ])
+  })
+})

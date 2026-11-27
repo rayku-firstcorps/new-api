@@ -8596,6 +8596,23 @@
     "Create a key and test forwarding": "Создайте ключ и проверьте пересылку",
     "Set up your first channel and make a test request": "Настройте первый канал и отправьте тестовый запрос",
     "Test in Playground": "Проверить в Playground",
-    "Not topped up yet": "Баланс ещё не пополнен"
+    "Not topped up yet": "Баланс ещё не пополнен",
+    "Tools must be valid JSON: {{error}}": "Инструменты должны быть корректным JSON: {{error}}",
+    "Tool {{index}} must be an object": "Инструмент {{index}} должен быть объектом",
+    "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)": "Инструменту {{index}} нужно имя из букв, цифр, _ или - (до 64 символов)",
+    "Tool name {{name}} is used more than once": "Имя инструмента {{name}} используется несколько раз",
+    "Tool {{name}} parameters must be a JSON Schema object": "Параметры инструмента {{name}} должны быть объектом JSON Schema",
+    "Generating arguments": "Генерация аргументов",
+    "Result sent": "Результат отправлен",
+    "Awaiting result": "Ожидание результата",
+    "Tool call": "Вызов инструмента",
+    "Result for {{name}}": "Результат для {{name}}",
+    "Enter what the tool returned": "Введите, что вернул инструмент",
+    "Enter a result for every tool call": "Введите результат для каждого вызова инструмента",
+    "Send tool results": "Отправить результаты инструментов",
+    "Function definitions for chat and Claude models. You enter each tool result yourself.": "Определения функций для чат-моделей и Claude. Результат каждого инструмента вы вводите сами.",
+    "Awaiting Approval": "Ожидает подтверждения",
+    "Responded": "Получен ответ",
+    "Denied": "Отклонено"
   }
 }

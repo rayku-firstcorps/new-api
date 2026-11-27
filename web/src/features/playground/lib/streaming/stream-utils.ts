@@ -20,7 +20,9 @@ import { ERROR_MESSAGES } from '../../constants'
 import type {
   ChatCompletionChunk,
   GeneratedImage,
+  MessagesBlockEvent,
   MessagesResponse,
+  ToolCallDelta,
 } from '../../types'
 import type { ChatCompletionChoice } from '../message/message-streaming-utils'
 
@@ -79,12 +81,20 @@ export function parseStreamErrorDetails(data?: string): StreamErrorDetails {
   }
 }
 
-export function parseStreamMessageUpdates(data: string): StreamMessageUpdate[] {
+/**
+ * Map one chat completions chunk to text updates and tool call fragments.
+ * Fragments carry tool_calls[].index (position in the list when an upstream
+ * leaves it out), so later fragments of the same call append its arguments.
+ */
+export function parseChatCompletionChunk(data: string): {
+  updates: StreamMessageUpdate[]
+  toolCalls: ToolCallDelta[]
+} {
   const chunk = JSON.parse(data) as ChatCompletionChunk
   const delta = chunk.choices?.[0]?.delta
 
   if (!delta) {
-    return []
+    return { updates: [], toolCalls: [] }
   }
 
   const updates: StreamMessageUpdate[] = []
@@ -98,7 +108,20 @@ export function parseStreamMessageUpdates(data: string): StreamMessageUpdate[] {
     updates.push({ type: 'content', chunk: delta.content })
   }
 
-  return updates
+  const toolCalls = (delta.tool_calls ?? []).map(
+    (call, position): ToolCallDelta => ({
+      index: call.index ?? position,
+      id: call.id || undefined,
+      name: call.function?.name || undefined,
+      arguments: call.function?.arguments || undefined,
+    })
+  )
+
+  return { updates, toolCalls }
+}
+
+export function parseStreamMessageUpdates(data: string): StreamMessageUpdate[] {
+  return parseChatCompletionChunk(data).updates
 }
 
 type ResponsesStreamPayload = {
@@ -136,7 +159,14 @@ export const RESPONSES_STREAM_EVENT_TYPES = [
 ] as const
 
 export type ResponsesStreamEvent =
-  | { kind: 'updates'; updates: StreamMessageUpdate[] }
+  | {
+      kind: 'updates'
+      updates: StreamMessageUpdate[]
+      // Tool call fragments (chat completions and Messages)
+      toolCalls?: ToolCallDelta[]
+      // Content block change to keep for replay (Messages)
+      block?: MessagesBlockEvent
+    }
   | { kind: 'image'; image: GeneratedImage }
   | { kind: 'done' }
   | ({ kind: 'error' } & StreamErrorDetails)
@@ -217,56 +247,87 @@ export function parseResponsesStreamEvent(data: string): ResponsesStreamEvent {
 
 type MessagesStreamPayload = {
   type?: string
+  index?: number
+  content_block?: Record<string, unknown>
   delta?: {
     type?: string
     text?: string
     thinking?: string
+    signature?: string
+    partial_json?: string
   }
 }
 
 // Named Messages events the playground handles. "error" is left out: sse.js
 // routes it to the stream error listener, which reads its error.message.
 export const MESSAGES_STREAM_EVENT_TYPES = [
+  'content_block_start',
   'content_block_delta',
   'message_stop',
 ] as const
 
 /**
  * Map one Anthropic Messages stream event to a playground update. Text and
- * thinking deltas update the message, message_stop ends it, and the other
- * events (message_start, ping, signature deltas, ...) produce no update.
+ * thinking deltas update the message; a tool_use block start and its
+ * input_json_delta fragments build a tool call; every block change is also
+ * kept for replay. message_stop ends the stream; other events (message_start,
+ * ping, ...) produce no update.
  */
 export function parseMessagesStreamEvent(data: string): ResponsesStreamEvent {
   const event = JSON.parse(data) as MessagesStreamPayload
+  const index = event.index ?? 0
 
   if (event.type === 'message_stop') {
     return { kind: 'done' }
   }
 
-  if (event.type !== 'content_block_delta') {
+  if (event.type === 'content_block_start' && event.content_block) {
+    const block = event.content_block
+    const toolCalls: ToolCallDelta[] =
+      block.type === 'tool_use'
+        ? [
+            {
+              index,
+              id: typeof block.id === 'string' ? block.id : undefined,
+              name: typeof block.name === 'string' ? block.name : undefined,
+            },
+          ]
+        : []
+    return {
+      kind: 'updates',
+      updates: [],
+      toolCalls,
+      block: { kind: 'start', index, block },
+    }
+  }
+
+  if (event.type !== 'content_block_delta' || !event.delta) {
     return { kind: 'updates', updates: [] }
   }
 
-  if (event.delta?.type === 'text_delta' && event.delta.text) {
-    return {
-      kind: 'updates',
-      updates: [{ type: 'content', chunk: event.delta.text }],
-    }
+  const delta = event.delta
+  const updates: StreamMessageUpdate[] = []
+  const toolCalls: ToolCallDelta[] = []
+  if (delta.type === 'text_delta' && delta.text) {
+    updates.push({ type: 'content', chunk: delta.text })
+  } else if (delta.type === 'thinking_delta' && delta.thinking) {
+    updates.push({ type: 'reasoning', chunk: delta.thinking })
+  } else if (delta.type === 'input_json_delta' && delta.partial_json) {
+    toolCalls.push({ index, arguments: delta.partial_json })
   }
 
-  if (event.delta?.type === 'thinking_delta' && event.delta.thinking) {
-    return {
-      kind: 'updates',
-      updates: [{ type: 'reasoning', chunk: event.delta.thinking }],
-    }
+  return {
+    kind: 'updates',
+    updates,
+    toolCalls,
+    block: { kind: 'delta', index, delta },
   }
-
-  return { kind: 'updates', updates: [] }
 }
 
 /**
  * Read a non-streaming Messages response as a chat completion choice: text
- * blocks form the content and thinking blocks the reasoning. Returns null
+ * blocks form the content, thinking blocks the reasoning and tool_use blocks
+ * the tool calls. Returns null
  * when the response carries no content array.
  */
 export function getMessagesResponseChoice(
@@ -278,9 +339,21 @@ export function getMessagesResponseChoice(
 
   let content = ''
   let reasoning = ''
+  const toolCalls: NonNullable<ChatCompletionChoice['message']['tool_calls']> =
+    []
   for (const block of response.content) {
     if (block.type === 'text' && block.text) content += block.text
     if (block.type === 'thinking' && block.thinking) reasoning += block.thinking
+    if (block.type === 'tool_use') {
+      toolCalls.push({
+        id: block.id ?? '',
+        type: 'function',
+        function: {
+          name: block.name ?? '',
+          arguments: JSON.stringify(block.input ?? {}),
+        },
+      })
+    }
   }
 
   return {
@@ -289,8 +362,9 @@ export function getMessagesResponseChoice(
       role: 'assistant',
       content,
       reasoning_content: reasoning || null,
+      ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
     },
-    finish_reason: 'stop',
+    finish_reason: toolCalls.length > 0 ? 'tool_calls' : 'stop',
   }
 }
 

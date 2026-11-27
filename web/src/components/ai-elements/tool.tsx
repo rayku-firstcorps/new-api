@@ -60,10 +60,16 @@ export type ToolHeaderProps = {
   title?: string
   type: ToolUIPart['type']
   state: ExtendedToolState
+  // Replaces the default badge text of the state
+  statusLabel?: string
   className?: string
 }
 
-const getStatusBadge = (status: ExtendedToolState) => {
+const getStatusBadge = (
+  status: ExtendedToolState,
+  translate: (key: string) => string,
+  statusLabel?: string
+) => {
   const labels: Record<ExtendedToolState, string> = {
     'input-streaming': 'Pending',
     'input-available': 'Running',
@@ -87,7 +93,7 @@ const getStatusBadge = (status: ExtendedToolState) => {
   return (
     <Badge className='gap-1.5 text-xs' variant='secondary'>
       {icons[status]}
-      {labels[status]}
+      {statusLabel ?? translate(labels[status])}
     </Badge>
   )
 }
@@ -97,25 +103,29 @@ export const ToolHeader = ({
   title,
   type,
   state,
+  statusLabel,
   ...props
-}: ToolHeaderProps) => (
-  <CollapsibleTrigger
-    className={cn(
-      'group flex w-full items-center justify-between gap-4 p-3',
-      className
-    )}
-    {...props}
-  >
-    <div className='flex items-center gap-2'>
-      <WrenchIcon className='text-muted-foreground size-4' />
-      <span className='text-sm font-medium'>
-        {title ?? type.split('-').slice(1).join('-')}
-      </span>
-      {getStatusBadge(state)}
-    </div>
-    <ChevronDownIcon className='text-muted-foreground size-4 transition-transform group-data-[panel-open]:rotate-180' />
-  </CollapsibleTrigger>
-)
+}: ToolHeaderProps) => {
+  const { t } = useTranslation()
+  return (
+    <CollapsibleTrigger
+      className={cn(
+        'group flex w-full items-center justify-between gap-4 p-3',
+        className
+      )}
+      {...props}
+    >
+      <div className='flex min-w-0 items-center gap-2'>
+        <WrenchIcon className='text-muted-foreground size-4 shrink-0' />
+        <span className='truncate text-sm font-medium'>
+          {title ?? type.split('-').slice(1).join('-')}
+        </span>
+        {getStatusBadge(state, t, statusLabel)}
+      </div>
+      <ChevronDownIcon className='text-muted-foreground size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-180' />
+    </CollapsibleTrigger>
+  )
+}
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>
 
@@ -158,6 +168,7 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
+  const { t } = useTranslation()
   if (!(output || errorText)) {
     return null
   }
@@ -175,7 +186,7 @@ export const ToolOutput = ({
   return (
     <div className={cn('space-y-2 p-4', className)} {...props}>
       <h4 className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-        {errorText ? 'Error' : 'Result'}
+        {errorText ? t('Error') : t('Result')}
       </h4>
       <div
         className={cn(

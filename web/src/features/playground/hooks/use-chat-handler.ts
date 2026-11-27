@@ -24,11 +24,15 @@ import { handleServerError } from '@/lib/handle-server-error'
 import { sendChatCompletion, sendMessages } from '../api'
 import { ERROR_MESSAGES, MESSAGE_STATUS } from '../constants'
 import {
+  applyMessagesBlockEvent,
   applyStreamingChunk,
+  applyToolCallDeltas,
   buildChatCompletionPayload,
   buildMessagesPayload,
   buildResponsesPayload,
+  getMessagesResponseBlocks,
   getMessagesResponseChoice,
+  parseToolDefinitions,
   updateAssistantMessageWithError,
   updateLastAssistantMessage,
   parseRequestErrorDetails,
@@ -42,10 +46,13 @@ import {
 import type {
   GeneratedImage,
   Message,
+  MessagesBlockEvent,
   PlaygroundConfig,
   PlaygroundRequestFormat,
   PlaygroundStreamRequest,
   ParameterEnabled,
+  ToolCallDelta,
+  ToolDefinition,
 } from '../types'
 import { useStreamRequest } from './use-stream-request'
 
@@ -60,10 +67,13 @@ interface UseChatHandlerOptions {
 const KNOWN_ERROR_MESSAGES = new Set<string>(Object.values(ERROR_MESSAGES))
 const STREAM_UPDATE_FLUSH_MS = 50
 
+// Stream changes batched into one message update per flush
 type PendingStreamChunks = {
   generation: number
   content: string
   reasoning: string
+  toolCalls: ToolCallDelta[]
+  blocks: MessagesBlockEvent[]
 }
 
 function mergePendingStreamChunk(
@@ -95,6 +105,8 @@ export function useChatHandler({
     generation: 0,
     content: '',
     reasoning: '',
+    toolCalls: [],
+    blocks: [],
   })
   const streamFlushTimerRef = useRef<number | null>(null)
 
@@ -107,6 +119,8 @@ export function useChatHandler({
       generation,
       content: '',
       reasoning: '',
+      toolCalls: [],
+      blocks: [],
     }
   }, [])
 
@@ -120,7 +134,12 @@ export function useChatHandler({
 
       const pendingChunks = pendingStreamChunksRef.current
       if (pendingChunks.generation !== generation) return
-      if (!pendingChunks.reasoning && !pendingChunks.content) {
+      if (
+        !pendingChunks.reasoning &&
+        !pendingChunks.content &&
+        pendingChunks.toolCalls.length === 0 &&
+        pendingChunks.blocks.length === 0
+      ) {
         return
       }
 
@@ -128,11 +147,25 @@ export function useChatHandler({
         generation,
         content: '',
         reasoning: '',
+        toolCalls: [],
+        blocks: [],
       }
       onMessageUpdate((prev) => {
         if (generation !== requestGenerationRef.current) return prev
         return updateLastAssistantMessage(prev, (message) => {
+          if (message.status === MESSAGE_STATUS.ERROR) return message
           let updatedMessage = message
+
+          for (const event of pendingChunks.blocks) {
+            updatedMessage = applyMessagesBlockEvent(updatedMessage, event)
+          }
+
+          if (pendingChunks.toolCalls.length > 0) {
+            updatedMessage = {
+              ...applyToolCallDeltas(updatedMessage, pendingChunks.toolCalls),
+              status: MESSAGE_STATUS.STREAMING,
+            }
+          }
 
           if (pendingChunks.reasoning) {
             updatedMessage = applyStreamingChunk(
@@ -215,6 +248,28 @@ export function useChatHandler({
     [scheduleStreamFlush]
   )
 
+  // Tool call fragments and Messages block changes arrive with nearly every
+  // token, so they are batched with the text.
+  const handleStreamToolCalls = useCallback(
+    (generation: number, deltas: ToolCallDelta[]) => {
+      if (generation !== requestGenerationRef.current) return
+      if (pendingStreamChunksRef.current.generation !== generation) return
+      pendingStreamChunksRef.current.toolCalls.push(...deltas)
+      scheduleStreamFlush(generation)
+    },
+    [scheduleStreamFlush]
+  )
+
+  const handleMessagesBlock = useCallback(
+    (generation: number, event: MessagesBlockEvent) => {
+      if (generation !== requestGenerationRef.current) return
+      if (pendingStreamChunksRef.current.generation !== generation) return
+      pendingStreamChunksRef.current.blocks.push(event)
+      scheduleStreamFlush(generation)
+    },
+    [scheduleStreamFlush]
+  )
+
   // Images are applied at once: each one is a complete (or partial) picture,
   // not a delta that benefits from batching.
   const handleStreamImage = useCallback(
@@ -274,7 +329,7 @@ export function useChatHandler({
 
   // Send streaming chat request
   const sendStreamingChat = useCallback(
-    (messages: Message[]) => {
+    (messages: Message[], tools: ToolDefinition[]) => {
       const generation = requestGenerationRef.current + 1
       requestGenerationRef.current = generation
       abortControllerRef.current?.abort()
@@ -290,7 +345,7 @@ export function useChatHandler({
       } else if (requestFormat === 'messages') {
         request = {
           format: 'messages',
-          payload: buildMessagesPayload(messages, config),
+          payload: buildMessagesPayload(messages, config, tools),
         }
       } else {
         request = {
@@ -298,13 +353,16 @@ export function useChatHandler({
           payload: buildChatCompletionPayload(
             messages,
             config,
-            parameterEnabled
+            parameterEnabled,
+            tools
           ),
         }
       }
       void sendStreamRequest(request, {
         onUpdate: (type, chunk) => handleStreamUpdate(generation, type, chunk),
         onImage: (image) => handleStreamImage(generation, image),
+        onToolCalls: (deltas) => handleStreamToolCalls(generation, deltas),
+        onMessagesBlock: (event) => handleMessagesBlock(generation, event),
         onComplete: () => handleStreamComplete(generation),
         onError: (error, errorCode) =>
           handleStreamError(generation, error, errorCode),
@@ -317,6 +375,8 @@ export function useChatHandler({
       sendStreamRequest,
       discardPendingStreamUpdates,
       handleStreamUpdate,
+      handleStreamToolCalls,
+      handleMessagesBlock,
       handleStreamImage,
       handleStreamComplete,
       handleStreamError,
@@ -325,7 +385,7 @@ export function useChatHandler({
 
   // Send non-streaming chat request
   const sendNonStreamingChat = useCallback(
-    async (messages: Message[]) => {
+    async (messages: Message[], tools: ToolDefinition[]) => {
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
 
@@ -338,15 +398,22 @@ export function useChatHandler({
       try {
         setIsRequesting(true)
         let choice: ChatCompletionChoice | null
+        let messagesBlocks: Message['messagesBlocks']
         if (requestFormat === 'messages') {
           const response = await sendMessages(
-            buildMessagesPayload(messages, config),
+            buildMessagesPayload(messages, config, tools),
             abortController.signal
           )
           choice = getMessagesResponseChoice(response)
+          messagesBlocks = getMessagesResponseBlocks(response)
         } else {
           const response = await sendChatCompletion(
-            buildChatCompletionPayload(messages, config, parameterEnabled),
+            buildChatCompletionPayload(
+              messages,
+              config,
+              parameterEnabled,
+              tools
+            ),
             abortController.signal
           )
           choice = response.choices?.[0] ?? null
@@ -366,9 +433,10 @@ export function useChatHandler({
         const completedChoice = choice
         onMessageUpdate((prev) => {
           if (requestGenerationRef.current !== generation) return prev
-          return updateLastAssistantMessage(prev, (message) =>
-            applyChatCompletionChoice(message, completedChoice)
-          )
+          return updateLastAssistantMessage(prev, (message) => ({
+            ...applyChatCompletionChoice(message, completedChoice),
+            ...(messagesBlocks?.length ? { messagesBlocks } : {}),
+          }))
         })
       } catch (error: unknown) {
         if (
@@ -398,17 +466,43 @@ export function useChatHandler({
     ]
   )
 
-  // Send chat request (stream or non-stream based on config)
+  // Send chat request (stream or non-stream based on config). Tools go with
+  // chat and Messages requests; image models (Responses) take none. Invalid
+  // tools JSON fails the turn before anything is sent.
   const sendChat = useCallback(
     (messages: Message[]) => {
+      let tools: ToolDefinition[] = []
+      if (parameterEnabled.tools && requestFormat !== 'responses') {
+        const parsed = parseToolDefinitions(config.tools)
+        if (parsed.error) {
+          const generation = requestGenerationRef.current + 1
+          requestGenerationRef.current = generation
+          handleStreamError(
+            generation,
+            t(parsed.error.key, parsed.error.values)
+          )
+          return
+        }
+        tools = parsed.tools
+      }
+
       // 'responses' always streams; 'messages' follows config.stream like chat
       if (config.stream || requestFormat === 'responses') {
-        sendStreamingChat(messages)
+        sendStreamingChat(messages, tools)
       } else {
-        sendNonStreamingChat(messages)
+        void sendNonStreamingChat(messages, tools)
       }
     },
-    [config.stream, requestFormat, sendStreamingChat, sendNonStreamingChat]
+    [
+      config.stream,
+      config.tools,
+      parameterEnabled.tools,
+      requestFormat,
+      handleStreamError,
+      sendStreamingChat,
+      sendNonStreamingChat,
+      t,
+    ]
   )
 
   // Stop generation

@@ -21,6 +21,8 @@ import { useCallback, useState } from 'react'
 import {
   appendUserMessagePair,
   applyMessageEdit,
+  applyToolResults,
+  createLoadingAssistantMessage,
   createRegeneratedMessages,
   removeMessageByKey,
 } from '../lib'
@@ -55,6 +57,24 @@ export function usePlaygroundConversation({
   const handleRegenerateMessage = useCallback(
     (message: Message) => {
       const nextMessages = createRegeneratedMessages(messages, message.key)
+      if (!nextMessages) return
+
+      updateMessages(nextMessages)
+      sendChat(nextMessages)
+    },
+    [messages, updateMessages, sendChat]
+  )
+
+  // The user answered the turn's tool calls: keep the results on it and
+  // continue the conversation from a new assistant turn.
+  const handleSubmitToolResults = useCallback(
+    (message: Message, results: Record<string, string>) => {
+      const nextMessages = applyToolResults(
+        messages,
+        message.key,
+        results,
+        createLoadingAssistantMessage()
+      )
       if (!nextMessages) return
 
       updateMessages(nextMessages)
@@ -112,5 +132,6 @@ export function usePlaygroundConversation({
     handleEditOpenChange,
     applyEdit,
     handleDeleteMessage,
+    handleSubmitToolResults,
   }
 }

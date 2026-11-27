@@ -8596,6 +8596,23 @@
     "Create a key and test forwarding": "Tạo khóa và kiểm tra chuyển tiếp",
     "Set up your first channel and make a test request": "Thiết lập kênh đầu tiên và gửi một yêu cầu thử",
     "Test in Playground": "Thử trong Playground",
-    "Not topped up yet": "Chưa nạp tiền"
+    "Not topped up yet": "Chưa nạp tiền",
+    "Tools must be valid JSON: {{error}}": "Công cụ phải là JSON hợp lệ: {{error}}",
+    "Tool {{index}} must be an object": "Công cụ {{index}} phải là một đối tượng",
+    "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)": "Công cụ {{index}} cần tên gồm chữ cái, chữ số, _ hoặc - (tối đa 64 ký tự)",
+    "Tool name {{name}} is used more than once": "Tên công cụ {{name}} bị dùng nhiều lần",
+    "Tool {{name}} parameters must be a JSON Schema object": "Tham số của công cụ {{name}} phải là đối tượng JSON Schema",
+    "Generating arguments": "Đang tạo tham số",
+    "Result sent": "Đã gửi kết quả",
+    "Awaiting result": "Đang chờ kết quả",
+    "Tool call": "Gọi công cụ",
+    "Result for {{name}}": "Kết quả cho {{name}}",
+    "Enter what the tool returned": "Nhập nội dung công cụ trả về",
+    "Enter a result for every tool call": "Nhập kết quả cho mọi lệnh gọi công cụ",
+    "Send tool results": "Gửi kết quả công cụ",
+    "Function definitions for chat and Claude models. You enter each tool result yourself.": "Định nghĩa hàm cho các mô hình chat và Claude. Bạn tự nhập kết quả của từng công cụ.",
+    "Awaiting Approval": "Đang chờ phê duyệt",
+    "Responded": "Đã phản hồi",
+    "Denied": "Đã từ chối"
   }
 }

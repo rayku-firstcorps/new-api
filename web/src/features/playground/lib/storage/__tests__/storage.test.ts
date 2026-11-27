@@ -124,3 +124,50 @@ test('saving messages drops generated image data and keeps the image placeholder
     { ...imageMessage, images: [{ id: 'ig_1', mediaType: 'image/png' }] },
   ])
 })
+
+test('tool calls, results and Messages blocks survive a reload', () => {
+  useAuthStore.getState().auth.setUser({ id: 1, username: 'A', role: 1 })
+  const blocks: NonNullable<Message['messagesBlocks']> = []
+  // Blocks are kept by stream index; index 0 here was a block that is not kept
+  blocks[1] = { type: 'thinking', thinking: '', signature: 'sig-1' }
+  blocks[2] = {
+    type: 'tool_use',
+    id: 'toolu_1',
+    name: 'get_weather',
+    input: '{}',
+  }
+  saveMessages([
+    {
+      key: 'tool-turn',
+      from: 'assistant',
+      versions: [{ id: 'v', content: '' }],
+      status: 'complete',
+      toolCalls: [
+        {
+          index: 2,
+          id: 'toolu_1',
+          name: 'get_weather',
+          arguments: '{}',
+          result: '18°C',
+        },
+      ],
+      messagesBlocks: blocks,
+    },
+  ])
+
+  const [loaded] = loadMessages() ?? []
+
+  expect(loaded.toolCalls).toEqual([
+    {
+      index: 2,
+      id: 'toolu_1',
+      name: 'get_weather',
+      arguments: '{}',
+      result: '18°C',
+    },
+  ])
+  expect(loaded.messagesBlocks).toEqual([
+    { type: 'thinking', thinking: '', signature: 'sig-1' },
+    { type: 'tool_use', id: 'toolu_1', name: 'get_weather', input: '{}' },
+  ])
+})

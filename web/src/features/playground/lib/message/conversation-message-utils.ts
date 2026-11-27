@@ -124,11 +124,14 @@ export function applyMessageEdit(
     return null
   }
 
+  // The kept Messages blocks hold the original text; drop them so the
+  // request history sends the edited content.
   const updatedMessages = messages.map((message) =>
     message.key === messageKey
       ? {
           ...updateCurrentVersionContent(message, content),
           createdAt: shouldSubmit ? submittedAt : message.createdAt,
+          messagesBlocks: undefined,
         }
       : message
   )

@@ -8596,6 +8596,23 @@
     "Create a key and test forwarding": "Créer une clé et tester le transfert",
     "Set up your first channel and make a test request": "Configurez votre premier canal et envoyez une requête de test",
     "Test in Playground": "Tester dans le Playground",
-    "Not topped up yet": "Pas encore rechargé"
+    "Not topped up yet": "Pas encore rechargé",
+    "Tools must be valid JSON: {{error}}": "Les outils doivent être un JSON valide : {{error}}",
+    "Tool {{index}} must be an object": "L’outil {{index}} doit être un objet",
+    "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)": "L’outil {{index}} doit avoir un nom composé de lettres, chiffres, _ ou - (64 caractères max.)",
+    "Tool name {{name}} is used more than once": "Le nom d’outil {{name}} est utilisé plusieurs fois",
+    "Tool {{name}} parameters must be a JSON Schema object": "Les paramètres de l’outil {{name}} doivent être un objet JSON Schema",
+    "Generating arguments": "Génération des arguments",
+    "Result sent": "Résultat envoyé",
+    "Awaiting result": "En attente du résultat",
+    "Tool call": "Appel d’outil",
+    "Result for {{name}}": "Résultat pour {{name}}",
+    "Enter what the tool returned": "Saisissez ce que l’outil a renvoyé",
+    "Enter a result for every tool call": "Saisissez un résultat pour chaque appel d’outil",
+    "Send tool results": "Envoyer les résultats des outils",
+    "Function definitions for chat and Claude models. You enter each tool result yourself.": "Définitions de fonctions pour les modèles de chat et Claude. Vous saisissez vous-même le résultat de chaque outil.",
+    "Awaiting Approval": "En attente d’approbation",
+    "Responded": "Répondu",
+    "Denied": "Refusé"
   }
 }

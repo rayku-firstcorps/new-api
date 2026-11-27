@@ -26,6 +26,7 @@ import type {
   ContentPart,
   GeneratedImage,
 } from '../../types'
+import { hasAnsweredToolCalls } from '../tools/tool-calling'
 
 /**
  * Create a new message version
@@ -230,8 +231,13 @@ export function formatMessageForAPI(message: Message): ChatCompletionMessage {
 export function isValidMessage(message: Message): boolean {
   if (!message || !message.from || !message.versions.length) return false
 
-  // Exclude empty assistant messages (loading/streaming placeholders)
-  if (message.from === MESSAGE_ROLES.ASSISTANT && !hasMessageContent(message)) {
+  // Exclude empty assistant messages (loading/streaming placeholders); a
+  // turn that only called tools counts once the user answered them.
+  if (
+    message.from === MESSAGE_ROLES.ASSISTANT &&
+    !hasMessageContent(message) &&
+    !hasAnsweredToolCalls(message)
+  ) {
     return false
   }
 

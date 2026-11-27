@@ -544,6 +544,20 @@
         "图片 base64 不写入 localStorage、不随下一轮请求作为文本发回（复用现有 images 逻辑）",
         "vitest、typecheck、Playground lint 与 Harness 验证通过"
       ]
+    },
+    {
+      "id": "playground-function-calling",
+      "title": "Playground 支持 function calling（手动回填工具结果）（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求。浏览器不执行工具，由用户手动填写结果后继续对话；后端中继已支持 tools，不改后端",
+      "scope": ["web/src/features/playground/", "web/src/components/ai-elements/tool.tsx", "web/src/i18n/locales/", "web/src/i18n/static-keys.ts", ".harness/verify.sh"],
+      "acceptance": [
+        "参数面板可启用并编辑工具定义 JSON（OpenAI function 格式，也接受 name/description/parameters 或 input_schema 的简写），无效 JSON 有字段级提示且阻止发送",
+        "chat 格式发送 tools 并解析流式 delta.tool_calls（按 index 拼接参数）与非流式 message.tool_calls；Messages 格式转换为 Anthropic tools，解析 content_block_start(tool_use)/input_json_delta 与非流式 tool_use 块",
+        "助手消息展示工具调用（名称、参数），用户为每个调用填写结果后提交，按格式回填历史（chat：assistant.tool_calls + tool 消息；Messages：tool_use 块 + 下一条 user 的 tool_result 块）并继续对话",
+        "工具调用与结果随对话保存到 localStorage；生图（Responses）模型不发送工具",
+        "七语言新增文案；vitest、typecheck、Playground lint 与 Harness 验证通过"
+      ]
     }
   ],
   "out_of_scope": [

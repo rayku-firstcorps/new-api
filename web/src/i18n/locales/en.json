@@ -8596,6 +8596,23 @@
     "Create a key and test forwarding": "Create a key and test forwarding",
     "Set up your first channel and make a test request": "Set up your first channel and make a test request",
     "Test in Playground": "Test in Playground",
-    "Not topped up yet": "Not topped up yet"
+    "Not topped up yet": "Not topped up yet",
+    "Tools must be valid JSON: {{error}}": "Tools must be valid JSON: {{error}}",
+    "Tool {{index}} must be an object": "Tool {{index}} must be an object",
+    "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)": "Tool {{index}} needs a name of letters, digits, _ or - (up to 64)",
+    "Tool name {{name}} is used more than once": "Tool name {{name}} is used more than once",
+    "Tool {{name}} parameters must be a JSON Schema object": "Tool {{name}} parameters must be a JSON Schema object",
+    "Generating arguments": "Generating arguments",
+    "Result sent": "Result sent",
+    "Awaiting result": "Awaiting result",
+    "Tool call": "Tool call",
+    "Result for {{name}}": "Result for {{name}}",
+    "Enter what the tool returned": "Enter what the tool returned",
+    "Enter a result for every tool call": "Enter a result for every tool call",
+    "Send tool results": "Send tool results",
+    "Function definitions for chat and Claude models. You enter each tool result yourself.": "Function definitions for chat and Claude models. You enter each tool result yourself.",
+    "Awaiting Approval": "Awaiting Approval",
+    "Responded": "Responded",
+    "Denied": "Denied"
   }
 }
