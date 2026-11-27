@@ -67,7 +67,7 @@
 2026-11-27 追加 playground-claude-messages（用户明确批准），已 done、未提交：
 - Claude 模型挂在开启透传的 OpenAI 类型渠道上时，Messages 格式依然会失败；需要时再加「/pg/* 选渠道跳过透传渠道」过滤。
 - 未在真实 Anthropic 上游与浏览器中实测；SystemPerformanceCheck 对 /pg/messages 仍返回 OpenAI 错误格式（前端两种格式都能解析）。
-- 遗留（与本 feature 无关，仍未修）：router TestAccessTokenRouteRulesCoverEveryDashboardRoute 因 PUT /api/user/onboarding 缺 access token 规则失败。
+- 2026-11-27 已修：PUT /api/user/onboarding 补 access token 规则 profile:write（与 PUT /api/user/self、/api/user/setting 一致），router TestAccessTokenRouteRulesCoverEveryDashboardRoute 恢复通过。
 
 2026-11-27 追加 playground-responses-image（用户明确批准，作为 Stage 3 内独立 feature，不改 out_of_scope 其他约束），已 done、未提交：
 - 生图模型判断依赖 /api/pricing 的 supported_endpoint_types（common.IsImageGenerationModel 名称规则：dall-e、gpt-image-、qwen-image、wan* 等）；只支持 /images/generations 的上游（如 dall-e-3、wan、qwen-image）在 Playground 里也会被发到 /responses 而失败，需要时再加例外或改为可切换。
