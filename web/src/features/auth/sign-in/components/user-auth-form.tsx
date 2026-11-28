@@ -57,6 +57,7 @@ import {
 import { PasskeyDomainSelector } from '@/features/auth/passkey/components/passkey-domain-selector'
 import type { AuthFormProps } from '@/features/auth/types'
 import { useStatus } from '@/hooks/use-status'
+import { trackFeature } from '@/lib/analytics'
 import { handleServerError } from '@/lib/handle-server-error'
 import { isPasskeySupported as detectPasskeySupport } from '@/lib/passkey'
 import { AuthOperationError } from '@/lib/secure-verification'
@@ -168,6 +169,7 @@ export function UserAuthForm({
       return
     }
 
+    trackFeature('auth.login_method_select', { method: 'password' })
     if (!validateTurnstile()) return
 
     const submittedTurnstileToken = turnstileToken
@@ -244,6 +246,7 @@ export function UserAuthForm({
   }
 
   async function handlePasskeyLogin() {
+    trackFeature('auth.login_method_select', { method: 'passkey' })
     if (requiresLegalConsent && !agreedToLegal) {
       toast.error(legalConsentErrorMessage)
       return

@@ -50,6 +50,7 @@ import {
 import { useChatPresets } from '@/features/chat/hooks/use-chat-presets'
 import { resolveChatUrl, type ChatPreset } from '@/features/chat/lib/chat-links'
 import { sendToFluent } from '@/features/chat/lib/send-to-fluent'
+import { trackFeature } from '@/lib/analytics'
 import { encodeChannelConnectionInfo } from '@/lib/channel-connection-info'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
 import { handleServerError } from '@/lib/handle-server-error'
@@ -150,6 +151,10 @@ export function DataTableRowActions<TData>({
     try {
       const result = await updateApiKeyStatus(apiKey.id, newStatus)
       if (result.success) {
+        trackFeature('token.toggle', {
+          has_expiry: apiKey.expired_time !== -1,
+          has_quota_limit: !apiKey.unlimited_quota,
+        })
         const message = isEnabled
           ? t(SUCCESS_MESSAGES.API_KEY_DISABLED)
           : t(SUCCESS_MESSAGES.API_KEY_ENABLED)
@@ -226,7 +231,12 @@ export function DataTableRowActions<TData>({
             const realKey = await resolveRealKey(apiKey.id)
             if (!realKey) return
             const ok = await copyToClipboard(realKey)
-            if (ok) toast.success(t('Copied'))
+            if (!ok) return
+            toast.success(t('Copied'))
+            trackFeature('token.copy', {
+              has_expiry: apiKey.expired_time !== -1,
+              has_quota_limit: !apiKey.unlimited_quota,
+            })
           }}
         >
           {t('Copy Key')}

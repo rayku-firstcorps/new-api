@@ -25,6 +25,8 @@ import { toast } from 'sonner'
 import { Dialog } from '@/components/dialog'
 import { Button } from '@/components/ui/button'
 import { useStatus } from '@/hooks/use-status'
+import { trackFeature } from '@/lib/analytics'
+import { rangeBucketOf } from '@/lib/analytics/range-bucket'
 import dayjs from '@/lib/dayjs'
 import { handleServerError } from '@/lib/handle-server-error'
 
@@ -128,6 +130,10 @@ export function ExportLogsDialog() {
         lines
       )
       toast.success(t('Exported {{count}} logs', { count }))
+      trackFeature('usage_log.export', {
+        range_bucket: rangeBucketOf(range.start, range.end),
+        format: 'csv',
+      })
       setOpen(false)
     } catch (error) {
       handleServerError(error, t('Failed to export logs'))

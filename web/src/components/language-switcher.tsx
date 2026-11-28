@@ -31,6 +31,8 @@ import {
   INTERFACE_LANGUAGE_OPTIONS,
   normalizeInterfaceLanguage,
 } from '@/i18n/languages'
+import { trackFeature } from '@/lib/analytics'
+import { detectLang } from '@/lib/analytics/context'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -42,6 +44,7 @@ export function LanguageSwitcher(props: { className?: string }) {
   const handleChangeLanguage = useCallback(
     async (code: string) => {
       await i18n.changeLanguage(code)
+      trackFeature('preference.lang_change', { value: detectLang() })
       if (user) {
         try {
           await api.put('/api/user/self', { language: code })

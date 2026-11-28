@@ -22,6 +22,8 @@ import { useTranslation } from 'react-i18next'
 import { SectionPageLayout } from '@/components/layout'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { trackFeature } from '@/lib/analytics'
+import { payMethodOf } from '@/lib/analytics/pay-method'
 import { getSelf } from '@/lib/api'
 
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
@@ -174,6 +176,7 @@ export function Wallet(props: WalletProps) {
   // Handle payment method selection
   const handlePaymentMethodSelect = async (method: PaymentMethod) => {
     setSelectedPaymentMethod(method)
+    trackFeature('wallet.topup_open', { pay_method: payMethodOf(method.type) })
     setSelectedWaffoMethodIndex(null)
     setPaymentLoading(method.type)
 
@@ -236,6 +239,7 @@ export function Wallet(props: WalletProps) {
   // Handle Creem product selection
   const handleCreemProductSelect = (product: CreemProduct) => {
     setSelectedCreemProduct(product)
+    trackFeature('wallet.topup_open', { pay_method: 'creem' })
     setCreemDialogOpen(true)
   }
 
@@ -262,6 +266,7 @@ export function Wallet(props: WalletProps) {
       icon: method.icon,
     })
     setSelectedWaffoMethodIndex(index)
+    trackFeature('wallet.topup_open', { pay_method: 'waffo' })
     setPaymentLoading(loadingKey)
 
     try {

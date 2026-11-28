@@ -20,6 +20,7 @@ import i18next from 'i18next'
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 
+import { trackFeature } from '@/lib/analytics'
 import { getSelf } from '@/lib/api'
 import { formatQuota } from '@/lib/format'
 import { handleServerError } from '@/lib/handle-server-error'
@@ -51,13 +52,16 @@ export function useRedemption() {
           })
         )
         await getSelf()
+        trackFeature('wallet.redeem_submit', { result: 'ok' })
         return true
       }
 
       handleServerError(response, i18next.t('Redemption failed'))
+      trackFeature('wallet.redeem_submit', { result: 'fail' })
       return false
     } catch (_error) {
       handleServerError(_error, i18next.t('Redemption failed'))
+      trackFeature('wallet.redeem_submit', { result: 'fail' })
       return false
     } finally {
       setRedeeming(false)

@@ -64,6 +64,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { RelatedPolicyLink } from '@/features/system-settings/request-policies/related-policy-link'
 import { useStatus } from '@/hooks/use-status'
+import { trackFeature } from '@/lib/analytics'
 import { getUserModels, getUserGroups } from '@/lib/api'
 import { getCurrencyDisplay, getCurrencyLabel } from '@/lib/currency'
 import { handleServerError } from '@/lib/handle-server-error'
@@ -326,6 +327,10 @@ export function ApiKeysMutateDrawer({
         }
 
         if (successCount > 0) {
+          trackFeature('token.create', {
+            has_expiry: basePayload.expired_time !== -1,
+            has_quota_limit: !basePayload.unlimited_quota,
+          })
           toast.success(
             t('Successfully created {{count}} API Key(s)', {
               count: successCount,

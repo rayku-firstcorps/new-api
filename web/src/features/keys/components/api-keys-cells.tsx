@@ -35,6 +35,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { trackFeature } from '@/lib/analytics'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
 
 import type { ApiKey } from '../types'
@@ -71,8 +72,20 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
     if (!realKey) return
 
     const ok = await copyToClipboard(realKey)
-    if (ok) markKeyCopied(apiKey.id)
-  }, [resolvedFullKey, resolveRealKey, apiKey.id, markKeyCopied])
+    if (!ok) return
+    markKeyCopied(apiKey.id)
+    trackFeature('token.copy', {
+      has_expiry: apiKey.expired_time !== -1,
+      has_quota_limit: !apiKey.unlimited_quota,
+    })
+  }, [
+    resolvedFullKey,
+    resolveRealKey,
+    apiKey.id,
+    apiKey.expired_time,
+    apiKey.unlimited_quota,
+    markKeyCopied,
+  ])
 
   let copyIcon = <Copy className='size-3.5' />
   let copyTooltip = t('Copy API key')

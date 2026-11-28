@@ -27,6 +27,7 @@ import {
   IconWeChat,
 } from '@/assets/brand-icons'
 import { Button } from '@/components/ui/button'
+import { trackFeature } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
 
 import { useOAuthLogin } from '../hooks/use-oauth-login'
@@ -171,7 +172,12 @@ export function OAuthProviders({
               variant='outline'
               type='button'
               disabled={disabled || isLoading || extraDisabled}
-              onClick={onClick}
+              onClick={() => {
+                trackFeature('auth.login_method_select', {
+                  method: key === 'wechat' ? 'wechat' : 'oauth',
+                })
+                onClick()
+              }}
               className='border-input hover:bg-foreground/5 active:bg-foreground/10 h-11 w-full justify-center gap-2 rounded-lg bg-transparent text-sm'
             >
               {icon}

@@ -25,6 +25,7 @@ import { WizardShell, type WizardStep } from '@/components/wizard/wizard-shell'
 import { DASHBOARD_DEFAULT_SECTION } from '@/features/dashboard/section-registry'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { trackFeature } from '@/lib/analytics'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { AdminChannelStep } from './components/admin/channel-step'
@@ -106,10 +107,12 @@ export function AdminOnboardingWizard(props: AdminOnboardingWizardProps) {
   if (finishing) return navigateToOverview
 
   const handleSkip = async () => {
+    trackFeature('onboarding.skip', { step })
     await progress.skip()
     setFinishing(true)
   }
   const handleFinish = async () => {
+    trackFeature('onboarding.step_complete', { step })
     setFinishing(true)
     await progress.complete('api')
   }
@@ -130,7 +133,10 @@ export function AdminOnboardingWizard(props: AdminOnboardingWizardProps) {
           currentStep={step}
           totalSteps={STEPS.length}
           onBack={() => setStep(step - 1)}
-          onNext={() => setStep(step + 1)}
+          onNext={() => {
+            trackFeature('onboarding.step_complete', { step })
+            setStep(step + 1)
+          }}
           onSubmit={handleFinish}
           submitLabel={t('Finish and open console')}
         />

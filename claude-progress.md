@@ -5,6 +5,17 @@
 
 ## 当前 Stage
 
+**Stage 4** — 用户行为埋点与跨设备分析（stage4-behavior-analytics，2026-11-27 用户要求按 prompts 并行构建）
+
+目标：按 `docs/prd/behavior-analytics-design.md` 与 `docs/prd/behavior-analytics-prompts.md`（P0–P8）实现；允许新增 `behavior_events` 表（LOG_DB）。out_of_scope 以 `.harness/feature_list.json` 为准。
+
+P0 已确认决策（采用方案 §10 倾向的默认值）：
+- 默认关闭：`analytics_setting.enabled=false`，管理员手动开启。
+- 存储：复用 LOG_DB，默认保留 90 天并自动清理。
+- 权限：看板与查询接口用 `AdminAuth`（Admin/Root 可见，不新增 Casbin 权限点）；盐轮换与手动清理仅 `RootAuth`。
+
+以下为 Stage 3 说明（保留）：
+
 **Stage 3** — 用户引导 First Setup 与注册赠送配置（stage3-user-onboarding，2026-11-27 用户决定开启）
 
 目标：按 `docs/prd/user-onboarding-first-setup-plan.md` 与 `docs/prd/user-onboarding-first-setup-prompts.md`（P1–P9）实现；本 Stage 允许后端改动。out_of_scope 以 `.harness/feature_list.json` 为准。Stage 2 原 out_of_scope（后端任何改动；删除或精简原有功能；KuCode 原型独有功能；首页定价区）仍适用于未完成的 kucode-* 项，本 Stage 不收尾 kucode-* 项。
@@ -67,7 +78,21 @@
 | playground-openai-hosted-tools | done | 2026-11-27 用户要求「openai接口也要支持」，并明确按端点判断（不按模型名）。getHostedToolsRoute（playground-option-utils）：生图→none；已走 Messages 的 Claude→messages；否则目录 supported_endpoint_types 含 openai-response→responses，含 anthropic→messages（两者都有优先 Responses），都没有→chat（web_search_options）；无目录数据→chat。开关按路由过滤（messages 三个、responses 搜索+代码、chat 仅搜索、none 无）；开启任一托管工具时 getTurnRequestFormat 把 chat 模型该轮改走对应原生端点。Responses：总是流式，不发采样参数与 max_output_tokens，tools 为扁平 function + {type:web_search} + {type:code_interpreter,container:{type:auto}}，include web_search_call.action.sources / code_interpreter_call.outputs；流解析 output_item.added(function_call)/function_call_arguments.delta→工具调用，output_text.annotation.added→Sources，web_search_call/code_interpreter_call→message.responsesItems（按 id 取最新）并用 MessageHostedTools 展示；回传已回答函数调用为 function_call + function_call_output，托管调用项与 reasoning 项不回传。生图请求体不变。UI 组件改收 hostedToolsRoute。无新增文案。全量 vitest 278 文件/3231 例、tsc、oxlint/oxfmt、build:check、verify.sh 通过 |
 | playground-browser-tools | pending | 2026-11-27 用户要求，浏览器内自动执行自定义工具并回填结果，下一个会话实现 |
 
+| analytics-setting-and-model | done | 2026-11-27 analytics_setting 六个键（hash_secret 写保护、不外露）、/api/status 三字段、behavior_events（含 active_ms/api_route/error_name）、主节点盐生成、4096 异步写入、分批清理；SQLite/MySQL 5.7/PG 9.6/ClickHouse 25.3 验证；修复 MySQL 5.7 批量 DoNothing 报 1869 |
+| analytics-ingest-pipeline | done | 2026-11-27 POST /api/analytics/events：门控→限流 120/60s→32KB→TryUserAuth；白名单/路由模板化/actor_hash；真实浏览器上报已核对 |
+| analytics-sdk-core | done | 2026-11-27 web/src/lib/analytics SDK（队列、采样、DNT/GPC、keepalive fetch、sendBeacon 兜底）；与 Go 白名单逐项一致 |
+| analytics-sdk-integration | done | 2026-11-27 __root 挂载、http-client api_error、runtime/vitals、17 个 trackFeature 点位；真实浏览器已验 page_view/leave/vitals/login_method，api_error 与其余 feature 点位仅单测覆盖 |
+| analytics-query-api | done | 2026-11-27 六个 GET（Admin）+ salt/rotate、expired（Root）；P50/P95 为 50ms 直方图；SQLite/MySQL/PG/ClickHouse 实测 |
+| analytics-admin-settings-ui | done | 2026-11-27 系统设置「行为埋点」卡片（启用/采样/保留/DNT，Root 才见轮换盐与立即清理），七语言 |
+| analytics-dashboard-ui | done | 2026-11-27 /analytics 四 Tab 看板（URL 持久化筛选，未启用/空/错误态），侧栏入口，七语言；真实浏览器加载通过，图表未做窄屏人工目检 |
 ## 上次停在哪里
+2026-11-27 Stage 4 行为埋点 P0-P8 全部完成并验收（7 个 analytics-* feature 均 done，未提交）：
+- 集成修复：MySQL 5.7 下 `OnConflict{DoNothing}` 生成 `id=id` 报 Error 1869，InsertBehaviorEvents 在 MySQL 改用 `event_id=VALUES(event_id)` 的 no-op 更新；pkg/jsplugin 保留路由表补 `/analytics`。
+- 已知与本次无关的失败：`TestReservedRouteNamespacesCoverConsolePages` 仍缺 `/onboarding`（Stage 3 遗留，未改）；`web` lint 在 use-table-url-state.ts 有既有 error；Windows 上 relay/channel HTTP2 GOAWAY 测试偶发失败，单跑通过。
+- ClickHouse 重复 event_id 不去重（C4，已接受）；retry 的批次会让 PV 偏高。
+- 未提交 git。下一个 feature 仍是 playground-browser-tools。
+
+(以下为上一会话记录，保留)
 2026-11-27 追加 playground-openai-hosted-tools（用户要求），已 done、未提交：
 - 未在真实上游与浏览器实测；路由只看模型目录的 supported_endpoint_types：普通 OpenAI 渠道的 GPT 模型默认只列 openai，需在模型管理里为模型声明 openai-response 端点才会走 Responses；非 Claude 模型声明 anthropic 端点后开启托管工具会走 Messages。
 - 走 Responses 的轮次总是流式、不发 temperature/top_p/max_tokens；不回传 reasoning 与托管调用项（无状态多轮可用，但推理模型的函数调用续写会丢失上一轮推理）。
@@ -271,6 +296,13 @@
 
 ## 已知问题 / 待决策
 
+- [ ] 行为埋点（设计限制，不修）：sendBeacon 降级批次与 unload 时 token 将过期的批次 actor_hash 为空，不计入 Actor UV/多设备
+- [x] 行为埋点：未登录时缓冲的事件登录后 flush 被归到登录用户 — 2026-11-28 已修：队列按事件记录时的 user id 分批，只有同一用户的批次带 Bearer（transport.ts）
+- [x] 行为埋点：采样未命中的新访客每次加载重新抽样 — 2026-11-28 已修：device_id 在抽样前持久化（仅存本地，未命中时不上报）
+- [ ] 行为埋点：未做图表窄屏人工目检；api_error 上报与除 auth.login_method_select 外的 trackFeature 点位未在真实浏览器逐个点击
+- [ ] 行为埋点：未验证 MySQL/PG 下 behavior_events 从"旧版本升级且已有数据"之外的场景（已验证：基线版本库→新版本启动两次幂等）
+- [x] pkg/jsplugin 保留路由表缺 `/onboarding` — 2026-11-28 已补，TestReservedRouteNamespacesCoverConsolePages 通过
+- [ ] web 全量 `bun run lint` 有大量既有错误（与埋点无关，未处理）；src/hooks 下 use-table-url-state.ts 的 no-non-null-assertion 已修
 - [ ] `users` 表新增 `promotion_code`、`promotion_channel_tag` 字段：优先通过 GORM AutoMigrate，如遇 SQLite ALTER COLUMN 问题需参考 `model/main.go` 现有模式手工补字段
 - [ ] OAuth 注册（GitHub/Discord/OIDC）是否需要同步接入推广码逻辑？（建议：是，抽 finalize 函数复用）
 - [ ] 推广码与用户 `aff_code` 冲突检测：创建推广链接时需校验 code 不与现有用户 aff_code 重名
@@ -280,6 +312,15 @@
 - 新增 `docs/prd/antom-payment-security-hardening-plan.md`，记录 Antom 支付回调验签、金额/币种/订单归属校验、统一额度结算、上限保护及测试验收计划；本次未修改支付业务代码。
 
 ## 本次验证
+
+### 2026-11-27 行为埋点 P8 全量验收
+- 环境：Docker Desktop 29.9.3（手动启动）；mysql:5.7（5.7.44）、postgres:9.6（9.6.24）、clickhouse-server:25.3（25.3.14.14）、SQLite（内置）；容器已删除。
+- 迁移与升级：用 HEAD 基线二进制（git worktree）在 MySQL/PG/SQLite 建库，再用新二进制启动两次——无 panic/fatal、无 ALTER TABLE、索引齐全（含 uidx_be_event_id）。ClickHouse（SQLite 主库 + LOG_SQL_DSN）启动两次，DDL 含 TTL；retention_days 改为 30 后 TTL 同步为 30 天。ClickHouse 23.8 无法跑通既有 audit_logs 的 JSON 列（与本功能无关），故改用 25.3。
+- 命令：`TEST_ANALYTICS_DB=mysql|postgres TEST_MANAGE_USER_DIALECT=mysql|postgres go test ./controller -run "Analytics|BehaviorEvents" -count=1`（DSN 指向 127.0.0.1 容器，PG 用 URL 形式）。12 个测试在 SQLite、MySQL 5.7、PG 9.6 全部通过（先在 MySQL 失败，修复后通过）。
+- ClickHouse 端到端：入库 → overview/health/devices/trends → expired（handled_by_ttl=true）通过；重复 event_id 保留（C4）。
+- 真实浏览器（Chrome + puppeteer-core，SQLite 实例）：登录后上报 67 行，无 query/hash/@/token；GET /api/option 与 /api/status 不含盐；PUT hash_secret/secret_rotated_at/越界值被拒；rotate 与 expired 正常；看板能加载。
+- go build / vet / gofmt 干净；go test ./... 仅上述既有失败；web typecheck 通过，vitest 286 文件 3331 用例通过，analytics 相关文件 oxlint 无告警；bun run build 通过；bun run i18n:sync 已跑，96 个新键七语言齐全。
+- verify.sh 七个 analytics-* feature 全部通过。
 
 ### 2026-10-27 LinuxDo 优惠入口
 

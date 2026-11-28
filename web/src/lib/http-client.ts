@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import axios, { type AxiosRequestConfig } from 'axios'
 import { t } from 'i18next'
 
+import { trackApiError, type ApiErrorKind } from '@/lib/analytics'
 import {
   applyAuthRotation,
   clearAuthentication,
@@ -41,6 +42,7 @@ declare module 'axios' {
     authRetry?: boolean
     acceptAuthRotation?: boolean
     singleUseAuthorization?: boolean
+    analyticsStartedAt?: number
   }
 }
 
@@ -83,6 +85,32 @@ function redirectToSignIn(): void {
   }
 }
 
+function reportApiError(
+  error: unknown,
+  config: ApiRequestConfig | undefined,
+  status: number | undefined
+): void {
+  if (!config?.url || axios.isCancel(error)) return
+  let kind: ApiErrorKind
+  if (status !== undefined) {
+    kind = status >= 500 ? 'http_5xx' : 'http_4xx'
+  } else {
+    const code = (error as { code?: string } | null)?.code
+    kind =
+      code === 'ECONNABORTED' || code === 'ETIMEDOUT' ? 'timeout' : 'network'
+  }
+  trackApiError({
+    url: config.url,
+    method: config.method ?? 'get',
+    status,
+    durationMs:
+      config.analyticsStartedAt === undefined
+        ? 0
+        : Math.max(0, performance.now() - config.analyticsStartedAt),
+    kind,
+  })
+}
+
 api.interceptors.response.use(
   (response) => {
     if (response.config.acceptAuthRotation && response.data?.success === true) {
@@ -95,6 +123,11 @@ api.interceptors.response.use(
     const config = error?.config as ApiRequestConfig | undefined
     const skipErrorHandler = config?.skipErrorHandler
     const status = error?.response?.status
+
+    // A 401 that is about to be refreshed and retried is reported by the retry.
+    const willRetryAfterRefresh =
+      status === 401 && config && !config.skipAuthRefresh && !config.authRetry
+    if (!willRetryAfterRefresh) reportApiError(error, config, status)
 
     if (status === 401) {
       if (config && !config.skipAuthRefresh && !config.authRetry) {
@@ -110,6 +143,8 @@ api.interceptors.response.use(
           }
           return api.request(config)
         }
+        // No retry happens when the refresh fails, so report the original 401.
+        reportApiError(error, config, status)
 
         if (outcome.kind === 'anonymous' || outcome.kind === 'out_of_sync') {
           if (!skipErrorHandler) {
@@ -145,6 +180,7 @@ api.interceptors.response.use(
 )
 
 api.interceptors.request.use(async (config) => {
+  config.analyticsStartedAt = performance.now()
   if (config.singleUseAuthorization || config.headers.has('X-Security-Proof')) {
     // Refresh before spending a proof/flow, never by replaying its request.
     config.skipAuthRefresh = true

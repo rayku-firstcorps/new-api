@@ -21,6 +21,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { trackClientError } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
 
 const FEEDBACK_URL = 'https://github.com/QuantumNous/new-api/issues'
@@ -46,6 +47,10 @@ export function GeneralError({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { history } = useRouter()
+  useEffect(
+    () => trackClientError({ error, source: 'react_boundary' }),
+    [error]
+  )
   useEffect(() => {
     if (
       !(error instanceof Error) ||

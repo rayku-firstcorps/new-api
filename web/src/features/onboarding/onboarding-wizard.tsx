@@ -26,6 +26,7 @@ import type { OnboardingUseCase } from '@/features/auth/types'
 import { DASHBOARD_DEFAULT_SECTION } from '@/features/dashboard/section-registry'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { trackFeature } from '@/lib/analytics'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { ConnectStep } from './components/connect-step'
@@ -104,6 +105,7 @@ export function OnboardingWizard() {
   const goToStep = (step: number) => setState((prev) => ({ ...prev, step }))
 
   const handleNext = () => {
+    trackFeature('onboarding.step_complete', { step: state.step })
     if (state.step === ONBOARDING_STEP.USE_CASE) {
       void progress.saveUseCase(state.useCase)
     }
@@ -111,11 +113,13 @@ export function OnboardingWizard() {
   }
 
   const handleSkip = async () => {
+    trackFeature('onboarding.skip', { step: state.step })
     await progress.skip()
     setFinishing(true)
   }
 
   const handleFinish = async () => {
+    trackFeature('onboarding.step_complete', { step: state.step })
     setFinishing(true)
     await progress.complete(state.useCase)
   }

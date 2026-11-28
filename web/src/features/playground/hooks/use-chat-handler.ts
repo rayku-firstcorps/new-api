@@ -19,6 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { trackFeature } from '@/lib/analytics'
+import { providerFamilyOf } from '@/lib/analytics/provider-family'
 import { handleServerError } from '@/lib/handle-server-error'
 
 import { sendChatCompletion, sendMessages } from '../api'
@@ -561,6 +563,11 @@ export function useChatHandler({
   // sends the turn through Responses, which always streams.
   const sendChat = useCallback(
     (messages: Message[]) => {
+      trackFeature('playground.request_submit', {
+        stream: config.stream,
+        has_image: messages.some((m) => (m.images?.length ?? 0) > 0),
+        provider_family: providerFamilyOf(config.model),
+      })
       let tools: ToolDefinition[] = []
       if (parameterEnabled.tools && requestFormat !== 'responses') {
         const parsed = parseToolDefinitions(config.tools)
@@ -595,6 +602,7 @@ export function useChatHandler({
     },
     [
       config.hosted_tools,
+      config.model,
       hostedToolsRoute,
       config.stream,
       config.tools,

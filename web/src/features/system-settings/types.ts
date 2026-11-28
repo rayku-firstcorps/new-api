@@ -432,6 +432,11 @@ export type OperationsSettings = {
   'log_setting.user_export_enabled': boolean
   'log_setting.max_range_days': number
   'system_task_setting.retention_days': number
+  'analytics_setting.enabled': boolean
+  'analytics_setting.sample_rate': number
+  'analytics_setting.retention_days': number
+  'analytics_setting.respect_dnt': boolean
+  'analytics_setting.secret_rotated_at': number
   'performance_setting.disk_cache_enabled': boolean
   'performance_setting.disk_cache_threshold_mb': number
   'performance_setting.disk_cache_max_size_mb': number

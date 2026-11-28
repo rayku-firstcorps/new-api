@@ -130,7 +130,18 @@ export interface UpdateOnboardingRequest {
   use_case?: OnboardingUseCase
 }
 
-export interface SystemStatus extends OnboardingStatusFields {
+/**
+ * Behavior analytics switches exposed by /api/status. Optional so an older
+ * backend that omits them still type-checks (the SDK then stays inactive).
+ */
+export interface AnalyticsStatusFields {
+  analytics_enabled?: boolean
+  analytics_sample_rate?: number
+  analytics_respect_dnt?: boolean
+}
+
+export interface SystemStatus
+  extends OnboardingStatusFields, AnalyticsStatusFields {
   success?: boolean
   message?: string
   data?: {
@@ -181,7 +192,8 @@ export interface SystemStatus extends OnboardingStatusFields {
     official_social_links?: OfficialSocialLink[]
     OfficialSocialLinks?: OfficialSocialLink[]
     [key: string]: unknown
-  } & OnboardingStatusFields
+  } & OnboardingStatusFields &
+    AnalyticsStatusFields
   // Allow direct access to common properties
   version?: string
   system_name?: string

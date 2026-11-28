@@ -57,6 +57,7 @@ var accessTokenRouteRules = map[string]accessTokenRouteRule{
 	"GET /api/oauth/:provider":            accessTokenSessionRule,
 	"GET /api/verify/methods":             accessTokenAnyRule,
 	"POST /api/verify":                    accessTokenAnyRule,
+	"POST /api/analytics/events":          accessTokenSessionRule,
 
 	// router/api-router.go: /api/user (self)
 	"GET /api/user/sessions":                       accessTokenSessionRule,
@@ -324,6 +325,16 @@ var accessTokenRouteRules = map[string]accessTokenRouteRule{
 	"GET /api/user/self/promotion-reward":        accessTokenScopeRule("wallet:read"),
 	"POST /api/user/self/promotion-reward/claim": accessTokenScopeRule("wallet:write"),
 	"GET /api/home/self_summary":                 accessTokenSessionRule,
+
+	// router/analytics_admin_router.go
+	"GET /api/analytics/overview":     accessTokenSessionRule,
+	"GET /api/analytics/trends":       accessTokenSessionRule,
+	"GET /api/analytics/devices":      accessTokenSessionRule,
+	"GET /api/analytics/pages":        accessTokenSessionRule,
+	"GET /api/analytics/features":     accessTokenSessionRule,
+	"GET /api/analytics/health":       accessTokenSessionRule,
+	"POST /api/analytics/salt/rotate": accessTokenSessionRule,
+	"DELETE /api/analytics/expired":   accessTokenSessionRule,
 
 	// router/api-router.go: /api/sso (consent and credential minting)
 	"GET /api/sso/authorize":  accessTokenSessionRule,

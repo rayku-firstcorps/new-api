@@ -346,6 +346,16 @@ func validateOptionValue(key string, value string) error {
 	if key == operation_setting.LogMaxRangeDaysOptionKey {
 		return operation_setting.ValidateLogMaxRangeDays(value)
 	}
+	switch key {
+	case operation_setting.AnalyticsSampleRateOptionKey:
+		return operation_setting.ValidateAnalyticsSampleRate(value)
+	case operation_setting.AnalyticsRetentionDaysOptionKey:
+		return operation_setting.ValidateAnalyticsRetentionDays(value)
+	case operation_setting.AnalyticsHashSecretOptionKey:
+		return common.NewMessage("The analytics hash secret cannot be changed through the settings API")
+	case operation_setting.AnalyticsSecretRotatedAtOptionKey:
+		return common.NewMessage("This analytics setting is read-only")
+	}
 	if key == operation_setting.SystemTaskRetentionDaysOptionKey {
 		return operation_setting.ValidateSystemTaskRetentionDays(value)
 	}
@@ -449,6 +459,39 @@ func UpdateOptionsBulk(values map[string]string) error {
 	}
 	if policySnapshot != nil {
 		requestPolicySnapshot.Store(policySnapshot)
+	}
+	return nil
+}
+
+// SetAnalyticsSecret stores the analytics hash secret and its rotation time in
+// one transaction. It bypasses validateOptionValue, which rejects both keys
+// from the settings API. The secret is never logged.
+func SetAnalyticsSecret(secret string, rotatedAt int64) error {
+	values := map[string]string{
+		operation_setting.AnalyticsHashSecretOptionKey:      secret,
+		operation_setting.AnalyticsSecretRotatedAtOptionKey: strconv.FormatInt(rotatedAt, 10),
+	}
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		for k, v := range values {
+			option := Option{Key: k}
+			if err := tx.FirstOrCreate(&option, Option{Key: k}).Error; err != nil {
+				return err
+			}
+			option.Value = v
+			if err := tx.Save(&option).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	BumpSyncTopic(SyncTopicOptions)
+	for k, v := range values {
+		if err := updateOptionMap(k, v); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -884,6 +927,11 @@ func handleConfigUpdate(key, value string) bool {
 	config.UpdateConfigFromMap(cfg, configMap)
 
 	// 特定配置的后处理
+	if key == operation_setting.AnalyticsRetentionDaysOptionKey && common.IsMasterNode {
+		if err := SyncBehaviorEventsTTL(operation_setting.GetAnalyticsSetting().RetentionDays); err != nil {
+			common.SysError(common.LogText("failed to sync behavior events TTL: %s", err.Error()))
+		}
+	}
 	if configName == "performance_setting" {
 		performance_setting.UpdateAndSync()
 	} else if configName == "billing_setting" {

@@ -25,6 +25,7 @@ import {
   useState,
 } from 'react'
 
+import { trackFeature } from '@/lib/analytics'
 import {
   clearLegacyThemeCustomization,
   readThemePreference,
@@ -120,6 +121,7 @@ export function ThemeProvider({
     (theme: Theme) => {
       writeThemePreference(storageKey, theme)
       _setTheme(theme)
+      trackFeature('preference.theme_change', { value: theme })
     },
     [storageKey]
   )

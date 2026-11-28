@@ -506,6 +506,11 @@ func UpdateOption(c *gin.Context) {
 		}
 		return
 	}
+	if option.Key == operation_setting.AnalyticsEnabledOptionKey && option.Value.(string) == "true" {
+		if _, err := service.EnsureAnalyticsSecret(); err != nil {
+			common.SysError(common.LogText("failed to ensure analytics hash secret: %s", err.Error()))
+		}
+	}
 	// 出于安全考虑只记录被修改的配置项名称，不记录配置值（可能含密钥等敏感信息）。
 	recordManageAudit(c, "option.update", map[string]any{
 		"key": option.Key,

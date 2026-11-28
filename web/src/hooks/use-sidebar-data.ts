@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import {
   Activity,
+  BarChart3,
   Box,
   ClipboardList,
   CreditCard,
@@ -163,6 +164,12 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
             title: t('Promotion Links'),
             url: '/promotions',
             icon: Sparkles,
+          },
+          {
+            title: t('Behavior Analytics'),
+            url: '/analytics',
+            icon: BarChart3,
+            requiredRole: ROLE.ADMIN,
           },
           {
             title: t('System Info'),

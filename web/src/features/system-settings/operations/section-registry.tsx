@@ -20,6 +20,7 @@ import { SystemBehaviorSection } from '../general/system-behavior-section'
 import { EmailSettingsSection } from '../integrations/email-settings-section'
 import { MonitoringSettingsSection } from '../integrations/monitoring-settings-section'
 import { WorkerSettingsSection } from '../integrations/worker-settings-section'
+import { AnalyticsSettingsSection } from '../maintenance/analytics-settings-section'
 import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
@@ -156,6 +157,26 @@ const OPERATIONS_SECTIONS = [
             settings['log_setting.max_range_days'] ?? 365,
           'system_task_setting.retention_days':
             settings['system_task_setting.retention_days'] ?? 30,
+        }}
+      />
+    ),
+  },
+  {
+    id: 'analytics',
+    titleKey: 'Behavior Analytics',
+    build: (settings: OperationsSettings) => (
+      <AnalyticsSettingsSection
+        defaultValues={{
+          'analytics_setting.enabled':
+            settings['analytics_setting.enabled'] ?? false,
+          'analytics_setting.sample_rate':
+            settings['analytics_setting.sample_rate'] ?? 100,
+          'analytics_setting.retention_days':
+            settings['analytics_setting.retention_days'] ?? 90,
+          'analytics_setting.respect_dnt':
+            settings['analytics_setting.respect_dnt'] ?? true,
+          'analytics_setting.secret_rotated_at':
+            settings['analytics_setting.secret_rotated_at'] ?? 0,
         }}
       />
     ),

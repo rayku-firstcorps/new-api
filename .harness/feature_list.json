@@ -1,7 +1,7 @@
 {
   "project": "new-api",
   "schema_version": "1.0",
-  "current_stage": "stage3-user-onboarding",
+  "current_stage": "stage4-behavior-analytics",
   "features": [
     {
       "id": "homepage-linuxdo-offers",
@@ -598,14 +598,107 @@
         "工具定义可附带在浏览器内运行的实现，模型调用后自动执行并回填结果继续对话",
         "执行隔离、超时与失败回填 is_error，用户可随时停止自动循环"
       ]
+    },
+    {
+      "id": "analytics-setting-and-model",
+      "title": "行为埋点配置、哈希盐、/api/status 字段、behavior_events 表与留存清理（后端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["setting/operation_setting/analytics_setting.go", "controller/option.go", "controller/misc.go", "model/behavior_event.go", "model/main.go", "service/", "main.go", "web/src/i18n/locales/"],
+      "acceptance": [
+        "analytics_setting 四项配置及默认值（enabled=false、sample_rate=100、retention_days=90、respect_dnt=true），越界被拒",
+        "哈希盐仅主节点生成且幂等；GET /api/option、/api/status 不返回盐，PUT /api/option 不可写盐",
+        "/api/status 仅新增 analytics_enabled / analytics_sample_rate / analytics_respect_dnt",
+        "behavior_events 在 SQLite/MySQL/PostgreSQL AutoMigrate 幂等，ClickHouse 独立建表含 TTL",
+        "重复 event_id 批量写入不报错且只存一行；仅主节点按 retention_days 分批清理"
+      ]
+    },
+    {
+      "id": "analytics-ingest-pipeline",
+      "title": "POST /api/analytics/events 上报、白名单脱敏、actor_hash、限流与异步批量写入（后端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["router/api-router.go", "middleware/", "service/analytics_*.go", "controller/analytics.go", "dto/"],
+      "acceptance": [
+        "公开上报接口：专用限流 + 32KB / 50 条上限 + TryUserAuth，始终返回 202",
+        "事件名、props 键与枚举字段严格白名单，路由模板化并剥离 query/hash",
+        "actor_hash = HMAC-SHA256(盐, u:user_id) 前 32 位，跨设备一致，匿名为空",
+        "有界通道 4096、满 100 条或 2 秒批量写入，队列满丢弃不阻塞，退出时 flush"
+      ]
+    },
+    {
+      "id": "analytics-sdk-core",
+      "title": "web/src/lib/analytics 埋点 SDK 核心（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["web/src/lib/analytics/"],
+      "acceptance": [
+        "device_id / session_id（30 分钟轮换）生成与存储容错",
+        "client_type 含 Electron 识别，环境字段只报枚举，无原始 UA 与指纹",
+        "前端脱敏与白名单与后端一致，/api/analytics/ 防递归",
+        "批量队列（上限 100、满 20 或 5 秒 flush）、离页 flush、确定性采样、DNT",
+        "analytics.test.ts 覆盖上述场景"
+      ]
+    },
+    {
+      "id": "analytics-sdk-integration",
+      "title": "SDK 挂载 __root.tsx / http-client.ts、性能与异常、业务 trackFeature 接入（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["web/src/routes/__root.tsx", "web/src/lib/http-client.ts", "web/src/lib/analytics/", "web/src/features/"],
+      "acceptance": [
+        "路由切换先 route.leave 后 route.enter，含 active_ms 与 reason",
+        "接口失败上报 api_error，401 重试成功与 /api/analytics/ 不上报",
+        "vital.* 与 runtime.* 事件只含数值与错误类型，不含 message",
+        "§5.2 各模块 trackFeature props 只含白名单枚举/布尔/计数"
+      ]
+    },
+    {
+      "id": "analytics-query-api",
+      "title": "/api/analytics/* 聚合查询、盐轮换与手动清理（后端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["controller/analytics.go", "service/analytics_*.go", "model/behavior_event.go", "router/api-router.go", "web/src/i18n/locales/"],
+      "acceptance": [
+        "overview / trends / devices / pages / features / health 六个接口仅 Admin 可访问",
+        "跨设备统计、时间窗口边界、本地小时换算、P50/P95 结果正确且三库一致",
+        "salt/rotate 与 expired 仅 Root，响应与审计不含盐值"
+      ]
+    },
+    {
+      "id": "analytics-admin-settings-ui",
+      "title": "系统设置「行为埋点」配置卡片（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["web/src/features/system-settings/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "启用开关、采样率 1-100、保留天数 7-365、DNT 开关，保存请求体正确且越界拦截",
+        "轮换盐与立即清理仅 Root 可见，ConfirmDialog 二次确认",
+        "七语言文案"
+      ]
+    },
+    {
+      "id": "analytics-dashboard-ui",
+      "title": "/analytics 行为分析四 Tab 管理看板（前端）",
+      "status": "done",
+      "note": "2026-11-27 用户要求按 docs/prd/behavior-analytics-prompts.md 构建",
+      "scope": ["web/src/routes/_authenticated/analytics/", "web/src/features/analytics/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "仅 Admin/Root 可访问，侧边栏入口",
+        "全局时间范围与端类型筛选写入 URL",
+        "Overview / Devices / Behavior / Health 四 Tab 按方案 §8.1 展示",
+        "加载、空数据、未启用、错误状态；@/lib/format 与 toIntlLocale；七语言"
+      ]
     }
   ],
   "out_of_scope": [
-    "新增数据库表或列（引导状态复用 users.setting JSON 列）",
-    "新增后端代理测试请求接口（测试请求走现有中继与计费链路）",
+    "采集任何用户输入、业务内容、明文身份或明文 IP（behavior-analytics-design.md §1 红线）",
+    "第三方分析 SDK 或外部上报服务",
+    "硬件 / Canvas / 字体等设备指纹",
+    "计费、额度与结算逻辑的任何改动",
     "删除或精简 new-api 原有功能",
     "修改受保护的项目标识",
     "stage2 KuCode 换肤 in_progress 项的收尾与视觉验收",
-    "方案 user-onboarding-first-setup-plan.md 以外的新需求"
+    "方案 behavior-analytics-design.md 以外的新需求"
   ]
 }

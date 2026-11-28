@@ -57,6 +57,7 @@ import {
 } from '@/features/performance-metrics/lib/format'
 import { PluginIcon } from '@/features/task-plugins/components/plugin-icon'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { trackFeature } from '@/lib/analytics'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { requireServerSuccess } from '@/lib/server-error-message'
 import { cn } from '@/lib/utils'
@@ -1554,7 +1555,15 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
     <div className='@container/details space-y-4'>
       <ModelHeader model={props.model} variant={props.variant ?? 'page'} />
 
-      <Tabs defaultValue='overview' className='gap-4'>
+      <Tabs
+        defaultValue='overview'
+        onValueChange={(v) =>
+          trackFeature('models.view_detail', {
+            tab: v === 'overview' ? 'details' : (v as 'performance' | 'api'),
+          })
+        }
+        className='gap-4'
+      >
         <TabsList
           variant='line'
           className='grid w-full grid-cols-3 gap-1 rounded-none border-b p-0 group-data-horizontal/tabs:h-auto'

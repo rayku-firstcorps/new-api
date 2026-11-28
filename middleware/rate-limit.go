@@ -273,3 +273,8 @@ func SearchRateLimit() func(c *gin.Context) {
 func AntomInquiryRateLimit() func(c *gin.Context) {
 	return userRateLimitFactory(10, 60, "AIQ")
 }
+
+const (
+	analyticsRateLimitNum      = 120
+	analyticsRateLimitDuration = 60
+)

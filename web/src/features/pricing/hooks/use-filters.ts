@@ -20,6 +20,7 @@ import { useSearch } from '@tanstack/react-router'
 import { useMemo, useCallback, useState } from 'react'
 
 import { useDebounce } from '@/hooks/use-debounce'
+import { trackFeature, type FilterType } from '@/lib/analytics'
 
 import {
   FILTER_ALL,
@@ -53,6 +54,17 @@ function normalizeViewMode(value: unknown): ViewMode {
   return VIEW_MODES.CARD
 }
 
+// Filter state keys that map to an analytics filter type; search text is never tracked.
+const FILTER_TYPE_BY_KEY: Record<string, FilterType | undefined> = {
+  vendor: 'vendor',
+  group: 'group',
+  endpointType: 'endpoint_type',
+  quotaType: 'billing_type',
+  tag: 'tag',
+  sort: 'sort',
+  view: 'view_mode',
+}
+
 export function useFilters(models: PricingModel[]) {
   const search = useSearch({ from: '/pricing/' })
   const [filterState, setFilterState] = useState<FilterState>(() => ({
@@ -82,6 +94,10 @@ export function useFilters(models: PricingModel[]) {
   const showRechargePrice = filterState.rechargePrice === true
 
   const updateFilters = useCallback((updates: Record<string, unknown>) => {
+    const filterType = FILTER_TYPE_BY_KEY[Object.keys(updates)[0]]
+    if (Object.keys(updates).length === 1 && filterType) {
+      trackFeature('pricing.filter_change', { filter_type: filterType })
+    }
     setFilterState((prev) => {
       const next: Record<string, unknown> = { ...prev, ...updates }
       for (const key of Object.keys(next)) {

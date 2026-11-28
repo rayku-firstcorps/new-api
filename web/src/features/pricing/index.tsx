@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 
 import { PublicLayout } from '@/components/layout'
 import { PageTransition } from '@/components/page-transition'
+import { trackFeature } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
 
 import {
@@ -95,6 +96,7 @@ export function Pricing() {
 
   const handleModelClick = useCallback((modelName: string) => {
     setSelectedModelName(modelName)
+    trackFeature('models.view_detail', { tab: 'details' })
   }, [])
 
   const selectedModel = useMemo(

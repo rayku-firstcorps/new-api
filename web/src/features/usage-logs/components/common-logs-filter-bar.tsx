@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/tooltip'
 import { getGroups } from '@/features/users/api'
 import { useMediaQuery } from '@/hooks'
+import { trackFeature } from '@/lib/analytics'
+import { rangeBucketOf } from '@/lib/analytics/range-bucket'
 import { getUserGroups } from '@/lib/api'
 import { requireServerSuccess } from '@/lib/server-error-message'
 
@@ -215,6 +217,9 @@ export function CommonLogsFilterBar<TData>(
   const handleApply = useCallback(
     (nextFilters: CommonLogFilters = filters) => {
       const filterParams = buildSearchParams(nextFilters, 'common')
+      trackFeature('usage_log.filter', {
+        range_bucket: rangeBucketOf(nextFilters.startTime, nextFilters.endTime),
+      })
       navigate({
         to: '/usage-logs/$section',
         params: { section: 'common' },

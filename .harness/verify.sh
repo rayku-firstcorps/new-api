@@ -312,6 +312,85 @@ if [[ "$TARGET" == "all" || "$TARGET" == "playground-openai-hosted-tools" ]]; th
   fi
 fi
 
+# ── stage4 行为埋点 ───────────────────────────────────
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-setting-and-model" ]]; then
+  echo ""
+  echo "── analytics-setting-and-model ──"
+  check "analytics_setting.go 存在" "test -f setting/operation_setting/analytics_setting.go"
+  check "behavior_event.go 存在" "test -f model/behavior_event.go"
+  check "/api/status 暴露 analytics_enabled" "grep -q 'analytics_enabled' controller/misc.go"
+  check "/api/status 不暴露哈希盐" "! grep -qiE 'hash_(salt|secret)' controller/misc.go"
+  check "后端相关测试通过" "go test ./model/... ./setting/... ./controller/... ./service/..."
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-ingest-pipeline" ]]; then
+  echo ""
+  echo "── analytics-ingest-pipeline ──"
+  check "上报路由已注册" "grep -q 'analytics/events' router/api-router.go"
+  check "异步写入服务存在" "test -f service/analytics_writer.go"
+  check "后端相关测试通过" "go test ./service/... ./controller/... ./middleware/... ./model/..."
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-sdk-core" ]]; then
+  echo ""
+  echo "── analytics-sdk-core ──"
+  for f in index.ts context.ts sanitize.ts transport.ts vitals.ts analytics.test.ts; do
+    check "web/src/lib/analytics/$f 存在" "test -f web/src/lib/analytics/$f"
+  done
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "SDK 测试通过" "(cd web && bunx vitest run src/lib/analytics)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-sdk-integration" ]]; then
+  echo ""
+  echo "── analytics-sdk-integration ──"
+  check "http-client 接入 trackApiError" "grep -q 'trackApiError' web/src/lib/http-client.ts"
+  check "业务模块接入 trackFeature" "grep -rq 'trackFeature(' web/src/features"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "SDK 测试通过" "(cd web && bunx vitest run src/lib/analytics)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-query-api" ]]; then
+  echo ""
+  echo "── analytics-query-api ──"
+  check "controller/analytics.go 存在" "test -f controller/analytics.go"
+  check "聚合路由已注册" "grep -q 'analytics/overview\|/overview' router/api-router.go && grep -q 'salt/rotate' router/api-router.go"
+  check "后端相关测试通过" "go test ./controller/... ./service/... ./model/..."
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-admin-settings-ui" ]]; then
+  echo ""
+  echo "── analytics-admin-settings-ui ──"
+  check "系统设置引用 analytics_setting" "grep -rq 'analytics_setting' web/src/features/system-settings"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "系统设置测试通过" "(cd web && bunx vitest run src/features/system-settings)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-dashboard-ui" ]]; then
+  echo ""
+  echo "── analytics-dashboard-ui ──"
+  check "看板路由存在" "test -d web/src/routes/_authenticated/analytics"
+  check "看板 feature 目录存在" "test -d web/src/features/analytics"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "看板测试通过" "(cd web && bunx vitest run src/features/analytics)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
 # ── 汇总 ─────────────────────────────────────────────
 echo ""
 echo "================================================"
