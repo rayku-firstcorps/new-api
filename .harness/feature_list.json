@@ -689,6 +689,20 @@
         "Overview / Devices / Behavior / Health 四 Tab 按方案 §8.1 展示",
         "加载、空数据、未启用、错误状态；@/lib/format 与 toIntlLocale；七语言"
       ]
+    },
+    {
+      "id": "analytics-label-mapping",
+      "title": "行为分析看板埋点事件、功能模块与设备维度的七语言可读标签",
+      "status": "done",
+      "note": "2026-11-28 用户要求按 docs/prd/behavior-analytics-label-mapping-plan.md 构建（看板 i18n 完善，不改采集与后端）",
+      "scope": ["web/src/lib/analytics/whitelist.ts", "web/src/features/analytics/", "web/src/i18n/locales/"],
+      "acceptance": [
+        "26 个白名单事件、10 个功能模块、6 类 event_type 均有标签，白名单增删时 TypeScript 编译期报错",
+        "未知或历史事件名回退原始值，空值显示 Unknown",
+        "行为 Tab 三处面板显示可读名称，悬停可见原始 event_name / module；健康 Tab 复用统一标签",
+        "设备 Tab 的系统、浏览器、语言、主题枚举及 other/unknown 显示可读名称",
+        "七语言文案齐全，类型检查、定向 lint、analytics 测试与 Harness 验证通过"
+      ]
     }
   ],
   "out_of_scope": [

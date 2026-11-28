@@ -16,13 +16,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import i18next from 'i18next'
 import { afterEach, describe, expect, test } from 'vitest'
 
+import { EVENT_WHITELIST } from '@/lib/analytics/whitelist'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { assertAnalyticsAccess } from '../lib/access'
 import { formatDurationMs, formatRatio } from '../lib/format'
+import {
+  deviceDimensionLabel,
+  eventNameLabel,
+  eventTypeLabel,
+  featureModuleLabel,
+} from '../lib/labels'
 import { pickGranularity, resolveAnalyticsRange } from '../lib/range'
 import { analyticsSearchSchema } from '../lib/search'
 
@@ -117,5 +125,59 @@ describe('formatting', () => {
   test('ratio uses the locale percent format', () => {
     expect(formatRatio(0.4, 'en')).toBe('40%')
     expect(formatRatio(0.4, 'fr')).toMatch(/40[\s  ]%/)
+  })
+})
+
+describe('analytics labels', () => {
+  const t = i18next.t
+  const keys = Object.keys(EVENT_WHITELIST).map((key) => key.split('|'))
+  const eventTypes = [...new Set(keys.map(([type]) => type))]
+  const eventNames = keys.map(([, name]) => name)
+  const modules = [
+    ...new Set(
+      keys
+        .filter(([type]) => type === 'feature_use')
+        .map(([, name]) => name.split('.')[0])
+    ),
+  ]
+
+  test('every whitelisted event, module and event type has a readable label', () => {
+    expect(eventNames).toHaveLength(26)
+    expect(modules).toHaveLength(10)
+    expect(eventTypes).toHaveLength(6)
+    for (const name of eventNames) {
+      expect(eventNameLabel(t, name)).not.toBe(name)
+    }
+    for (const module of modules) {
+      expect(featureModuleLabel(t, module)).not.toBe(module)
+    }
+    for (const type of eventTypes) {
+      expect(eventTypeLabel(t, type)).not.toBe(type)
+    }
+  })
+
+  test('values outside the whitelist fall back to the raw value or Unknown', () => {
+    expect(eventNameLabel(t, 'legacy.removed_event')).toBe(
+      'legacy.removed_event'
+    )
+    expect(eventNameLabel(t, '')).toBe('Unknown')
+    expect(featureModuleLabel(t, 'legacy')).toBe('legacy')
+    expect(eventTypeLabel(t, '')).toBe('Unknown')
+  })
+
+  test.each([
+    ['os_family', 'macos', 'macOS'],
+    ['browser_family', 'chrome', 'Chrome'],
+    ['lang', 'zh', '简体中文'],
+    ['lang', 'zh-TW', '繁體中文'],
+    ['lang', 'fr', 'Français'],
+    ['theme', 'system', 'System'],
+    ['viewport', '2xl', '2xl'],
+    ['os_family', 'other', 'Other'],
+    ['browser_family', 'unknown', 'Unknown'],
+    ['theme', '', 'Unknown'],
+    ['os_family', 'constructor', 'constructor'],
+  ] as const)('device %s "%s" is shown as "%s"', (dimension, key, label) => {
+    expect(deviceDimensionLabel(t, dimension, key)).toBe(label)
   })
 })

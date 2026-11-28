@@ -26,6 +26,8 @@ export interface BarListItem {
   label: string
   value: number
   detail?: string
+  /** Native tooltip on the label, for example the raw event name. */
+  title?: string
 }
 
 interface BarListProps {
@@ -56,7 +58,9 @@ export function BarList(props: BarListProps) {
       {props.items.map((item) => (
         <li key={item.key} className='grid gap-1'>
           <div className='flex items-baseline justify-between gap-2 text-xs'>
-            <span className='min-w-0 truncate font-medium'>{item.label}</span>
+            <span className='min-w-0 truncate font-medium' title={item.title}>
+              {item.label}
+            </span>
             <span className='text-muted-foreground shrink-0 tabular-nums'>
               {formatNumber(item.value, locale)}
               {item.detail != null && ` · ${item.detail}`}

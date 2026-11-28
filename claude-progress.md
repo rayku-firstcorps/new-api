@@ -85,7 +85,15 @@ P0 已确认决策（采用方案 §10 倾向的默认值）：
 | analytics-query-api | done | 2026-11-27 六个 GET（Admin）+ salt/rotate、expired（Root）；P50/P95 为 50ms 直方图；SQLite/MySQL/PG/ClickHouse 实测 |
 | analytics-admin-settings-ui | done | 2026-11-27 系统设置「行为埋点」卡片（启用/采样/保留/DNT，Root 才见轮换盐与立即清理），七语言 |
 | analytics-dashboard-ui | done | 2026-11-27 /analytics 四 Tab 看板（URL 持久化筛选，未启用/空/错误态），侧栏入口，七语言；真实浏览器加载通过，图表未做窄屏人工目检 |
+| analytics-label-mapping | done | 2026-11-28 看板事件名、功能模块、事件类型与设备维度（系统/浏览器/语言/主题、other/unknown）七语言可读标签；原始 ID 以悬停提示保留；白名单增删时编译期报错 |
 ## 上次停在哪里
+2026-11-28 analytics-label-mapping（按 docs/prd/behavior-analytics-label-mapping-plan.md，用户要求），已 done、未提交：
+- 计划 §五 待确认项按默认处理：显示可读名称，原始 event_name / module 用原生 title 悬停提示（方案 A）；设备 Tab 维度一并映射；译名复用侧栏已有译法（Playground=游乐场、token 模块=API 密钥、Pricing=定价），未采用草案中的「演练场」「令牌」。
+- 未新增 vitalLabel：健康 Tab 直接复用 eventNameLabel；eventTypeLabel 已实现并有测试，但看板暂无调用处。
+- 后端设备维度空值返回 "unknown"，前端已映射为 Unknown；视口桶（xs…2xl）保持原样。
+- 未做真实浏览器目检。下一个 feature 仍是 playground-browser-tools。
+
+(以下为上一会话记录，保留)
 2026-11-27 Stage 4 行为埋点 P0-P8 全部完成并验收（7 个 analytics-* feature 均 done，未提交）：
 - 集成修复：MySQL 5.7 下 `OnConflict{DoNothing}` 生成 `id=id` 报 Error 1869，InsertBehaviorEvents 在 MySQL 改用 `event_id=VALUES(event_id)` 的 no-op 更新；pkg/jsplugin 保留路由表补 `/analytics`。
 - 已知与本次无关的失败：`TestReservedRouteNamespacesCoverConsolePages` 仍缺 `/onboarding`（Stage 3 遗留，未改）；`web` lint 在 use-table-url-state.ts 有既有 error；Windows 上 relay/channel HTTP2 GOAWAY 测试偶发失败，单跑通过。
@@ -312,6 +320,12 @@ P0 已确认决策（采用方案 §10 倾向的默认值）：
 - 新增 `docs/prd/antom-payment-security-hardening-plan.md`，记录 Antom 支付回调验签、金额/币种/订单归属校验、统一额度结算、上限保护及测试验收计划；本次未修改支付业务代码。
 
 ## 本次验证
+
+### 2026-11-28 埋点标签映射
+- `bun check -b` 通过；删掉一个 case 后类型检查报错（穷尽检查有效），恢复后通过。
+- 改动的 8 个文件 oxlint 0 告警、oxfmt 检查通过；`bun run i18n:sync` 已跑，23 个新键七语言齐全。
+- `bunx vitest run src/features/analytics/__tests__/ src/lib/analytics/`：3 个文件 94 个用例通过。
+- `bash .harness/verify.sh analytics-label-mapping` 8 项全部通过。
 
 ### 2026-11-27 行为埋点 P8 全量验收
 - 环境：Docker Desktop 29.9.3（手动启动）；mysql:5.7（5.7.44）、postgres:9.6（9.6.24）、clickhouse-server:25.3（25.3.14.14）、SQLite（内置）；容器已删除。

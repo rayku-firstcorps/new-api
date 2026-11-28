@@ -22,6 +22,7 @@ import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
+import zhLocale from '@/i18n/locales/zh.json'
 import { api } from '@/lib/api'
 
 import { AnalyticsPage } from '..'
@@ -73,6 +74,19 @@ const DEVICES = {
   },
 }
 
+const PAGES = { items: [] }
+const FEATURES = {
+  items: [{ event_name: 'playground.request_submit', count: 9, devices: 3 }],
+  modules: [{ module: 'token', count: 4 }],
+  by_client_type: [
+    {
+      event_name: 'playground.request_submit',
+      client_type: 'web_desktop',
+      count: 9,
+    },
+  ],
+}
+
 let overviewBody: unknown
 let trendsBody: unknown
 const calls: { url: string; params: Record<string, unknown> }[] = []
@@ -97,6 +111,10 @@ beforeEach(() => {
         return trendsBody
       case '/api/analytics/devices':
         return ok(DEVICES)
+      case '/api/analytics/pages':
+        return ok(PAGES)
+      case '/api/analytics/features':
+        return ok(FEATURES)
       default:
         throw new Error(`unexpected ${url}`)
     }
@@ -185,6 +203,28 @@ test('devices tab queries the devices endpoint and lists client-type combos', as
     await screen.findByText('Web desktop + Web mobile')
   ).toBeInTheDocument()
   expect(calls.map((c) => c.url)).toEqual(['/api/analytics/devices'])
+})
+
+test('behavior tab shows readable feature and module names that follow the interface language', async () => {
+  renderPage({ tab: 'behavior' })
+
+  // Bar list and the by-client table both name the feature; hover keeps the raw id.
+  const labels = await screen.findAllByText('Send playground request')
+  expect(labels).toHaveLength(2)
+  for (const label of labels) {
+    expect(label).toHaveAttribute('title', 'playground.request_submit')
+  }
+  expect(screen.getByText('API Keys')).toHaveAttribute('title', 'token')
+  expect(screen.queryByText('playground.request_submit')).toBeNull()
+
+  i18next.addResourceBundle('zhCN', 'translation', zhLocale.translation)
+  try {
+    await act(() => i18next.changeLanguage('zhCN'))
+    expect(await screen.findAllByText('游乐场发送请求')).toHaveLength(2)
+    expect(screen.getByText('API 密钥')).toBeInTheDocument()
+  } finally {
+    i18next.removeResourceBundle('zhCN', 'translation')
+  }
 })
 
 test('turned-off analytics shows the settings guide and sends no request', () => {

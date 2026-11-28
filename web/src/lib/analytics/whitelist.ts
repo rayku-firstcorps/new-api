@@ -176,8 +176,7 @@ const feature = (props: Record<string, PropRule>): EventSpec => ({
   props,
 })
 
-/** Keyed by `event_type|event_name`. */
-export const EVENT_WHITELIST: Readonly<Record<string, EventSpec>> = {
+const EVENT_SPECS = {
   'page_view|route.enter': {
     routeRequired: true,
     navFields: true,
@@ -237,4 +236,19 @@ export const EVENT_WHITELIST: Readonly<Record<string, EventSpec>> = {
   },
   'client_error|runtime.error': RUNTIME_ERROR,
   'client_error|runtime.unhandled_rejection': RUNTIME_ERROR,
-}
+} satisfies Record<string, EventSpec>
+
+/** Keyed by `event_type|event_name`. */
+export const EVENT_WHITELIST: Readonly<Record<string, EventSpec>> = EVENT_SPECS
+
+type EventKey = keyof typeof EVENT_SPECS
+type EventTypeOf<K> = K extends `${infer T}|${string}` ? T : never
+type EventNameOf<K> = K extends `${string}|${infer N}` ? N : never
+type ModuleOf<N> = N extends `${infer M}.${string}` ? M : never
+
+export type AnalyticsEventType = EventTypeOf<EventKey>
+export type AnalyticsEventName = EventNameOf<EventKey>
+/** The part of a feature_use event name before the first ".", as grouped by the server. */
+export type AnalyticsFeatureModule = ModuleOf<
+  EventNameOf<Extract<EventKey, `feature_use|${string}`>>
+>

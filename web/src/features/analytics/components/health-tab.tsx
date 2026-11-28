@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -36,6 +36,7 @@ import { useAnalyticsQuery } from '../hooks/use-analytics-query'
 import { useIntlLocale } from '../hooks/use-intl-locale'
 import { buildVitalTrendSpec } from '../lib/chart-specs'
 import { formatDurationMs } from '../lib/format'
+import { eventNameLabel } from '../lib/labels'
 import type { AnalyticsRangeParams, AnalyticsVitalName } from '../types'
 import { AnalyticsChart } from './analytics-chart'
 import { BarList } from './bar-list'
@@ -51,20 +52,8 @@ export function HealthTab(props: HealthTabProps) {
   const query = useAnalyticsQuery('health', props.params, getAnalyticsHealth)
   const data = query.data
 
-  const vitalLabel = useMemo(
-    () =>
-      (name: AnalyticsVitalName): string => {
-        switch (name) {
-          case 'vital.fcp':
-            return t('First contentful paint')
-          case 'vital.lcp':
-            return t('Largest contentful paint')
-          case 'vital.ttfb':
-            return t('Time to first byte')
-          default:
-            return t('Route change')
-        }
-      },
+  const vitalLabel = useCallback(
+    (name: AnalyticsVitalName) => eventNameLabel(t, name),
     [t]
   )
   const trendSpec = useMemo(

@@ -33,7 +33,11 @@ import { getAnalyticsFeatures, getAnalyticsPages } from '../api'
 import { useAnalyticsQuery } from '../hooks/use-analytics-query'
 import { useIntlLocale } from '../hooks/use-intl-locale'
 import { formatDurationMs } from '../lib/format'
-import { clientTypeLabel } from '../lib/labels'
+import {
+  clientTypeLabel,
+  eventNameLabel,
+  featureModuleLabel,
+} from '../lib/labels'
 import { ANALYTICS_CLIENT_TYPES } from '../lib/search'
 import type { AnalyticsRangeParams } from '../types'
 import { BarList } from './bar-list'
@@ -120,7 +124,8 @@ export function BehaviorTab(props: BehaviorTabProps) {
               <BarList
                 items={featureItems.map((item) => ({
                   key: item.event_name,
-                  label: item.event_name,
+                  label: eventNameLabel(t, item.event_name),
+                  title: item.event_name,
                   value: item.count,
                   detail: t('{{count}} devices', { count: item.devices }),
                 }))}
@@ -135,7 +140,8 @@ export function BehaviorTab(props: BehaviorTabProps) {
               <BarList
                 items={(features.data?.modules ?? []).map((item) => ({
                   key: item.module,
-                  label: item.module,
+                  label: featureModuleLabel(t, item.module),
+                  title: item.module,
                   value: item.count,
                 }))}
               />
@@ -162,8 +168,8 @@ export function BehaviorTab(props: BehaviorTabProps) {
               <TableBody>
                 {featureItems.map((item) => (
                   <TableRow key={item.event_name}>
-                    <TableCell className='font-mono text-xs'>
-                      {item.event_name}
+                    <TableCell title={item.event_name}>
+                      {eventNameLabel(t, item.event_name)}
                     </TableCell>
                     {ANALYTICS_CLIENT_TYPES.map((type) => {
                       const row = byClient.find(

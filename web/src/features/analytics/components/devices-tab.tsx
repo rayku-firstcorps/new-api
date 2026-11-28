@@ -28,7 +28,12 @@ import { useAnalyticsQuery } from '../hooks/use-analytics-query'
 import { useIntlLocale } from '../hooks/use-intl-locale'
 import { buildDonutSpec } from '../lib/chart-specs'
 import { formatRatio } from '../lib/format'
-import { clientComboLabel, clientTypeLabel } from '../lib/labels'
+import {
+  clientComboLabel,
+  clientTypeLabel,
+  deviceDimensionLabel,
+  type DeviceDimension,
+} from '../lib/labels'
 import type { AnalyticsDimensionItem, AnalyticsRangeParams } from '../types'
 import { AnalyticsChart } from './analytics-chart'
 import { BarList } from './bar-list'
@@ -63,12 +68,28 @@ export function DevicesTab(props: DevicesTabProps) {
 
   const cross = data?.cross_device
   const total = cross?.actors_total ?? 0
-  const dimensions: { title: string; items: AnalyticsDimensionItem[] }[] = [
-    { title: t('Operating system'), items: data?.os_families ?? [] },
-    { title: t('Browser'), items: data?.browsers ?? [] },
-    { title: t('Viewport'), items: data?.viewports ?? [] },
-    { title: t('Language'), items: data?.langs ?? [] },
-    { title: t('Theme'), items: data?.themes ?? [] },
+  const dimensions: {
+    dimension: DeviceDimension
+    title: string
+    items: AnalyticsDimensionItem[]
+  }[] = [
+    {
+      dimension: 'os_family',
+      title: t('Operating system'),
+      items: data?.os_families ?? [],
+    },
+    {
+      dimension: 'browser_family',
+      title: t('Browser'),
+      items: data?.browsers ?? [],
+    },
+    {
+      dimension: 'viewport',
+      title: t('Viewport'),
+      items: data?.viewports ?? [],
+    },
+    { dimension: 'lang', title: t('Language'), items: data?.langs ?? [] },
+    { dimension: 'theme', title: t('Theme'), items: data?.themes ?? [] },
   ]
 
   return (
@@ -94,7 +115,7 @@ export function DevicesTab(props: DevicesTabProps) {
       <div className='grid gap-4 md:grid-cols-2'>
         {dimensions.map((dimension) => (
           <PanelWrapper
-            key={dimension.title}
+            key={dimension.dimension}
             title={dimension.title}
             loading={query.isPending}
             empty={dimension.items.length === 0}
@@ -103,7 +124,7 @@ export function DevicesTab(props: DevicesTabProps) {
             <BarList
               items={dimension.items.map((item) => ({
                 key: item.key,
-                label: item.key === '' ? t('Unknown') : item.key,
+                label: deviceDimensionLabel(t, dimension.dimension, item.key),
                 value: item.devices,
               }))}
             />

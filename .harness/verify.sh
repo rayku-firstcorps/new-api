@@ -391,6 +391,25 @@ if [[ "$TARGET" == "all" || "$TARGET" == "analytics-dashboard-ui" ]]; then
   fi
 fi
 
+if [[ "$TARGET" == "all" || "$TARGET" == "analytics-label-mapping" ]]; then
+  echo ""
+  echo "── analytics-label-mapping ──"
+  check "白名单导出事件名与模块类型" \
+    "grep -q 'export type AnalyticsEventName' web/src/lib/analytics/whitelist.ts && grep -q 'export type AnalyticsFeatureModule' web/src/lib/analytics/whitelist.ts"
+  check "labels.ts 提供事件、模块、事件类型与设备维度标签" \
+    "grep -q 'export function eventNameLabel' web/src/features/analytics/lib/labels.ts && grep -q 'export function featureModuleLabel' web/src/features/analytics/lib/labels.ts && grep -q 'export function eventTypeLabel' web/src/features/analytics/lib/labels.ts && grep -q 'export function deviceDimensionLabel' web/src/features/analytics/lib/labels.ts"
+  check "行为 Tab 不再直接展示原始 event_name" \
+    "! grep -q 'label: item.event_name' web/src/features/analytics/components/behavior-tab.tsx"
+  check "七语言均含新增标签" \
+    "for l in en zh zh-TW fr ja ru vi; do grep -q '\"Send playground request\"' web/src/i18n/locales/\$l.json || exit 1; done"
+  if command -v bun &>/dev/null; then
+    check "前端类型检查通过" "(cd web && bun run typecheck)"
+    check "看板与 SDK 测试通过" "(cd web && bunx vitest run src/features/analytics src/lib/analytics)"
+  else
+    skip "前端验证（Bun 未安装）"
+  fi
+fi
+
 # ── 汇总 ─────────────────────────────────────────────
 echo ""
 echo "================================================"
